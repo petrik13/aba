@@ -121,6 +121,12 @@
 
   /* ---------- main ---------- */
   main{flex:1; min-width:0; padding:28px 34px 60px; max-width:1180px;}
+  .local-mode-banner{
+    background:var(--warn-bg); color:var(--warn); border:1px solid var(--warn);
+    border-radius:10px; padding:10px 14px; font-size:12.5px; line-height:1.5;
+    margin-bottom:18px;
+  }
+  .local-mode-banner strong{color:inherit;}
   .topbar{display:flex; justify-content:space-between; gap:20px; align-items:flex-start; margin-bottom:20px;}
   .topbar h2{font-size:25px;}
   .topbar .desc{color:var(--ink-muted); margin:8px 0 0; max-width:64ch; font-size:13.5px;}
@@ -392,12 +398,15 @@
       <button class="btn sm" id="btn-help">﹖ Ajuda</button>
     </div>
 
-    <div class="sidebar-foot">
+    <div class="sidebar-foot" id="sidebar-foot">
       <strong>Sobre estes dados —</strong> os registros vêm do mesmo <code class="mono">seed_examples.sql</code> rodado contra o schema Postgres do protótipo.
     </div>
   </aside>
 
   <main>
+    <div id="local-mode-banner" class="local-mode-banner" style="display:none;">
+      ⚠ <strong>Modo de demonstração local</strong> — este exemplar não está rodando dentro do claude.ai, então os dados ficam salvos só neste navegador (não são compartilhados nem sincronizados com nenhuma outra instância). Ótimo para testar a navegação e o preenchimento; limpar os dados do site apaga tudo.
+    </div>
     <div class="topbar">
       <div>
         <h2 id="entity-title">—</h2>
@@ -1267,7 +1276,7 @@
   // Ajuda — explica os conceitos do sistema; atualizar HELP_SECTIONS e
   // HELP_CHANGELOG a cada nova versão publicada.
   // =========================================================================
-  var APP_VERSION = "v7";
+  var APP_VERSION = "v8";
   var HELP_SECTIONS = [
     { titulo:"O que é o Registro ABA",
       corpo:"<p>Protótipo funcional de um sistema de gestão fundiária — pensado para substituir o modelo rígido de \"processo/formulário\" por Entidades e Formulários totalmente configuráveis. Os dados aqui são de exemplo.</p>" },
@@ -1305,9 +1314,12 @@
       corpo:"<p>Abra o registro (clique na linha da tabela) e use o botão <strong>✎ Editar</strong> no topo do drawer. O modo de edição mostra todos os campos nativos e configurados de uma vez, sem bloqueio por aba — é o fluxo de corrigir o que já existe, não o de preenchimento guiado.</p>" },
     { titulo:"Configuração por Entidade vs. Configuração geral",
       corpo:"<p><strong>⚙ Configurar</strong> (no topo, por Entidade) ajusta ciclo de vida, abas e campos daquela Entidade/Formulário específico.</p>" +
-        "<p><strong>⚙ Configuração geral</strong> (na barra lateral) é do sistema como um todo: usuários com acesso e a ordem das Entidades no menu — outras configurações globais entram aqui no futuro.</p>" }
+        "<p><strong>⚙ Configuração geral</strong> (na barra lateral) é do sistema como um todo: usuários com acesso e a ordem das Entidades no menu — outras configurações globais entram aqui no futuro.</p>" },
+    { titulo:"Modo de demonstração local",
+      corpo:"<p>Dentro do claude.ai os dados ficam numa base compartilhada de verdade. Quando este arquivo é aberto fora do claude.ai (por exemplo, publicado como <code>index.html</code> no GitHub Pages), esse recurso não existe — então o sistema entra sozinho em <strong>modo de demonstração local</strong> (aviso amarelo no topo): tudo que você criar ou editar fica salvo só no seu navegador (localStorage), não é compartilhado com ninguém e some se você limpar os dados do site. É o jeito de mandar o app para alguém testar a navegação e o preenchimento sem precisar de acesso ao claude.ai.</p>" }
   ];
   var HELP_CHANGELOG = [
+    { versao:"v8", texto:"Busca em modais de relação (associar registro, Titular(es)) também só filtra ao confirmar; visual claro mais corporativo (fundo cinza-azulado, azul de destaque); modo de demonstração local (localStorage) quando o app roda fora do claude.ai, para mandar o link/arquivo do GitHub para alguém testar de verdade." },
     { versao:"v7", texto:"Busca só filtra ao confirmar (Enter/botão); Configuração geral (usuários + ordem do menu); este botão de Ajuda; construtor de Abas & Campos em três painéis (paleta, tela, propriedades), estilo formulário arrastar-e-configurar; visual atualizado (barra lateral escura fixa)." },
     { versao:"v6", texto:"Titular(es) obrigatório na Titularidade, sempre vinculado a registros reais de Pessoa." },
     { versao:"v5", texto:"Editar registros existentes pelo drawer; associar por busca em vez de lista solta." },
@@ -2205,10 +2217,115 @@
   // =========================================================================
   // Conexão com a base
   // =========================================================================
+  var isLocalDb = false;
+
+  // Modo de demonstração local — usado quando o app não está rodando dentro
+  // do claude.ai (ex.: publicado como index.html estático no GitHub Pages),
+  // onde window.claude/o "db" do Artifact não existem. Implementa a mesma
+  // API (collection().add/get/onSnapshot, doc().set/update/delete/get) só
+  // que persistindo em localStorage, para quem for testar conseguir de fato
+  // criar/editar registros — os dados ficam só no navegador dessa pessoa.
+  function makeLocalDb(){
+    var STORAGE_KEY = "aba_local_db_v1";
+    var persistOk = true;
+    var state = {};
+    try{
+      var raw = window.localStorage.getItem(STORAGE_KEY);
+      state = raw ? JSON.parse(raw) : {};
+    }catch(e){ state = {}; persistOk = false; }
+
+    var listeners = {};
+    function ensure(name){ if(!state[name]) state[name] = []; if(!listeners[name]) listeners[name] = []; }
+    function persist(){
+      if(!persistOk) return;
+      try{ window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+      catch(e){ persistOk = false; }
+    }
+    function snapshotFor(name){
+      return { docs: state[name].map(function(d){ return { id:d.id, data:function(){ return d; } }; }) };
+    }
+    function notify(name){ listeners[name].forEach(function(cb){ cb(snapshotFor(name)); }); }
+    function genId(name){ return name + "_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2,8); }
+
+    function collection(name){
+      ensure(name);
+      return {
+        add: function(data){
+          return new Promise(function(resolve){
+            var id = genId(name);
+            state[name].push(Object.assign({}, data, {id:id}));
+            persist(); notify(name);
+            resolve({id:id});
+          });
+        },
+        get: function(){ return Promise.resolve(snapshotFor(name)); },
+        onSnapshot: function(cb){
+          listeners[name].push(cb);
+          cb(snapshotFor(name));
+          return function unsubscribe(){ listeners[name] = listeners[name].filter(function(x){ return x !== cb; }); };
+        }
+      };
+    }
+
+    function docRef(path){
+      var parts = path.split("/"); var name = parts[0], id = parts[1];
+      ensure(name);
+      return {
+        set: function(data){
+          return new Promise(function(resolve){
+            var idx = state[name].findIndex(function(d){ return d.id === id; });
+            var doc = Object.assign({}, data, {id:id});
+            if(idx === -1) state[name].push(doc); else state[name][idx] = doc;
+            persist(); notify(name);
+            resolve();
+          });
+        },
+        update: function(patch){
+          return new Promise(function(resolve){
+            var idx = state[name].findIndex(function(d){ return d.id === id; });
+            if(idx === -1) state[name].push(Object.assign({}, patch, {id:id}));
+            else state[name][idx] = Object.assign({}, state[name][idx], patch);
+            persist(); notify(name);
+            resolve();
+          });
+        },
+        delete: function(){
+          return new Promise(function(resolve){
+            state[name] = state[name].filter(function(d){ return d.id !== id; });
+            persist(); notify(name);
+            resolve();
+          });
+        },
+        get: function(){
+          return new Promise(function(resolve){
+            var d = state[name].find(function(x){ return x.id === id; });
+            resolve({ exists: !!d, id:id, data:function(){ return d; } });
+          });
+        }
+      };
+    }
+
+    return { collection: collection, doc: docRef, __persistOk: function(){ return persistOk; } };
+  }
+
+  function updateLocalModeBanner(){
+    var banner = document.getElementById("local-mode-banner");
+    var foot = document.getElementById("sidebar-foot");
+    if(!banner || !foot) return;
+    if(isLocalDb){
+      banner.style.display = "";
+      foot.innerHTML = '<strong>Sobre estes dados —</strong> modo de demonstração local: os registros ficam salvos apenas no seu navegador (localStorage), não são compartilhados com ninguém.';
+    } else {
+      banner.style.display = "none";
+      foot.innerHTML = '<strong>Sobre estes dados —</strong> os registros vêm do mesmo <code class="mono">seed_examples.sql</code> rodado contra o schema Postgres do protótipo.';
+    }
+  }
+
   async function boot(){
     render();
     try{ db = await window.claude.use("db"); }catch(e){ db = null; }
-    if(!db){ dbReady = true; render(); return; }
+    if(!db){ db = makeLocalDb(); isLocalDb = true; }
+    updateLocalModeBanner();
 
     COLLECTIONS.forEach(function(colName){
       db.collection(colName).onSnapshot(function(snap){
