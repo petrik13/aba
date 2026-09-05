@@ -1,0 +1,2225 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body><title>Registro ABA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f4f6f9; --surface:#ffffff; --surface-2:#edf1f6;
+    --ink:#1e2733; --ink-muted:#5b6577; --ink-faint:#8993a4;
+    --border:#dde3ec; --border-soft:#e9edf3;
+    --accent:#2f5fd8; --accent-strong:#23439e; --accent-ink:#ffffff;
+    --selo:#c0392b; --selo-ink:#fdecea;
+    --ok:#1f8a4c; --ok-bg:#e5f6ec;
+    --warn:#b7791f; --warn-bg:#fbf0da;
+    --info:#2f6fb0; --info-bg:#e7f1fa;
+    --neutral:#6b7280; --neutral-bg:#eef0f3;
+    --shadow: 0 12px 32px -16px rgba(30,39,51,.18);
+
+    /* Sidebar chrome — always dark, regardless of the app's own light/dark
+       theme (a fixed enterprise-app look, distinct from the content area). */
+    --sb-bg:#161b22; --sb-surface-2:#1f2733; --sb-border:#262e3a;
+    --sb-ink:#e7ebe3; --sb-ink-muted:#a3ab9f; --sb-ink-faint:#79817a;
+    --sb-accent:#5b8dd9; --sb-accent-ink:#0b1420; --sb-selo:#e2896c;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#12160f; --surface:#191e17; --surface-2:#1f2620;
+      --ink:#e7ebe3; --ink-muted:#a3ab9f; --ink-faint:#79817a;
+      --border:#313a2f; --border-soft:#252d24;
+      --accent:#7fa0c2; --accent-strong:#9db8d6; --accent-ink:#0c1620;
+      --selo:#e2896c; --selo-ink:#2a1712;
+      --ok:#79c491; --ok-bg:#1c2c20;
+      --warn:#dab06a; --warn-bg:#2e2718;
+      --info:#7fb2e6; --info-bg:#182432;
+      --neutral:#9aa197; --neutral-bg:#232a21;
+      --shadow: 0 12px 32px -16px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12160f; --surface:#191e17; --surface-2:#1f2620;
+    --ink:#e7ebe3; --ink-muted:#a3ab9f; --ink-faint:#79817a;
+    --border:#313a2f; --border-soft:#252d24;
+    --accent:#7fa0c2; --accent-strong:#9db8d6; --accent-ink:#0c1620;
+    --selo:#e2896c; --selo-ink:#2a1712;
+    --ok:#79c491; --ok-bg:#1c2c20;
+    --warn:#dab06a; --warn-bg:#2e2718;
+    --info:#7fb2e6; --info-bg:#182432;
+    --neutral:#9aa197; --neutral-bg:#232a21;
+    --shadow: 0 12px 32px -16px rgba(0,0,0,.6);
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:"IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    font-size:14px; line-height:1.5;
+  }
+  h1,h2,h3,h4{font-family:"IBM Plex Serif", Georgia, serif; font-weight:600; margin:0; text-wrap:balance;}
+  code, .mono{font-family:"IBM Plex Mono", ui-monospace, monospace;}
+  a{color:var(--accent);}
+  button{font-family:inherit; cursor:pointer;}
+  input,select,textarea{font-family:inherit;}
+
+  .app{display:flex; min-height:100vh;}
+
+  /* ---------- sidebar (always dark chrome, independent of app theme) ---------- */
+  .sidebar{
+    width:280px; flex:0 0 280px; background:var(--sb-bg);
+    border-right:1px solid var(--sb-border); padding:22px 16px;
+    display:flex; flex-direction:column; gap:20px; overflow-y:auto;
+  }
+  .brand-eyebrow{font-size:10.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--sb-selo); font-weight:600;}
+  .brand h1{font-size:22px; margin-top:4px; color:var(--sb-ink);}
+  .brand p{margin:6px 0 0; color:var(--sb-ink-muted); font-size:12.5px;}
+
+  .nav-section-label{
+    font-size:10.5px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--sb-ink-faint); font-weight:600; margin:0 0 6px 4px;
+  }
+  nav.nav-group{display:flex; flex-direction:column; gap:2px;}
+  .nav-item{
+    display:flex; align-items:center; gap:10px;
+    padding:9px 10px; border-radius:9px; border:1px solid transparent;
+    background:none; color:var(--sb-ink-muted); text-align:left; width:100%;
+    font-size:13.5px; transition:background .12s ease, color .12s ease;
+  }
+  .nav-item:hover{background:var(--sb-surface-2); color:var(--sb-ink);}
+  .nav-item.active{background:var(--sb-accent); color:var(--sb-accent-ink); font-weight:500;}
+  .nav-glyph{
+    width:24px; height:24px; border-radius:7px; flex:0 0 24px;
+    display:flex; align-items:center; justify-content:center;
+    font-family:"IBM Plex Serif", serif; font-weight:600; font-size:12.5px;
+    background:var(--sb-surface-2); color:var(--sb-accent);
+  }
+  .nav-item.active .nav-glyph{background:rgba(255,255,255,.22); color:var(--sb-accent-ink);}
+  .nav-item span.label{overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1;}
+  .nav-count{
+    margin-left:auto; font-family:"IBM Plex Mono",monospace; font-size:11px;
+    color:var(--sb-ink-faint); background:var(--sb-surface-2);
+    border-radius:20px; padding:1px 7px; min-width:20px; text-align:center; flex:0 0 auto;
+  }
+  .nav-item.active .nav-count{background:rgba(255,255,255,.22); color:var(--sb-accent-ink);}
+  .nav-add{
+    display:flex; align-items:center; gap:8px; padding:8px 10px; margin-top:4px;
+    border-radius:9px; border:1px dashed var(--sb-border); background:none;
+    color:var(--sb-ink-muted); font-size:12.5px; width:100%;
+  }
+  .nav-add:hover{border-color:var(--sb-accent); color:var(--sb-accent);}
+
+  .sidebar-globalbtns{margin-top:auto; display:flex; flex-direction:column; gap:6px;}
+  .sidebar-globalbtns .btn{
+    justify-content:flex-start; width:100%; background:none; border-color:var(--sb-border);
+    color:var(--sb-ink-muted);
+  }
+  .sidebar-globalbtns .btn:hover{border-color:var(--sb-accent); color:var(--sb-ink);}
+
+  .sidebar-foot{
+    padding-top:16px; border-top:1px solid var(--sb-border);
+    font-size:11.5px; color:var(--sb-ink-faint); line-height:1.55;
+  }
+  .sidebar-foot strong{color:var(--sb-ink-muted);}
+
+  /* ---------- main ---------- */
+  main{flex:1; min-width:0; padding:28px 34px 60px; max-width:1180px;}
+  .topbar{display:flex; justify-content:space-between; gap:20px; align-items:flex-start; margin-bottom:20px;}
+  .topbar h2{font-size:25px;}
+  .topbar .desc{color:var(--ink-muted); margin:8px 0 0; max-width:64ch; font-size:13.5px;}
+  .topbar-actions{display:flex; flex-direction:column; align-items:flex-end; gap:8px; flex:0 0 auto;}
+  .meta-chip{
+    display:inline-flex; align-items:center; gap:6px;
+    background:var(--surface-2); border:1px solid var(--border-soft);
+    border-radius:20px; padding:4px 11px 4px 4px; font-size:12px; color:var(--ink-muted);
+    white-space:nowrap;
+  }
+  .meta-chip .dot{width:7px; height:7px; border-radius:50%; background:var(--ok);}
+  .meta-chip.warn .dot{background:var(--warn);}
+
+  .toolbar{display:flex; gap:10px; align-items:center; margin-bottom:14px;}
+  .search-wrap{position:relative; flex:1; max-width:320px;}
+  .search-wrap svg{
+    position:absolute; left:11px; top:50%; transform:translateY(-50%);
+    width:14px; height:14px; color:var(--ink-faint); pointer-events:none;
+  }
+  .search{
+    width:100%; padding:8px 12px 8px 32px; border-radius:8px;
+    border:1px solid var(--border); background:var(--surface); color:var(--ink); font-size:13px;
+  }
+  .search:focus{outline:2px solid var(--accent); outline-offset:-1px;}
+  .search-row{display:flex; gap:8px; align-items:center;}
+  .search-row input[type="text"]{flex:1;}
+  .btn{
+    padding:8px 14px; border-radius:8px; border:1px solid var(--border);
+    background:var(--surface); color:var(--ink); font-size:13px; font-weight:500;
+    display:inline-flex; align-items:center; gap:6px; white-space:nowrap;
+  }
+  .btn:hover{border-color:var(--accent);}
+  .btn.primary{background:var(--accent); border-color:var(--accent); color:var(--accent-ink);}
+  .btn.primary:hover{background:var(--accent-strong); border-color:var(--accent-strong);}
+  .btn.sm{padding:5px 10px; font-size:12px;}
+  .btn.danger{color:var(--selo); border-color:transparent;}
+  .btn.danger:hover{background:var(--selo-ink); border-color:var(--selo-ink);}
+
+  .table-wrap{
+    background:var(--surface); border:1px solid var(--border-soft);
+    border-radius:12px; overflow:auto; box-shadow:var(--shadow);
+  }
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  thead th{
+    text-align:left; font-size:10.5px; letter-spacing:.06em; text-transform:uppercase;
+    color:var(--ink-faint); font-weight:600; padding:11px 14px;
+    border-bottom:1px solid var(--border-soft); white-space:nowrap;
+  }
+  tbody td{padding:11px 14px; border-bottom:1px solid var(--border-soft); vertical-align:top;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr{cursor:pointer;}
+  tbody tr:hover td{background:var(--surface-2);}
+  tbody tr.selected td{background:var(--info-bg);}
+  .empty-row td{padding:34px 14px; text-align:center; color:var(--ink-faint);}
+
+  .badge{display:inline-block; padding:2px 9px; border-radius:20px; font-size:11px; font-weight:500; white-space:nowrap;}
+  .badge.ok{background:var(--ok-bg); color:var(--ok);}
+  .badge.warn{background:var(--warn-bg); color:var(--warn);}
+  .badge.info{background:var(--info-bg); color:var(--info);}
+  .badge.neutral{background:var(--neutral-bg); color:var(--neutral);}
+  .badge.selo{background:var(--selo-ink); color:var(--selo);}
+
+  /* ---------- overlay + right drawer (detail) ---------- */
+  .overlay{
+    position:fixed; inset:0; background:rgba(15,20,14,.32);
+    opacity:0; pointer-events:none; transition:opacity .15s ease; z-index:20;
+  }
+  .overlay.show{opacity:1; pointer-events:auto;}
+  .drawer{
+    position:fixed; top:0; right:0; bottom:0; width:420px; max-width:92vw;
+    background:var(--surface); border-left:1px solid var(--border);
+    box-shadow:-16px 0 36px -20px rgba(0,0,0,.4);
+    transform:translateX(100%); transition:transform .18s ease; z-index:21;
+    display:flex; flex-direction:column;
+  }
+  .drawer.show{transform:translateX(0);}
+  .drawer-head{
+    padding:20px 22px 16px; border-bottom:1px solid var(--border-soft);
+    display:flex; justify-content:space-between; align-items:flex-start; gap:12px;
+  }
+  .drawer-head h3{font-size:18px;}
+  .drawer-head .mono{color:var(--ink-faint); font-size:12px; margin-top:4px; display:block;}
+  .icon-btn{
+    background:none; border:1px solid var(--border); border-radius:8px;
+    width:28px; height:28px; color:var(--ink-muted); font-size:15px; flex:0 0 auto;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .icon-btn:hover{border-color:var(--accent); color:var(--accent);}
+  .drawer-body{padding:18px 22px 30px; overflow-y:auto;}
+  .field-row{display:flex; justify-content:space-between; gap:14px; padding:8px 0; border-bottom:1px solid var(--border-soft); font-size:13px;}
+  .field-row:last-child{border-bottom:none;}
+  .field-row .k{color:var(--ink-muted); flex:0 0 42%;}
+  .field-row .v{text-align:right; flex:1; min-width:0; word-break:break-word;}
+  .drawer-section{margin-top:20px;}
+  .drawer-section h4{font-size:10.5px; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-faint); margin-bottom:9px; font-weight:600;}
+  .chip-list{display:flex; flex-wrap:wrap; gap:7px;}
+  .chip{display:inline-flex; align-items:center; gap:6px; background:var(--surface-2); border:1px solid var(--border-soft); border-radius:8px; padding:6px 10px; font-size:12px; color:var(--ink); text-align:left;}
+  .chip:hover{border-color:var(--accent);}
+  .chip .tag{color:var(--ink-faint); font-size:10.5px;}
+  .chip-nav{cursor:pointer;}
+  .chip-nav:hover{text-decoration:underline;}
+  .chip-x{background:none; border:none; color:var(--ink-faint); cursor:pointer; font-size:12px; padding:0; line-height:1; flex:0 0 auto;}
+  .chip-x:hover{color:var(--selo);}
+  .empty-note{color:var(--ink-faint); font-size:12.5px; font-style:italic;}
+  .campos-json{background:var(--surface-2); border:1px solid var(--border-soft); border-radius:8px; padding:10px 12px; font-size:12px; white-space:pre-wrap; word-break:break-word;}
+  .assoc-results{display:flex; flex-direction:column; gap:6px; margin-top:12px; max-height:320px; overflow-y:auto;}
+  .assoc-result{display:flex; flex-direction:column; align-items:flex-start; gap:2px; text-align:left; background:var(--surface-2); border:1px solid var(--border-soft); border-radius:8px; padding:9px 12px; font-family:inherit; cursor:pointer;}
+  .assoc-result:hover{border-color:var(--accent);}
+  .assoc-result strong{font-size:13px; color:var(--ink); font-weight:600;}
+  .assoc-result span{font-size:11px; color:var(--ink-faint); font-family:var(--font-mono, monospace);}
+  .order-row{display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--border-soft);}
+  .order-row:last-child{border-bottom:none;}
+  .order-label{flex:1; font-size:13px;}
+  .help-section{margin-bottom:22px;}
+  .help-section h4{font-size:13.5px; margin-bottom:7px; color:var(--ink); font-weight:600;}
+  .help-body{font-size:13px; color:var(--ink-muted); line-height:1.65;}
+  .help-body p{margin:0 0 8px;}
+  .help-body ul{margin:0 0 8px 18px; padding:0;}
+  .help-body li{margin-bottom:4px;}
+  .help-body code{background:var(--surface-2); border-radius:4px; padding:1px 5px; font-family:"IBM Plex Mono",monospace; font-size:12px;}
+  .aba-locked{
+    background:var(--surface-2); border:1px dashed var(--border); border-radius:8px;
+    padding:10px 12px; font-size:12.5px; color:var(--ink-faint); display:flex; gap:8px; align-items:flex-start;
+  }
+
+  /* ---------- cartório add form ---------- */
+  .cartorio-form{
+    background:var(--surface); border:1px solid var(--border-soft); border-radius:12px;
+    padding:16px 18px; margin-bottom:16px; box-shadow:var(--shadow);
+    display:grid; grid-template-columns:1.4fr 1fr .5fr 1.3fr auto; gap:10px; align-items:end;
+  }
+  .cartorio-form label{display:block; font-size:11px; color:var(--ink-muted); margin-bottom:4px;}
+  .cartorio-form input{width:100%; padding:7px 10px; border-radius:7px; border:1px solid var(--border); background:var(--surface); color:var(--ink); font-size:13px;}
+  .cartorio-form input:focus{outline:2px solid var(--accent); outline-offset:-1px;}
+  .form-msg{font-size:12px; margin-top:8px;}
+
+  /* ---------- modal (center) ---------- */
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(15,20,14,.4); z-index:30;
+    display:none; align-items:flex-start; justify-content:center; padding:5vh 20px; overflow-y:auto;
+  }
+  .modal-overlay.show{display:flex;}
+  .modal{
+    background:var(--surface); border-radius:14px; border:1px solid var(--border-soft);
+    width:100%; max-width:800px; box-shadow:0 24px 60px -20px rgba(0,0,0,.45);
+    display:flex; flex-direction:column; max-height:90vh;
+  }
+  .modal-head{padding:20px 24px 14px; border-bottom:1px solid var(--border-soft); display:flex; justify-content:space-between; align-items:flex-start; gap:14px;}
+  .modal-head h3{font-size:19px;}
+  .modal-head p{margin:5px 0 0; color:var(--ink-muted); font-size:12.5px;}
+  .modal-tabs{display:flex; gap:4px; padding:12px 24px 0; border-bottom:1px solid var(--border-soft);}
+  .modal-tab{
+    padding:8px 14px; border-radius:8px 8px 0 0; border:1px solid transparent; border-bottom:none;
+    background:none; color:var(--ink-muted); font-size:12.5px; font-weight:500; position:relative; top:1px;
+  }
+  .modal-tab.active{background:var(--surface-2); color:var(--ink); border-color:var(--border-soft);}
+  .modal-body{padding:20px 24px; overflow-y:auto; flex:1;}
+  .modal-foot{padding:14px 24px; border-top:1px solid var(--border-soft); display:flex; justify-content:space-between; align-items:center; gap:10px;}
+
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:11.5px; color:var(--ink-muted); margin-bottom:5px; font-weight:500;}
+  .field input, .field select, .field textarea{
+    width:100%; padding:8px 10px; border-radius:7px; border:1px solid var(--border);
+    background:var(--surface); color:var(--ink); font-size:13px;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus{outline:2px solid var(--accent); outline-offset:-1px;}
+  .aba-heading{font-size:12px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.06em; font-weight:600; margin:18px 0 10px; padding-top:14px; border-top:1px solid var(--border-soft);}
+  .aba-heading:first-child{margin-top:0; padding-top:0; border-top:none;}
+
+  .chip-editor{display:flex; flex-wrap:wrap; gap:7px; margin-bottom:10px;}
+  .chip-editable{display:inline-flex; align-items:center; gap:6px; background:var(--surface-2); border:1px solid var(--border-soft); border-radius:20px; padding:5px 6px 5px 12px; font-size:12.5px;}
+  .chip-editable button{background:none; border:none; color:var(--ink-faint); width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px;}
+  .chip-editable button:hover{background:var(--selo-ink); color:var(--selo);}
+  .chip-add-row{display:flex; gap:8px;}
+  .chip-add-row input{flex:1; padding:7px 10px; border-radius:7px; border:1px solid var(--border); background:var(--surface); color:var(--ink); font-size:12.5px;}
+
+  .aba-card{border:1px solid var(--border-soft); border-radius:10px; padding:14px 16px; margin-bottom:14px; background:var(--surface-2);}
+  .aba-card-head{display:flex; gap:10px; align-items:center; margin-bottom:10px;}
+  .aba-card-head input{flex:1; padding:7px 10px; border-radius:7px; border:1px solid var(--border); background:var(--surface); color:var(--ink); font-size:13px; font-weight:500;}
+  .condicao-block{background:var(--surface); border:1px solid var(--border-soft); border-radius:8px; padding:10px 12px; margin-bottom:12px;}
+  .condicao-block label.cb-label{font-size:11px; color:var(--ink-muted); display:block; margin-bottom:6px;}
+  .condicao-block select{width:100%; padding:6px 9px; border-radius:6px; border:1px solid var(--border); background:var(--surface); color:var(--ink); font-size:12.5px; margin-bottom:8px;}
+  .checklist{display:flex; flex-direction:column; gap:5px; max-height:140px; overflow-y:auto;}
+  .checklist label{display:flex; align-items:center; gap:7px; font-size:12px; color:var(--ink);}
+  .campo-row{background:var(--surface); border:1px solid var(--border-soft); border-radius:8px; padding:10px 12px; margin-bottom:8px;}
+  .campo-row-top{display:flex; gap:8px; margin-bottom:8px;}
+  .campo-row-top input{flex:1.4; padding:6px 9px; border-radius:6px; border:1px solid var(--border); background:var(--surface); color:var(--ink); font-size:12.5px;}
+  .campo-row-top select{flex:1; padding:6px 9px; border-radius:6px; border:1px solid var(--border); background:var(--surface); color:var(--ink); font-size:12.5px;}
+  .campo-props{display:flex; flex-wrap:wrap; gap:10px 14px; font-size:11.5px; color:var(--ink-muted); margin-bottom:8px;}
+  .campo-props label{display:flex; align-items:center; gap:5px; white-space:nowrap;}
+  .campo-row-extra{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;}
+  .campo-row-extra input{padding:6px 9px; border-radius:6px; border:1px solid var(--border); background:var(--surface); color:var(--ink); font-size:12px;}
+  .campo-row-extra input::placeholder{color:var(--ink-faint);}
+
+  .flow-summary{background:var(--surface-2); border:1px solid var(--border-soft); border-radius:10px; padding:12px 14px; margin-top:16px;}
+  .flow-summary h4{font-size:10.5px; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-faint); margin-bottom:8px; font-weight:600;}
+  .flow-summary ol{margin:0; padding-left:18px; font-size:12.5px; color:var(--ink-muted); display:flex; flex-direction:column; gap:4px;}
+  .flow-summary strong{color:var(--ink); font-weight:600;}
+
+  /* ---------- construtor de Abas & Campos (estilo Survey123: paleta / canvas / propriedades) ---------- */
+  .modal.wide{max-width:1180px;}
+  .cfg-builder{display:flex; gap:0; height:min(560px, 68vh);}
+  .cfg-pane{overflow-y:auto; min-width:0;}
+  .cfg-palette{flex:0 0 220px; padding-right:16px; border-right:1px solid var(--border-soft);}
+  .cfg-canvas{flex:1; padding:0 16px; background:var(--bg);}
+  .cfg-props{flex:0 0 290px; padding-left:16px; border-left:1px solid var(--border-soft);}
+  .props-title, .palette-title{
+    font-size:10.5px; letter-spacing:.07em; text-transform:uppercase;
+    color:var(--ink-faint); font-weight:600; margin-bottom:12px;
+  }
+  .palette-group{margin-bottom:16px;}
+  .palette-group-label{font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-faint); font-weight:600; margin-bottom:6px;}
+  .palette-item{
+    display:block; width:100%; padding:7px 10px; border-radius:7px; margin-bottom:5px;
+    border:1px solid var(--border-soft); background:var(--surface); color:var(--ink); font-size:12.5px; text-align:left;
+  }
+  .palette-item:hover{border-color:var(--accent); color:var(--accent);}
+  .canvas-page{border:1px solid var(--border-soft); border-radius:10px; margin-bottom:14px; overflow:hidden; background:var(--surface);}
+  .canvas-page-head{display:flex; align-items:center; gap:8px; padding:9px 11px; background:var(--surface-2); border-bottom:1px solid var(--border-soft); cursor:pointer;}
+  .canvas-page-head.selected{background:var(--accent); color:var(--accent-ink);}
+  .canvas-page-head .nav-glyph{background:transparent; border:1px solid currentColor; color:inherit;}
+  .canvas-page-head input{
+    flex:1; background:none; border:none; font-family:"IBM Plex Serif",serif; font-weight:600;
+    font-size:13.5px; color:inherit; min-width:0;
+  }
+  .canvas-page-head input:focus{outline:1px solid currentColor; border-radius:4px;}
+  .canvas-page-cond{font-size:11px; color:var(--ink-faint); padding:6px 11px 0;}
+  .canvas-page-body{padding:10px 11px 11px;}
+  .canvas-field{
+    position:relative; display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:9px 11px; border-radius:8px; border:1px solid var(--border-soft); background:var(--surface);
+    margin-bottom:6px; cursor:pointer;
+  }
+  .canvas-field:hover{border-color:var(--accent);}
+  .canvas-field.selected{border-color:var(--accent); background:var(--info-bg);}
+  .canvas-field .cf-label{font-size:13px; font-weight:500;}
+  .canvas-field .cf-meta{font-size:11px; color:var(--ink-faint); margin-top:2px;}
+  .cf-remove{background:none; border:none; color:var(--ink-faint); font-size:13px; padding:2px; flex:0 0 auto;}
+  .cf-remove:hover{color:var(--selo);}
+  .canvas-empty{padding:18px; text-align:center; color:var(--ink-faint); font-size:12.5px; border:1px dashed var(--border-soft); border-radius:8px;}
+  .props-empty{color:var(--ink-faint); font-size:12.5px; text-align:center; padding:36px 8px;}
+  .props-heading{font-family:"IBM Plex Serif",serif; font-weight:600; font-size:14px; margin-bottom:14px;}
+
+  .small-btn-row{display:flex; gap:8px; margin-top:4px;}
+
+  @media (max-width:880px){
+    .sidebar{width:220px; flex-basis:220px;}
+    main{padding:20px;}
+    .cartorio-form{grid-template-columns:1fr 1fr;}
+  }
+</style>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-eyebrow">Protótipo funcional</div>
+      <h1>Registro ABA</h1>
+      <p>As Entidades do sistema — fixas e criadas — com dados de exemplo.</p>
+    </div>
+
+    <div>
+      <div class="nav-section-label">Entidades</div>
+      <nav class="nav-group" id="nav-all"></nav>
+      <button class="nav-add" id="btn-new-categoria">+ Novo Formulário</button>
+    </div>
+
+    <div class="sidebar-globalbtns">
+      <button class="btn sm" id="btn-config-geral">⚙ Configuração geral</button>
+      <button class="btn sm" id="btn-help">﹖ Ajuda</button>
+    </div>
+
+    <div class="sidebar-foot">
+      <strong>Sobre estes dados —</strong> os registros vêm do mesmo <code class="mono">seed_examples.sql</code> rodado contra o schema Postgres do protótipo.
+    </div>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <div>
+        <h2 id="entity-title">—</h2>
+        <p class="desc" id="entity-desc"></p>
+      </div>
+      <div class="topbar-actions">
+        <div id="meta-chip"></div>
+        <button class="btn sm" id="btn-config">⚙ Configurar</button>
+      </div>
+    </div>
+
+    <div id="cartorio-form-slot"></div>
+
+    <div class="toolbar">
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input class="search" id="search" type="text" placeholder="Buscar por nome ou código… (Enter para buscar)">
+      </div>
+      <button type="button" class="btn sm" id="search-go">Buscar</button>
+      <div id="toolbar-actions"></div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead id="thead"></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<div class="overlay" id="overlay"></div>
+<aside class="drawer" id="drawer">
+  <div class="drawer-head">
+    <div>
+      <h3 id="drawer-title">—</h3>
+      <span class="mono" id="drawer-sub"></span>
+    </div>
+    <button class="icon-btn" id="drawer-close">✕</button>
+  </div>
+  <div class="drawer-body" id="drawer-body"></div>
+</aside>
+
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal" id="modal"></div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // =========================================================================
+  // Configuração estática — Entidades fixas e tipos de campo
+  // =========================================================================
+  var FIXED_ENTITIES = [
+    { key:"terreno", label:"Terreno", glyph:"Te",
+      desc:"A terra nua, independente de benfeitorias — o espaço geográfico como se apresenta na realidade, não integralmente definida pela Titularidade.",
+      cols:[{k:"codigo", l:"Código", mono:true},{k:"nome", l:"Nome"},{k:"ciclo_de_vida", l:"Ciclo de vida", badge:true}]},
+    { key:"titularidade", label:"Titularidade", glyph:"Ti",
+      desc:"O documento (ou a posse) que comprova a quem pertence uma porção de terra — a Entidade estruturalmente mais complexa.",
+      cols:[{k:"codigo", l:"Código", mono:true},{k:"nome", l:"Nome"},{k:"tipo_evidencia", l:"Tipo de evidência", badge:"evidencia"},{k:"_cartorio", l:"Cartório"},{k:"_uf", l:"UF"}]},
+    { key:"empreendimento", label:"Empreendimento", glyph:"Em",
+      desc:"Obra ou ativo em qualquer fase — planejamento, implantação, operação, desativação — podendo se dividir, se fundir ou ser renomeado ao mudar de fase.",
+      cols:[{k:"codigo", l:"Código", mono:true},{k:"nome", l:"Nome"},{k:"ciclo_de_vida", l:"Ciclo de vida", badge:true}]},
+    { key:"edificacao", label:"Edificação", glyph:"Ed",
+      desc:"Construção existente sobre o Terreno, tendendo a respeitar seus limites — é Edificação o que é alvo de alvará.",
+      cols:[{k:"codigo", l:"Código", mono:true},{k:"nome", l:"Nome"},{k:"ciclo_de_vida", l:"Ciclo de vida", badge:true}]},
+    { key:"pessoa", label:"Pessoa", glyph:"Pe",
+      desc:"Cadastro de pessoa física ou jurídica.",
+      cols:[{k:"codigo", l:"Código", mono:true},{k:"nome", l:"Nome"},{k:"tipo_pessoa", l:"Tipo", badge:"tipo_pessoa"},{k:"ciclo_de_vida", l:"Ciclo de vida", badge:true}]},
+    { key:"cartorio", label:"Cartório", glyph:"Ca",
+      desc:"Registro dos cartórios do Brasil — base própria, alimentada manualmente por ora.",
+      cols:[{k:"codigo", l:"Código", mono:true},{k:"nome", l:"Nome"},{k:"municipio", l:"Município"},{k:"uf", l:"UF"}]}
+  ];
+  var FIXED_BY_KEY = {};
+  FIXED_ENTITIES.forEach(function(e){ FIXED_BY_KEY[e.key] = e; });
+
+  var FIELD_TYPES = [
+    {v:"texto", l:"Texto"}, {v:"numero", l:"Número"}, {v:"data", l:"Data"}, {v:"endereco", l:"Endereço"},
+    {v:"cpf_cnpj", l:"CPF/CNPJ"}, {v:"email", l:"E-mail"}, {v:"codigo", l:"Código"}, {v:"cep", l:"CEP"},
+    {v:"uf", l:"UF"}, {v:"municipio", l:"Município"}, {v:"consulta", l:"Consulta (referência)"},
+    {v:"lista", l:"Lista (opções)"}, {v:"arquivo", l:"Arquivo"}, {v:"localidade", l:"Localidade"}
+  ];
+  var FIELD_TYPE_LABEL = {}; FIELD_TYPES.forEach(function(t){ FIELD_TYPE_LABEL[t.v] = t.l; });
+  var INPUT_HTML_TYPE = { numero:"number", data:"date", email:"email" };
+
+  var EVIDENCIA_LABEL = { matricula:"Matrícula", transcricao:"Transcrição", posse_com_justo_titulo:"Posse c/ justo título", posse_sem_justo_titulo:"Posse s/ justo título" };
+  var TIPO_PESSOA_LABEL = { fisica:"Física", juridica:"Jurídica" };
+
+  function uid(prefix){ return (prefix||"id") + "-" + Math.random().toString(36).slice(2,9); }
+  function clone(obj){ return JSON.parse(JSON.stringify(obj)); }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; });
+  }
+  function cicloToneByPosition(idx, total){
+    if(total <= 1) return "neutral";
+    if(idx === 0) return "info";
+    if(idx === total - 1) return "neutral";
+    return "ok";
+  }
+  function evidenciaTone(v){ return v && v.indexOf("posse") === 0 ? "warn" : "ok"; }
+
+  // =========================================================================
+  // Estado
+  // =========================================================================
+  var COLLECTIONS = ["terreno","titularidade","empreendimento","edificacao","pessoa","cartorio",
+    "categoria","formulario_personalizado","relacionamento",
+    "terreno_titularidade","titularidade_pessoa","edificacao_terreno","config_entidade","config_sistema"];
+  var cache = {}; COLLECTIONS.forEach(function(c){ cache[c] = []; });
+  var dbReady = false, db = null;
+  var currentKey = "terreno";      // fixed entity key OR "form:<categoriaId>"
+  var selectedId = null;
+  var searchText = "";
+  var modal = { type:null };       // 'config' | 'new-record' | 'new-categoria'
+  var configTab = "ciclo";
+  var configSelection = null; // {type:"aba", ai} | {type:"campo", ai, ci} | null — seleção no construtor de Abas & Campos
+
+  function byId(list, id){ for(var i=0;i<list.length;i++){ if(list[i].id === id) return list[i]; } return null; }
+  function catById(id){ return byId(cache.categoria, id); }
+
+  function contextFor(key){
+    if(key.indexOf("form:") === 0){
+      var cat = catById(key.slice(5));
+      return { type:"categoria", categoria: cat };
+    }
+    return { type:"fixed", def: FIXED_BY_KEY[key] };
+  }
+
+  function recordsFor(key){
+    var ctx = contextFor(key);
+    if(ctx.type === "fixed") return cache[key] || [];
+    if(!ctx.categoria) return [];
+    return cache.formulario_personalizado.filter(function(r){ return r.categoria_id === ctx.categoria.id; });
+  }
+
+  function cicloValoresFor(key, row){
+    if(key === "pessoa"){
+      var cfg = byId(cache.config_entidade, "pessoa");
+      var variantes = cfg && cfg.ciclo_de_vida_variantes;
+      if(!variantes) return [];
+      if(row && row.tipo_pessoa === "juridica") return variantes.juridica || [];
+      return variantes.fisica || [];
+    }
+    var ctx = contextFor(key);
+    if(ctx.type === "categoria"){ return (ctx.categoria && ctx.categoria.ciclo_de_vida_valores) || []; }
+    var cfgF = byId(cache.config_entidade, key);
+    return (cfgF && cfgF.ciclo_de_vida_valores) || [];
+  }
+
+  // =========================================================================
+  // Regras de desbloqueio de aba — "o ciclo de vida representado pelo avanço"
+  // =========================================================================
+  function abaCampoValue(campoId){
+    var el = document.querySelector('[data-nr-campo="'+campoId+'"]');
+    return el ? el.value.trim() : "";
+  }
+  function abaCampoValueFromRecord(record, campoId){
+    var v = record.campos ? record.campos[campoId] : undefined;
+    return (v === undefined || v === null) ? "" : String(v).trim();
+  }
+  function isAbaFilled(aba, getVal){
+    var campos = aba.campos || [];
+    if(campos.length === 0) return true;
+    var obrig = campos.filter(function(c){ return c.obrigatorio; });
+    var check = obrig.length ? obrig : campos;
+    return check.some(function(c){ return getVal(c.id) !== ""; }) &&
+           (obrig.length === 0 || obrig.every(function(c){ return getVal(c.id) !== ""; }));
+  }
+  function isAbaUnlocked(aba, abas, getVal){
+    var cond = aba.condicao || {tipo:"livre"};
+    if(cond.tipo === "abas"){
+      return (cond.abas||[]).every(function(id){
+        var other = abas.filter(function(a){ return a.id === id; })[0];
+        return other ? isAbaFilled(other, getVal) : true;
+      });
+    }
+    if(cond.tipo === "campos"){
+      return (cond.campos||[]).every(function(id){ return getVal(id) !== ""; });
+    }
+    return true;
+  }
+  function condicaoLabel(aba, abas){
+    var cond = aba.condicao || {tipo:"livre"};
+    if(cond.tipo === "abas" && (cond.abas||[]).length){
+      var nomes = cond.abas.map(function(id){ var a = abas.filter(function(x){return x.id===id;})[0]; return a?a.nome:"?"; });
+      return "aparece depois que <strong>" + nomes.map(escapeHtml).join(", ") + "</strong> estiver preenchida";
+    }
+    if(cond.tipo === "campos" && (cond.campos||[]).length){
+      var labels = [];
+      abas.forEach(function(a){ (a.campos||[]).forEach(function(c){ if((cond.campos||[]).indexOf(c.id) > -1) labels.push(c.label); }); });
+      return "aparece depois que <strong>" + labels.map(escapeHtml).join(", ") + "</strong> for preenchido";
+    }
+    return "sempre visível (livre)";
+  }
+
+  // Dependência de campo individual ("Dependente de") — mostra/esconde um
+  // campo conforme o valor de outro campo específico.
+  function campoVisible(c, getVal){
+    if(!c.dependeCampo) return true;
+    var v = getVal(c.dependeCampo);
+    if(v === "") return false;
+    if(c.dependeValor) return v === c.dependeValor;
+    return true;
+  }
+
+  // "Calculado" — fórmula simples usando {id_do_campo}: soma/subtração/etc.
+  // quando todas as referências são numéricas, ou junção de texto (join de
+  // palavras) caso contrário.
+  function evalFormula(formula, getVal){
+    if(!formula) return "";
+    var refs = formula.match(/\{[^}]+\}/g) || [];
+    if(refs.length === 0) return formula;
+    var allNumeric = true;
+    var resolved = formula;
+    refs.forEach(function(token){
+      var id = token.slice(1,-1);
+      var v = getVal(id);
+      if(v === "" || isNaN(Number(v))) allNumeric = false;
+      resolved = resolved.split(token).join(v);
+    });
+    if(allNumeric && /^[\d\s+\-*/().]+$/.test(resolved)){
+      try{
+        var val = Function('"use strict"; return (' + resolved + ')')();
+        if(typeof val === "number" && isFinite(val)) return String(val);
+      }catch(e){}
+    }
+    return resolved;
+  }
+
+  var CODIGO_PREFIX = { terreno:"TER", titularidade:"TIT", empreendimento:"EMP", edificacao:"EDF", pessoa:"PES" };
+  function genCodigo(key){ return (CODIGO_PREFIX[key]||"REG") + "-" + Date.now().toString(36).toUpperCase(); }
+
+  // Seção de abas reutilizada tanto pela Categoria (Formulário) quanto por
+  // uma Entidade fixa com abas configuradas — mesma lógica de desbloqueio.
+  function abasSectionHtml(abas, getVal){
+    var html = "";
+    abas.forEach(function(aba){
+      var unlocked = isAbaUnlocked(aba, abas, getVal);
+      if(!unlocked){
+        html += '<div class="drawer-section"><h4>'+escapeHtml(aba.nome)+'</h4>' +
+          '<div class="aba-locked">🔒 <span>Ainda não preenchida — '+condicaoLabel(aba, abas)+'.</span></div></div>';
+        return;
+      }
+      var visibleCampos = (aba.campos||[]).filter(function(c){ return c.visivel !== false && campoVisible(c, getVal); });
+      if(visibleCampos.length === 0) return;
+      html += '<div class="drawer-section"><h4>'+escapeHtml(aba.nome)+'</h4>' +
+        visibleCampos.map(function(c){
+          var v = getVal(c.id);
+          return '<div class="field-row"><span class="k">'+escapeHtml(c.label)+'</span><span class="v">'+(v?escapeHtml(v):'<span class="empty-note">—</span>')+'</span></div>';
+        }).join("") + '</div>';
+    });
+    return html;
+  }
+
+  // =========================================================================
+  // Sidebar — uma lista só: Entidades fixas + Formulários criados
+  // =========================================================================
+  // Ordem do menu — respeita config_sistema/geral.ordem_entidades quando
+  // existir; Entidades/Formulários novos que ainda não estão nessa lista
+  // aparecem no final, na ordem natural.
+  function navEntries(){
+    var entries = FIXED_ENTITIES.map(function(e){
+      return { key:e.key, glyph:e.glyph, label:e.label, count: cache[e.key]?cache[e.key].length:0 };
+    });
+    cache.categoria.forEach(function(cat){
+      var key = "form:" + cat.id;
+      var count = cache.formulario_personalizado.filter(function(r){ return r.categoria_id === cat.id; }).length;
+      var glyph = (cat.nome || "?").split(" ").filter(Boolean).slice(0,2).map(function(w){return w[0];}).join("").toUpperCase();
+      entries.push({ key:key, glyph:glyph, label:cat.nome||cat.codigo, count:count });
+    });
+    var cfg = byId(cache.config_sistema, "geral");
+    var ordem = (cfg && cfg.ordem_entidades) || [];
+    entries.sort(function(a, b){
+      var ia = ordem.indexOf(a.key), ib = ordem.indexOf(b.key);
+      if(ia === -1 && ib === -1) return 0;
+      if(ia === -1) return 1;
+      if(ib === -1) return -1;
+      return ia - ib;
+    });
+    return entries;
+  }
+  function buildNav(){
+    var nav = document.getElementById("nav-all");
+    nav.innerHTML = "";
+    navEntries().forEach(function(e){
+      nav.appendChild(navButton(e.glyph, e.label, e.count, e.key, currentKey===e.key));
+    });
+  }
+  function navButton(glyph, label, count, key, active){
+    var btn = document.createElement("button");
+    btn.className = "nav-item" + (active ? " active" : "");
+    btn.innerHTML = '<span class="nav-glyph">'+glyph+'</span><span class="label">'+escapeHtml(label)+'</span><span class="nav-count">'+count+'</span>';
+    btn.addEventListener("click", function(){ selectKey(key); });
+    return btn;
+  }
+
+  function selectKey(key){
+    currentKey = key; selectedId = null; searchText = "";
+    var s = document.getElementById("search"); if(s) s.value = "";
+    closeDrawer();
+    render();
+  }
+
+  // =========================================================================
+  // Cartório — form de cadastro manual (mantido simples)
+  // =========================================================================
+  function renderCartorioForm(){
+    var slot = document.getElementById("cartorio-form-slot");
+    if(currentKey !== "cartorio"){ slot.innerHTML = ""; return; }
+    slot.innerHTML =
+      '<div class="cartorio-form">'+
+        '<div><label for="cf-nome">Nome do cartório</label><input id="cf-nome" placeholder="Ex.: 2º Ofício de Registro de Imóveis"></div>'+
+        '<div><label for="cf-municipio">Município</label><input id="cf-municipio" placeholder="Ex.: Belo Horizonte"></div>'+
+        '<div><label for="cf-uf">UF</label><input id="cf-uf" maxlength="2" placeholder="MG"></div>'+
+        '<div><label for="cf-contato">Contato (opcional)</label><input id="cf-contato" placeholder="Telefone, email…"></div>'+
+        '<button class="btn primary" id="cf-submit">+ Adicionar</button>'+
+      '</div><div class="form-msg" id="cf-msg" style="display:none;"></div>';
+
+    document.getElementById("cf-submit").addEventListener("click", async function(){
+      var nome = document.getElementById("cf-nome").value.trim();
+      var municipio = document.getElementById("cf-municipio").value.trim();
+      var uf = document.getElementById("cf-uf").value.trim().toUpperCase();
+      var contato = document.getElementById("cf-contato").value.trim();
+      var msg = document.getElementById("cf-msg");
+      if(!nome || !municipio || uf.length !== 2){
+        msg.style.display = "block"; msg.style.color = "var(--selo)";
+        msg.textContent = "Preencha nome, município e UF (2 letras) antes de adicionar."; return;
+      }
+      if(!db){ msg.style.display = "block"; msg.style.color = "var(--selo)"; msg.textContent = "Sem conexão com a base neste momento."; return; }
+      try{
+        await db.collection("cartorio").add({
+          codigo: "CART-" + Date.now().toString(36).toUpperCase(),
+          nome: nome, municipio: municipio, uf: uf, fonte_externa: null, campos:{}, ciclo_de_vida: null
+        });
+        document.getElementById("cf-nome").value = ""; document.getElementById("cf-municipio").value = "";
+        document.getElementById("cf-uf").value = ""; document.getElementById("cf-contato").value = "";
+        msg.style.display = "block"; msg.style.color = "var(--ok)"; msg.textContent = "Cartório adicionado.";
+      }catch(err){
+        msg.style.display = "block"; msg.style.color = "var(--selo)";
+        msg.textContent = "Não foi possível salvar (" + (err && err.code || "erro") + ").";
+      }
+    });
+  }
+
+  // =========================================================================
+  // Tabela principal
+  // =========================================================================
+  function filteredRows(){
+    var rows = recordsFor(currentKey);
+    if(!searchText) return rows;
+    var q = searchText.toLowerCase();
+    return rows.filter(function(r){
+      return (r.nome||"").toLowerCase().indexOf(q) > -1 || (r.codigo||"").toLowerCase().indexOf(q) > -1;
+    });
+  }
+
+  function fixedCellValue(row, col){
+    if(col.k === "_cartorio"){
+      var c = row.cartorio_id ? byId(cache.cartorio, row.cartorio_id) : null;
+      return c ? c.nome : "—";
+    }
+    if(col.k === "_uf"){ return row.uf || "—"; }
+    return row[col.k];
+  }
+
+  function categoriaColumns(cat){
+    var cols = [{k:"codigo", l:"Código", mono:true}, {k:"nome", l:"Nome"}];
+    var campos = [];
+    (cat.abas || []).forEach(function(aba){ (aba.campos || []).forEach(function(c){ if(c.tipo !== "arquivo") campos.push(c); }); });
+    campos.slice(0,2).forEach(function(c){ cols.push({k:"_campo:"+c.id, l:c.label, campoId:c.id}); });
+    if((cat.ciclo_de_vida_valores||[]).length) cols.push({k:"ciclo_de_vida", l:"Ciclo de vida", badge:true});
+    return cols;
+  }
+
+  function render(){
+    buildNav();
+    var ctx = contextFor(currentKey);
+    var title, desc, cols, rows = recordsFor(currentKey);
+
+    if(ctx.type === "fixed"){
+      title = ctx.def.label; desc = ctx.def.desc; cols = ctx.def.cols;
+    } else if(ctx.categoria){
+      title = ctx.categoria.nome || ctx.categoria.codigo;
+      desc = "Formulário — Categoria “" + title + "”. Não é uma Entidade fixa: abas e campos são inteiramente configuráveis.";
+      cols = categoriaColumns(ctx.categoria);
+    } else {
+      title = "—"; desc = "Este Formulário não foi encontrado (pode ter sido removido)."; cols = [];
+    }
+
+    document.getElementById("entity-title").textContent = title;
+    document.getElementById("entity-desc").textContent = desc;
+
+    var chip = document.getElementById("meta-chip");
+    chip.innerHTML = '<span class="meta-chip'+(rows.length===0?" warn":"")+'"><span class="dot"></span>'+
+      rows.length + (rows.length===1?" registro":" registros") + (dbReady ? "" : " · conectando…") + '</span>';
+
+    renderCartorioForm();
+    renderToolbarActions(ctx);
+
+    var thead = document.getElementById("thead");
+    thead.innerHTML = "<tr>" + cols.map(function(c){ return "<th>"+c.l+"</th>"; }).join("") + "</tr>";
+
+    var tbody = document.getElementById("tbody");
+    var rowsF = filteredRows();
+    if(cols.length === 0 || rowsF.length === 0){
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="'+Math.max(cols.length,1)+'">' +
+        (!dbReady ? "Conectando à base…" : (searchText ? "Nenhum registro corresponde à busca." : "Nenhum registro ainda.")) +
+        '</td></tr>';
+      return;
+    }
+    tbody.innerHTML = "";
+    rowsF.forEach(function(row){
+      var tr = document.createElement("tr");
+      if(row.id === selectedId) tr.className = "selected";
+      tr.innerHTML = cols.map(function(col){
+        var val;
+        if(col.campoId){ val = row.campos ? row.campos[col.campoId] : undefined; }
+        else if(ctx.type === "fixed"){ val = fixedCellValue(row, col); }
+        else { val = row[col.k]; }
+
+        if(col.badge){
+          if(col.k === "tipo_evidencia") return '<td><span class="badge '+evidenciaTone(val)+'">'+(EVIDENCIA_LABEL[val]||val||"—")+'</span></td>';
+          if(col.k === "tipo_pessoa") return '<td><span class="badge '+(val==="fisica"?"info":"ok")+'">'+(TIPO_PESSOA_LABEL[val]||val||"—")+'</span></td>';
+          var valores = cicloValoresFor(currentKey==="pessoa"?"pessoa":currentKey, row);
+          var idx = valores.indexOf(val);
+          var tone = val ? cicloToneByPosition(idx<0?0:idx, valores.length||1) : "neutral";
+          return '<td><span class="badge '+tone+'">'+(val||"—")+'</span></td>';
+        }
+        var cls = col.mono ? ' class="mono"' : "";
+        return "<td"+cls+">"+ (val || val === 0 ? escapeHtml(String(val)) : '<span class="empty-note">—</span>') +"</td>";
+      }).join("");
+      tr.addEventListener("click", function(){ openDrawer(currentKey, row.id); });
+      tbody.appendChild(tr);
+    });
+  }
+
+  function renderToolbarActions(ctx){
+    var slot = document.getElementById("toolbar-actions");
+    slot.innerHTML = "";
+    if(ctx.type === "categoria" && ctx.categoria){
+      var btn = document.createElement("button");
+      btn.className = "btn primary";
+      btn.textContent = "+ Novo registro";
+      btn.addEventListener("click", function(){ openNewRecordModal(ctx.categoria); });
+      slot.appendChild(btn);
+    }
+    if(ctx.type === "fixed" && ctx.def.key !== "cartorio"){
+      var btnF = document.createElement("button");
+      btnF.className = "btn primary";
+      btnF.textContent = "+ Novo " + ctx.def.label;
+      btnF.addEventListener("click", function(){ openNewFixedModal(ctx.def); });
+      slot.appendChild(btnF);
+    }
+  }
+
+  // =========================================================================
+  // Drawer de detalhe
+  // =========================================================================
+  function fieldRows(row, skipKeys){
+    var skip = Object.assign({id:1, created_at:1, updated_at:1, campos:1}, skipKeys||{});
+    var out = [];
+    Object.keys(row).forEach(function(k){
+      if(skip[k]) return;
+      if(row[k] === null || row[k] === undefined || row[k] === "") return;
+      var label = k.replace(/_/g,' ').replace(/\b\w/g, function(m){return m.toUpperCase();});
+      var val = row[k];
+      if(k === "cartorio_id"){ var c = byId(cache.cartorio, val); val = c ? c.nome : val; label = "Cartório"; }
+      if(k === "tipo_evidencia"){ val = EVIDENCIA_LABEL[val] || val; }
+      if(k === "tipo_pessoa"){ val = TIPO_PESSOA_LABEL[val] || val; }
+      out.push({k:label, v:val});
+    });
+    return out;
+  }
+
+  function relatedSection(entityKey, row){
+    var html = "";
+    function chips(list){
+      if(list.length === 0) return '<p class="empty-note">Nenhum vínculo registrado.</p>';
+      return '<div class="chip-list">' + list.map(function(item){
+        return '<button class="chip" data-nav-key="'+item.key+'" data-nav-id="'+item.id+'">'+
+          (item.tag ? '<span class="tag">'+item.tag+'</span>' : '') + escapeHtml(item.label) + '</button>';
+      }).join("") + '</div>';
+    }
+    // Chips com botão de desassociar — usados nas relações editáveis
+    // (Terreno↔Titularidade, Terreno↔Edificação).
+    function chipsEditable(list, joinCollection){
+      if(list.length === 0) return '<p class="empty-note">Nenhum vínculo registrado.</p>';
+      return '<div class="chip-list">' + list.map(function(item){
+        return '<span class="chip"><span class="chip-nav" data-nav-key="'+item.key+'" data-nav-id="'+item.id+'">'+escapeHtml(item.label)+'</span>'+
+          '<button type="button" class="chip-x" data-unlink-collection="'+joinCollection+'" data-unlink-id="'+item.joinId+'" title="Desassociar">✕</button></span>';
+      }).join("") + '</div>';
+    }
+    // Botão que abre um modal de busca (não uma lista solta — precisa
+    // escalar para milhares/milhões de registros de outra Entidade).
+    function assocButton(joinCollection, thisField, thisId, otherField, otherKey, excludeIds){
+      var label = FIXED_BY_KEY[otherKey] ? FIXED_BY_KEY[otherKey].label : otherKey;
+      return '<div class="small-btn-row"><button type="button" class="btn sm" data-assoc-open="'+joinCollection+':'+thisField+':'+thisId+':'+otherField+':'+otherKey+'" data-assoc-exclude="'+excludeIds.join(",")+'">+ Associar '+escapeHtml(label)+'…</button></div>';
+    }
+    if(entityKey === "titularidade"){
+      var linkedTerrenoIds = [];
+      var terrenos = cache.terreno_titularidade.filter(function(j){ return j.titularidade_id === row.id; })
+        .map(function(j){ var t=byId(cache.terreno,j.terreno_id); linkedTerrenoIds.push(j.terreno_id); return t?{key:"terreno",id:t.id,label:t.nome,joinId:j.id}:null; }).filter(Boolean);
+      var linkedPessoaIds = [];
+      var pessoas = cache.titularidade_pessoa.filter(function(j){ return j.titularidade_id === row.id; })
+        .map(function(j){ var p=byId(cache.pessoa,j.pessoa_id); linkedPessoaIds.push(j.pessoa_id); return p?{key:"pessoa",id:p.id,label:p.nome,joinId:j.id}:null; }).filter(Boolean);
+      html += '<div class="drawer-section"><h4>Terrenos</h4>' + chipsEditable(terrenos,"terreno_titularidade") +
+        assocButton("terreno_titularidade","titularidade_id",row.id,"terreno_id","terreno",linkedTerrenoIds) + '</div>';
+      html += '<div class="drawer-section"><h4>Titular(es) *</h4>' + chipsEditable(pessoas,"titularidade_pessoa") +
+        assocButton("titularidade_pessoa","titularidade_id",row.id,"pessoa_id","pessoa",linkedPessoaIds) + '</div>';
+    }
+    if(entityKey === "terreno"){
+      var linkedTitIds = [];
+      var tits = cache.terreno_titularidade.filter(function(j){ return j.terreno_id === row.id; })
+        .map(function(j){ var t=byId(cache.titularidade,j.titularidade_id); linkedTitIds.push(j.titularidade_id); return t?{key:"titularidade",id:t.id,label:t.nome,joinId:j.id}:null; }).filter(Boolean);
+      var linkedEdifIds = [];
+      var edifs = cache.edificacao_terreno.filter(function(j){ return j.terreno_id === row.id; })
+        .map(function(j){ var e=byId(cache.edificacao,j.edificacao_id); linkedEdifIds.push(j.edificacao_id); return e?{key:"edificacao",id:e.id,label:e.nome,joinId:j.id}:null; }).filter(Boolean);
+      html += '<div class="drawer-section"><h4>Titularidades</h4>' + chipsEditable(tits,"terreno_titularidade") +
+        assocButton("terreno_titularidade","terreno_id",row.id,"titularidade_id","titularidade",linkedTitIds) + '</div>';
+      html += '<div class="drawer-section"><h4>Edificações</h4>' + chipsEditable(edifs,"edificacao_terreno") +
+        assocButton("edificacao_terreno","terreno_id",row.id,"edificacao_id","edificacao",linkedEdifIds) + '</div>';
+    }
+    if(entityKey === "edificacao"){
+      var linkedTerrIds = [];
+      var terrs = cache.edificacao_terreno.filter(function(j){ return j.edificacao_id === row.id; })
+        .map(function(j){ var t=byId(cache.terreno,j.terreno_id); linkedTerrIds.push(j.terreno_id); return t?{key:"terreno",id:t.id,label:t.nome,joinId:j.id}:null; }).filter(Boolean);
+      html += '<div class="drawer-section"><h4>Terreno(s)</h4>' + chipsEditable(terrs,"edificacao_terreno") +
+        assocButton("edificacao_terreno","edificacao_id",row.id,"terreno_id","terreno",linkedTerrIds) + '</div>';
+    }
+    if(entityKey === "pessoa"){
+      var linkedTitPIds = [];
+      var titsP = cache.titularidade_pessoa.filter(function(j){ return j.pessoa_id === row.id; })
+        .map(function(j){ var t=byId(cache.titularidade,j.titularidade_id); linkedTitPIds.push(j.titularidade_id); return t?{key:"titularidade",id:t.id,label:t.nome,joinId:j.id}:null; }).filter(Boolean);
+      html += '<div class="drawer-section"><h4>Titularidades</h4>' + chipsEditable(titsP,"titularidade_pessoa") +
+        assocButton("titularidade_pessoa","pessoa_id",row.id,"titularidade_id","titularidade",linkedTitPIds) + '</div>';
+    }
+    if(entityKey === "cartorio"){
+      var titsC = cache.titularidade.filter(function(t){ return t.cartorio_id === row.id; }).map(function(t){ return {key:"titularidade",id:t.id,label:t.nome}; });
+      html += '<div class="drawer-section"><h4>Titularidades registradas aqui</h4>' + chips(titsC) + '</div>';
+    }
+    if(entityKey === "empreendimento"){
+      var rel = cache.relacionamento.filter(function(r){
+        return (r.origem_tipo==="empreendimento"&&r.origem_id===row.id)||(r.destino_tipo==="empreendimento"&&r.destino_id===row.id);
+      }).map(function(r){
+        var outgoing = r.origem_id === row.id, otherId = outgoing ? r.destino_id : r.origem_id;
+        var other = byId(cache.empreendimento, otherId); if(!other) return null;
+        var verb = r.tipo_relacao==="originou" ? (outgoing?"originou →":"← originado de") : r.tipo_relacao==="parte_de" ? (outgoing?"parte de →":"← absorveu") : r.tipo_relacao;
+        return {key:"empreendimento", id:other.id, label:other.nome, tag:verb};
+      }).filter(Boolean);
+      html += '<div class="drawer-section"><h4>Relacionamento (origem/derivação)</h4>' + chips(rel) + '</div>';
+    }
+    return html;
+  }
+
+  // Modal de associação — busca pelo nome/código em vez de um seletor solto,
+  // pensado para escalar a milhares/milhões de registros da outra Entidade.
+  function openAssocModal(cfg){
+    modal = {type:"assoc"};
+    var m = document.getElementById("modal");
+    var def = FIXED_BY_KEY[cfg.otherKey];
+    var label = def ? def.label : cfg.otherKey;
+    var allItems = (cache[cfg.otherKey] || []).filter(function(o){ return cfg.excludeIds.indexOf(o.id) === -1; });
+
+    function resultsHtml(list){
+      if(list.length === 0) return '<p class="empty-note">Nenhum resultado.</p>';
+      var shown = list.slice(0, 50);
+      var out = '<div class="assoc-results">' + shown.map(function(o){
+        return '<button type="button" class="assoc-result" data-assoc-pick="'+o.id+'"><strong>'+escapeHtml(o.nome||"(sem nome)")+'</strong><span>'+escapeHtml(o.codigo||"")+'</span></button>';
+      }).join("") + '</div>';
+      if(list.length > 50) out += '<p class="empty-note">Mostrando 50 de '+list.length+' resultados — refine a busca.</p>';
+      return out;
+    }
+
+    m.innerHTML =
+      '<div class="modal-head"><div><h3>Associar '+escapeHtml(label)+'</h3><p>Busque pelo nome ou código do registro.</p></div>'+
+      '<button class="icon-btn" id="modal-close">✕</button></div>'+
+      '<div class="modal-body"><div class="field"><label>Buscar</label>'+
+        '<div class="search-row"><input type="text" id="assoc-search" placeholder="Nome ou código de '+escapeHtml(label)+'… (Enter para buscar)">'+
+        '<button type="button" class="btn sm" id="assoc-search-go">Buscar</button></div></div>'+
+      '<div id="assoc-results">' + resultsHtml(allItems) + '</div></div>';
+    document.getElementById("modal-close").addEventListener("click", closeModal);
+
+    function wireResults(){
+      Array.prototype.forEach.call(m.querySelectorAll("[data-assoc-pick]"), function(btn){
+        btn.addEventListener("click", async function(){
+          if(!db) return;
+          var otherId = btn.getAttribute("data-assoc-pick");
+          var data = {}; data[cfg.thisField] = cfg.thisId; data[cfg.otherField] = otherId;
+          await db.collection(cfg.joinCollection).add(data);
+          closeModal();
+          openDrawer(cfg.entityKey, cfg.rowId);
+        });
+      });
+    }
+    wireResults();
+    var searchInput = document.getElementById("assoc-search");
+    function runAssocSearch(){
+      var q = searchInput.value.trim().toLowerCase();
+      var filtered = !q ? allItems : allItems.filter(function(o){
+        return (o.nome||"").toLowerCase().indexOf(q) > -1 || (o.codigo||"").toLowerCase().indexOf(q) > -1;
+      });
+      document.getElementById("assoc-results").innerHTML = resultsHtml(filtered);
+      wireResults();
+    }
+    searchInput.addEventListener("keydown", function(e){ if(e.key === "Enter") runAssocSearch(); });
+    document.getElementById("assoc-search-go").addEventListener("click", runAssocSearch);
+    openModalShell();
+    searchInput.focus();
+  }
+
+  function openDrawer(entityKey, id, mode){
+    mode = mode || "view";
+    var ctx = contextFor(entityKey);
+    var row = byId(recordsFor(entityKey), id);
+    if(!row) return;
+    selectedId = id;
+
+    document.getElementById("drawer-title").textContent = row.nome || row.codigo || "(sem nome)";
+    document.getElementById("drawer-sub").textContent = (ctx.type==="fixed"?ctx.def.label:(ctx.categoria&&ctx.categoria.nome)) + " · " + row.codigo;
+
+    var body = document.getElementById("drawer-body");
+
+    if(mode === "edit"){
+      renderDrawerEdit(entityKey, row, ctx, body);
+      document.getElementById("overlay").classList.add("show");
+      document.getElementById("drawer").classList.add("show");
+      render();
+      return;
+    }
+
+    var html = '<div class="small-btn-row"><button type="button" class="btn sm" id="drawer-edit-btn">✎ Editar</button></div>';
+
+    if(ctx.type === "categoria" && ctx.categoria){
+      html += '<div class="drawer-section">' + fieldRows(row, {campos:1, categoria_id:1}).map(function(f){
+        return '<div class="field-row"><span class="k">'+escapeHtml(f.k)+'</span><span class="v">'+escapeHtml(String(f.v))+'</span></div>';
+      }).join("") + '</div>';
+      var abas = ctx.categoria.abas || [];
+      var getVal = function(campoId){ return abaCampoValueFromRecord(row, campoId); };
+      html += abasSectionHtml(abas, getVal);
+    } else {
+      html += '<div class="drawer-section">' + fieldRows(row).map(function(f){
+        return '<div class="field-row"><span class="k">'+escapeHtml(f.k)+'</span><span class="v">'+escapeHtml(String(f.v))+'</span></div>';
+      }).join("") + '</div>';
+      var cfgFixed = byId(cache.config_entidade, entityKey);
+      var fixedAbas = (cfgFixed && cfgFixed.abas) || [];
+      var getValF = function(campoId){ return abaCampoValueFromRecord(row, campoId); };
+      if(fixedAbas.length){
+        html += abasSectionHtml(fixedAbas, getValF);
+      } else if(row.campos && Object.keys(row.campos).length){
+        var entries = Object.keys(row.campos).filter(function(k){ return row.campos[k] !== null && row.campos[k] !== "" && row.campos[k] !== undefined; });
+        if(entries.length){
+          html += '<div class="drawer-section"><h4>Campos adicionais</h4>' + entries.map(function(k){
+            var label = k.replace(/_/g,' ').replace(/\b\w/g, function(m){return m.toUpperCase();});
+            return '<div class="field-row"><span class="k">'+escapeHtml(label)+'</span><span class="v">'+escapeHtml(String(row.campos[k]))+'</span></div>';
+          }).join("") + '</div>';
+        }
+      }
+      html += relatedSection(entityKey, row);
+    }
+
+    body.innerHTML = html;
+    Array.prototype.forEach.call(body.querySelectorAll("[data-nav-key]"), function(el){
+      el.addEventListener("click", function(){
+        var k = el.getAttribute("data-nav-key"), id2 = el.getAttribute("data-nav-id");
+        selectKey(k); openDrawer(k, id2);
+      });
+    });
+    Array.prototype.forEach.call(body.querySelectorAll("[data-unlink-collection]"), function(btn){
+      btn.addEventListener("click", async function(e){
+        e.stopPropagation();
+        if(!db) return;
+        var col = btn.getAttribute("data-unlink-collection"), joinId = btn.getAttribute("data-unlink-id");
+        await db.doc(col + "/" + joinId).delete();
+        openDrawer(entityKey, id);
+      });
+    });
+    Array.prototype.forEach.call(body.querySelectorAll("[data-assoc-open]"), function(btn){
+      btn.addEventListener("click", function(){
+        var parts = btn.getAttribute("data-assoc-open").split(":");
+        var excludeIds = (btn.getAttribute("data-assoc-exclude")||"").split(",").filter(Boolean);
+        openAssocModal({
+          joinCollection: parts[0], thisField: parts[1], thisId: parts[2], otherField: parts[3], otherKey: parts[4],
+          excludeIds: excludeIds, entityKey: entityKey, rowId: id
+        });
+      });
+    });
+    var editBtn = document.getElementById("drawer-edit-btn");
+    if(editBtn) editBtn.addEventListener("click", function(){ openDrawer(entityKey, id, "edit"); });
+
+    document.getElementById("overlay").classList.add("show");
+    document.getElementById("drawer").classList.add("show");
+    render();
+  }
+
+  // Edição de um registro existente — mostra todos os campos nativos e
+  // configurados como campos comuns e editáveis, sem bloqueio/dependência
+  // (isso é o fluxo de preenchimento guiado, não de edição posterior).
+  function renderDrawerEdit(entityKey, row, ctx, body){
+    var col = ctx.type === "categoria" ? "formulario_personalizado" : entityKey;
+    var abas = ctx.type === "categoria" ? ((ctx.categoria && ctx.categoria.abas) || []) : (((byId(cache.config_entidade, entityKey)||{}).abas) || []);
+    var allCampos = []; abas.forEach(function(a){ (a.campos||[]).forEach(function(c){ allCampos.push(c); }); });
+
+    function editFieldHtml(c){
+      var val = row.campos ? row.campos[c.id] : "";
+      if(c.tipo === "arquivo"){
+        return '<div class="field"><label>'+escapeHtml(c.label)+'</label><input type="text" disabled placeholder="Upload não implementado neste protótipo"></div>';
+      }
+      var htmlType = c.calculado ? "text" : (INPUT_HTML_TYPE[c.tipo] || "text");
+      return '<div class="field"><label>'+escapeHtml(c.label)+(c.calculado?' · calculado':'')+'</label>'+
+        '<input type="'+htmlType+'" data-edit-campo="'+c.id+'"'+(c.calculado?" disabled":"")+' value="'+escapeHtml(val==null?"":val)+'"></div>';
+    }
+
+    var nativeHtml = '<div class="field"><label>Nome</label><input type="text" id="ed-nome" value="'+escapeHtml(row.nome||"")+'"></div>';
+    if(entityKey === "pessoa"){
+      nativeHtml += '<div class="field"><label>Tipo de pessoa</label><select id="ed-tipo-pessoa">'+
+        '<option value="fisica"'+(row.tipo_pessoa==="fisica"?" selected":"")+'>Física</option>'+
+        '<option value="juridica"'+(row.tipo_pessoa==="juridica"?" selected":"")+'>Jurídica</option></select></div>';
+    }
+    if(entityKey === "titularidade"){
+      var cartOpts = cache.cartorio.map(function(c){ return '<option value="'+c.id+'"'+(c.id===row.cartorio_id?" selected":"")+'>'+escapeHtml(c.nome)+'</option>'; }).join("");
+      nativeHtml +=
+        '<div class="field"><label>Tipo de evidência</label><select id="ed-tipo-evidencia">' +
+          Object.keys(EVIDENCIA_LABEL).map(function(v){ return '<option value="'+v+'"'+(v===row.tipo_evidencia?" selected":"")+'>'+EVIDENCIA_LABEL[v]+'</option>'; }).join("") +
+        '</select></div>' +
+        '<div id="ed-tit-extra">' +
+          '<div class="field"><label>Cartório</label><select id="ed-cartorio"><option value="">—</option>'+cartOpts+'</select></div>' +
+          '<div class="field"><label>Município</label><input type="text" id="ed-municipio" value="'+escapeHtml(row.municipio||"")+'"></div>' +
+          '<div class="field"><label>UF</label><input type="text" id="ed-uf" maxlength="2" value="'+escapeHtml(row.uf||"")+'"></div>' +
+          '<div class="field" id="ed-numero-wrap"><label id="ed-numero-label">Número da matrícula</label><input type="text" id="ed-numero" value="'+escapeHtml(row.numero_matricula||"")+'"></div>' +
+        '</div>';
+    }
+
+    var html = nativeHtml;
+    html += '<div id="ed-ciclo-wrap"></div>';
+    abas.forEach(function(aba, ai){
+      html += '<div class="aba-heading">'+escapeHtml(aba.nome)+'</div>';
+      html += (aba.campos||[]).map(editFieldHtml).join("");
+    });
+    html += '<div class="modal-foot" style="padding:14px 0 0; border-top:1px solid var(--border-soft); margin-top:18px;">'+
+      '<span id="ed-msg" class="empty-note"></span>'+
+      '<span style="display:flex; gap:8px;"><button type="button" class="btn sm" id="ed-cancel">Cancelar</button>'+
+      '<button type="button" class="btn primary sm" id="ed-save">Salvar</button></span></div>';
+    body.innerHTML = html;
+
+    function renderCicloOptions(){
+      var probe = entityKey === "pessoa" ? {tipo_pessoa: document.getElementById("ed-tipo-pessoa").value} : row;
+      var valores = cicloValoresFor(entityKey, probe);
+      var wrap = document.getElementById("ed-ciclo-wrap");
+      if(!valores.length){ wrap.innerHTML = ""; return; }
+      wrap.innerHTML = '<div class="field"><label>Ciclo de vida</label><select id="ed-ciclo">' +
+        valores.map(function(v){ return '<option value="'+escapeHtml(v)+'"'+(v===row.ciclo_de_vida?" selected":"")+'>'+escapeHtml(v)+'</option>'; }).join("") +
+        '</select></div>';
+    }
+    renderCicloOptions();
+    if(entityKey === "pessoa"){
+      document.getElementById("ed-tipo-pessoa").addEventListener("change", renderCicloOptions);
+    }
+
+    if(entityKey === "titularidade"){
+      var syncEd = function(){
+        var tipo = document.getElementById("ed-tipo-evidencia").value;
+        var isPosseSemTitulo = tipo === "posse_sem_justo_titulo";
+        document.getElementById("ed-tit-extra").style.display = isPosseSemTitulo ? "none" : "";
+        var numeroWrap = document.getElementById("ed-numero-wrap");
+        var showNumero = tipo === "matricula" || tipo === "transcricao";
+        numeroWrap.style.display = showNumero ? "" : "none";
+        document.getElementById("ed-numero-label").textContent = tipo === "transcricao" ? "Número da transcrição" : "Número da matrícula";
+      };
+      document.getElementById("ed-tipo-evidencia").addEventListener("change", syncEd);
+      syncEd();
+    }
+
+    function getValEdit(campoId){
+      var el = body.querySelector('[data-edit-campo="'+campoId+'"]');
+      return el ? el.value.trim() : "";
+    }
+    function updateCalculados(){
+      allCampos.forEach(function(c){
+        if(c.calculado && c.formula){
+          var el = body.querySelector('[data-edit-campo="'+c.id+'"]');
+          if(el) el.value = evalFormula(c.formula, getValEdit);
+        }
+      });
+    }
+    body.addEventListener("input", updateCalculados);
+    body.addEventListener("change", updateCalculados);
+    updateCalculados();
+
+    document.getElementById("ed-cancel").addEventListener("click", function(){ openDrawer(entityKey, row.id, "view"); });
+    document.getElementById("ed-save").addEventListener("click", async function(){
+      var msg = document.getElementById("ed-msg");
+      var nome = document.getElementById("ed-nome").value.trim();
+      if(!nome){ msg.style.color = "var(--selo)"; msg.textContent = "Informe um nome."; return; }
+      var patch = { nome: nome };
+
+      if(entityKey === "pessoa"){
+        patch.tipo_pessoa = document.getElementById("ed-tipo-pessoa").value;
+      }
+      if(entityKey === "titularidade"){
+        var tipo = document.getElementById("ed-tipo-evidencia").value;
+        var cartorioId = document.getElementById("ed-cartorio").value;
+        var municipio = document.getElementById("ed-municipio").value.trim();
+        var uf = document.getElementById("ed-uf").value.trim().toUpperCase();
+        var numero = document.getElementById("ed-numero").value.trim();
+        if(tipo !== "posse_sem_justo_titulo"){
+          if(!cartorioId || !municipio || uf.length !== 2){
+            msg.style.color = "var(--selo)"; msg.textContent = "Informe cartório, município e UF (2 letras) — obrigatórios para esse tipo de evidência."; return;
+          }
+          if((tipo === "matricula" || tipo === "transcricao") && !numero){
+            msg.style.color = "var(--selo)"; msg.textContent = "Informe o número da " + (tipo === "transcricao" ? "transcrição" : "matrícula") + "."; return;
+          }
+        }
+        patch.tipo_evidencia = tipo;
+        patch.cartorio_id = cartorioId || null;
+        patch.municipio = municipio || null;
+        patch.uf = uf || null;
+        patch.numero_matricula = numero || null;
+      }
+
+      var cicloSel = document.getElementById("ed-ciclo");
+      if(cicloSel) patch.ciclo_de_vida = cicloSel.value || null;
+
+      var campos = Object.assign({}, row.campos || {});
+      allCampos.forEach(function(c){
+        var val = getValEdit(c.id);
+        if(val) campos[c.id] = val; else delete campos[c.id];
+      });
+      patch.campos = campos;
+
+      if(!db) return;
+      await db.doc(col + "/" + row.id).update(patch);
+      openDrawer(entityKey, row.id, "view");
+    });
+  }
+
+  function closeDrawer(){
+    selectedId = null;
+    document.getElementById("overlay").classList.remove("show");
+    document.getElementById("drawer").classList.remove("show");
+  }
+  document.getElementById("drawer-close").addEventListener("click", closeDrawer);
+  // Busca só dispara ao confirmar (Enter ou botão) — não filtra a cada tecla.
+  // Campo vazio confirmado volta a mostrar todos os registros.
+  function runSearch(){ searchText = document.getElementById("search").value; render(); }
+  document.getElementById("search").addEventListener("keydown", function(e){ if(e.key === "Enter") runSearch(); });
+  document.getElementById("search-go").addEventListener("click", runSearch);
+  document.getElementById("btn-config").addEventListener("click", function(){ openConfigModal(currentKey); });
+  document.getElementById("btn-config-geral").addEventListener("click", openConfigGeralModal);
+  document.getElementById("btn-help").addEventListener("click", openHelpModal);
+  document.getElementById("btn-new-categoria").addEventListener("click", openNewCategoriaModal);
+  // Clicar fora de um modal central (Configuração, Novo Formulário, Novo registro)
+  // não fecha/cancela mais nada — só os botões explícitos (Cancelar/✕/Salvar) saem.
+
+  // =========================================================================
+  // Modal — mecanismo genérico
+  // =========================================================================
+  function closeModal(){
+    modal = {type:null};
+    document.getElementById("modal-overlay").classList.remove("show");
+    var m = document.getElementById("modal");
+    m.innerHTML = "";
+    m.classList.remove("wide");
+  }
+  function openModalShell(){ document.getElementById("modal-overlay").classList.add("show"); }
+
+  // =========================================================================
+  // Ajuda — explica os conceitos do sistema; atualizar HELP_SECTIONS e
+  // HELP_CHANGELOG a cada nova versão publicada.
+  // =========================================================================
+  var APP_VERSION = "v7";
+  var HELP_SECTIONS = [
+    { titulo:"O que é o Registro ABA",
+      corpo:"<p>Protótipo funcional de um sistema de gestão fundiária — pensado para substituir o modelo rígido de \"processo/formulário\" por Entidades e Formulários totalmente configuráveis. Os dados aqui são de exemplo.</p>" },
+    { titulo:"Entidades fixas",
+      corpo:"<p>Seis Entidades sempre existem no sistema, cada uma com sua própria tabela e tela:</p>" +
+        "<ul>" +
+        "<li><strong>Terreno</strong> — a terra nua, independente de benfeitorias.</li>" +
+        "<li><strong>Titularidade</strong> — o documento (ou a posse) que comprova a quem pertence um Terreno.</li>" +
+        "<li><strong>Empreendimento</strong> — obra ou ativo, com fases (planejamento, implantação, operação...).</li>" +
+        "<li><strong>Edificação</strong> — construção existente sobre um Terreno.</li>" +
+        "<li><strong>Pessoa</strong> — física ou jurídica.</li>" +
+        "<li><strong>Cartório</strong> — base de cartórios, hoje cadastrada manualmente.</li>" +
+        "</ul>" },
+    { titulo:"Formulário Personalizado",
+      corpo:"<p>Além das Entidades fixas, você pode criar novos \"Formulários\" (ex.: Alerta de Ocupação Irregular) pelo botão <strong>+ Novo Formulário</strong> na barra lateral. Por baixo, cada Formulário é uma <strong>Categoria</strong> com suas próprias abas, campos e ciclo de vida — e aparece no menu como qualquer outra Entidade.</p>" },
+    { titulo:"Abas e condição de desbloqueio",
+      corpo:"<p>Em Configuração → Abas & Campos, cada aba pode ter uma condição de quando aparece:</p>" +
+        "<ul>" +
+        "<li><strong>Livre</strong> — sempre visível.</li>" +
+        "<li><strong>Depende de aba(s)</strong> — só aparece depois que outra(s) aba(s) estiverem preenchidas.</li>" +
+        "<li><strong>Depende de campo(s)</strong> — só aparece depois que campo(s) específicos tiverem valor.</li>" +
+        "</ul>" +
+        "<p>É assim que o preenchimento guiado (o \"ciclo de vida\" do preenchimento) funciona, sem precisar de um fluxograma separado.</p>" },
+    { titulo:"Campos — tipos, dependência e cálculo",
+      corpo:"<p>Cada campo tem um tipo (texto, número, data, lista, arquivo...), pode ser marcado como obrigatório, e tem dois recursos avançados:</p>" +
+        "<ul>" +
+        "<li><strong>Dependente de</strong> — mostra o campo só depois que outro campo específico tiver um valor (ou um valor esperado exato).</li>" +
+        "<li><strong>Calculado</strong> — o valor é gerado por uma fórmula usando <code>{id_do_campo}</code>: soma/operações quando os valores são numéricos, ou junção de texto quando não são.</li>" +
+        "</ul>" },
+    { titulo:"Ciclo de vida",
+      corpo:"<p>Cada Entidade/Formulário tem uma lista configurável de valores de ciclo de vida (ex.: Ativo/Inativo). Pessoa é a única com vocabulário duplo — física (Vivo/Falecido) e jurídica (Ativo/Inativo).</p>" },
+    { titulo:"Associação entre registros",
+      corpo:"<p>Relações como Terreno↔Titularidade, Terreno↔Edificação e Titularidade↔Pessoa (Titular) aparecem no drawer de detalhe como chips. Clicar em <strong>+ Associar…</strong> abre uma busca (por nome ou código) em vez de uma lista solta — pensado para escalar a milhares de registros. O ✕ no chip desassocia.</p>" },
+    { titulo:"Editar um registro existente",
+      corpo:"<p>Abra o registro (clique na linha da tabela) e use o botão <strong>✎ Editar</strong> no topo do drawer. O modo de edição mostra todos os campos nativos e configurados de uma vez, sem bloqueio por aba — é o fluxo de corrigir o que já existe, não o de preenchimento guiado.</p>" },
+    { titulo:"Configuração por Entidade vs. Configuração geral",
+      corpo:"<p><strong>⚙ Configurar</strong> (no topo, por Entidade) ajusta ciclo de vida, abas e campos daquela Entidade/Formulário específico.</p>" +
+        "<p><strong>⚙ Configuração geral</strong> (na barra lateral) é do sistema como um todo: usuários com acesso e a ordem das Entidades no menu — outras configurações globais entram aqui no futuro.</p>" }
+  ];
+  var HELP_CHANGELOG = [
+    { versao:"v7", texto:"Busca só filtra ao confirmar (Enter/botão); Configuração geral (usuários + ordem do menu); este botão de Ajuda; construtor de Abas & Campos em três painéis (paleta, tela, propriedades), estilo formulário arrastar-e-configurar; visual atualizado (barra lateral escura fixa)." },
+    { versao:"v6", texto:"Titular(es) obrigatório na Titularidade, sempre vinculado a registros reais de Pessoa." },
+    { versao:"v5", texto:"Editar registros existentes pelo drawer; associar por busca em vez de lista solta." },
+    { versao:"v4", texto:"Criação de Terreno/Titularidade/Empreendimento/Edificação/Pessoa; dependência e cálculo de campos; associar/desassociar Terreno×Titularidade×Edificação." },
+    { versao:"v3", texto:"Menu unificado (Formulários viram Entidades como as demais); condição de desbloqueio de aba." },
+    { versao:"v2", texto:"Configuração de ciclo de vida, abas e campos; exemplos de Formulário." },
+    { versao:"v1", texto:"Primeira versão — 6 Entidades fixas, tabela + drawer de detalhe, relações resolvidas." }
+  ];
+  function openHelpModal(){
+    modal = { type:"help" };
+    var m = document.getElementById("modal");
+    m.innerHTML =
+      '<div class="modal-head"><div><h3>Ajuda — conceitos do Registro ABA</h3>'+
+      '<p>Versão '+APP_VERSION+' · esta ajuda é atualizada a cada nova versão publicada.</p></div>'+
+      '<button class="icon-btn" id="modal-close">✕</button></div>'+
+      '<div class="modal-body">' +
+        HELP_SECTIONS.map(function(s){ return '<div class="help-section"><h4>'+escapeHtml(s.titulo)+'</h4><div class="help-body">'+s.corpo+'</div></div>'; }).join("") +
+        '<div class="help-section"><h4>Histórico de versões</h4>' +
+          HELP_CHANGELOG.map(function(c){ return '<div class="field-row"><span class="k">'+escapeHtml(c.versao)+'</span><span class="v">'+escapeHtml(c.texto)+'</span></div>'; }).join("") +
+        '</div>' +
+      '</div>' +
+      '<div class="modal-foot"><span></span><button class="btn primary" id="help-close">Fechar</button></div>';
+    document.getElementById("modal-close").addEventListener("click", closeModal);
+    document.getElementById("help-close").addEventListener("click", closeModal);
+    openModalShell();
+  }
+
+  // =========================================================================
+  // Configuração geral do sistema — usuários e ordem das Entidades no menu.
+  // Independente da Configuração por Entidade/Formulário; extensível para
+  // outras configurações globais que vierem depois.
+  // =========================================================================
+  var configGeralTab = "usuarios";
+  var PAPEL_LABEL = { admin:"Administrador", editor:"Editor", leitor:"Leitor" };
+  function rawConfigGeral(){ return byId(cache.config_sistema, "geral") || {}; }
+  function buildConfigGeralDraft(){
+    var base = rawConfigGeral();
+    var ordem = (base.ordem_entidades && base.ordem_entidades.length) ? base.ordem_entidades.slice() : navEntries().map(function(e){ return e.key; });
+    return { usuarios: clone(base.usuarios||[]), ordem: ordem };
+  }
+  function openConfigGeralModal(){
+    configGeralTab = "usuarios";
+    modal = { type:"config-geral", draft: buildConfigGeralDraft() };
+    renderConfigGeralModal();
+    openModalShell();
+  }
+  async function saveConfigGeral(patch){
+    if(!db) return false;
+    try{
+      var existing = byId(cache.config_sistema, "geral");
+      if(existing){ await db.doc("config_sistema/geral").update(patch); }
+      else { await db.doc("config_sistema/geral").set(Object.assign({usuarios:[], ordem_entidades:[]}, patch)); }
+      return true;
+    }catch(err){ return false; }
+  }
+  function renderConfigGeralModal(){
+    var draft = modal.draft;
+    var m = document.getElementById("modal");
+    m.innerHTML =
+      '<div class="modal-head"><div><h3>Configuração geral</h3>'+
+      '<p>Configurações do sistema como um todo — usuários, ordem do menu e o que vier a seguir.</p></div>'+
+      '<button class="icon-btn" id="modal-close">✕</button></div>'+
+      '<div class="modal-tabs">'+tabBtn("usuarios","Usuários")+tabBtn("ordem","Ordem no menu")+'</div>'+
+      '<div class="modal-body" id="modal-body"></div>'+
+      '<div class="modal-foot"><button class="btn" id="cfg-cancel">Cancelar</button>'+
+      '<button class="btn primary" id="cfg-save-close">Salvar e fechar</button></div>';
+    document.getElementById("modal-close").addEventListener("click", closeModal);
+    document.getElementById("cfg-cancel").addEventListener("click", closeModal);
+    document.getElementById("cfg-save-close").addEventListener("click", async function(){
+      var btn = this; btn.textContent = "Salvando…"; btn.disabled = true;
+      var ok = await saveConfigGeral({ usuarios: draft.usuarios, ordem_entidades: draft.ordem });
+      if(ok){ closeModal(); }
+      else { btn.textContent = "Erro ao salvar"; btn.disabled = false; setTimeout(function(){ btn.textContent = "Salvar e fechar"; }, 1600); }
+    });
+    Array.prototype.forEach.call(m.querySelectorAll(".modal-tab"), function(btn){
+      btn.addEventListener("click", function(){ configGeralTab = btn.getAttribute("data-tab"); renderConfigGeralModal(); });
+    });
+    var body = document.getElementById("modal-body");
+    body.innerHTML = configGeralTab === "usuarios" ? usuariosTabHtml(draft) : ordemTabHtml(draft);
+    wireConfigGeralEvents();
+    function tabBtn(id, label){ return '<button class="modal-tab'+(configGeralTab===id?" active":"")+'" data-tab="'+id+'">'+label+'</button>'; }
+  }
+  function usuariosTabHtml(draft){
+    var rows = draft.usuarios.map(function(u){
+      return '<div class="field-row"><span class="k">'+escapeHtml(u.nome)+' <span class="empty-note">('+escapeHtml(PAPEL_LABEL[u.papel]||u.papel)+')</span></span>'+
+        '<span class="v">'+escapeHtml(u.email||"")+' <button type="button" class="chip-x" data-remove-usuario="'+u.id+'" title="Remover">✕</button></span></div>';
+    }).join("") || '<p class="empty-note">Nenhum usuário cadastrado ainda.</p>';
+    return '<div class="drawer-section"><h4>Usuários do sistema</h4>' + rows + '</div>' +
+      '<div class="drawer-section"><h4>Adicionar usuário</h4>' +
+        '<div class="field"><label>Nome</label><input type="text" id="ug-nome"></div>' +
+        '<div class="field"><label>E-mail</label><input type="email" id="ug-email"></div>' +
+        '<div class="field"><label>Papel</label><select id="ug-papel"><option value="admin">Administrador</option><option value="editor" selected>Editor</option><option value="leitor">Leitor</option></select></div>' +
+        '<div class="small-btn-row"><button type="button" class="btn sm" id="ug-add">+ Adicionar usuário</button></div>' +
+      '</div>';
+  }
+  function ordemTabHtml(draft){
+    var byKeyEntry = {}; navEntries().forEach(function(e){ byKeyEntry[e.key] = e; });
+    var rows = draft.ordem.map(function(key, i){
+      var e = byKeyEntry[key];
+      if(!e) return "";
+      return '<div class="order-row">' +
+        '<span class="nav-glyph">'+e.glyph+'</span><span class="order-label">'+escapeHtml(e.label)+'</span>' +
+        '<span class="small-btn-row">' +
+          '<button type="button" class="btn sm" data-order-up="'+i+'"'+(i===0?" disabled":"")+'>↑</button>' +
+          '<button type="button" class="btn sm" data-order-down="'+i+'"'+(i===draft.ordem.length-1?" disabled":"")+'>↓</button>' +
+        '</span></div>';
+    }).join("");
+    return '<div class="drawer-section"><h4>Ordem das Entidades no menu</h4><p class="empty-note">Use as setas para reordenar. Novas Entidades/Formulários entram no fim da lista.</p>'+rows+'</div>';
+  }
+  function wireConfigGeralEvents(){
+    var draft = modal.draft;
+    var m = document.getElementById("modal");
+    Array.prototype.forEach.call(m.querySelectorAll("[data-remove-usuario]"), function(btn){
+      btn.addEventListener("click", function(){
+        var id = btn.getAttribute("data-remove-usuario");
+        draft.usuarios = draft.usuarios.filter(function(u){ return u.id !== id; });
+        renderConfigGeralModal();
+      });
+    });
+    var addBtn = document.getElementById("ug-add");
+    if(addBtn) addBtn.addEventListener("click", function(){
+      var nome = document.getElementById("ug-nome").value.trim();
+      var email = document.getElementById("ug-email").value.trim();
+      var papel = document.getElementById("ug-papel").value;
+      if(!nome) return;
+      draft.usuarios.push({ id: uid("user"), nome: nome, email: email, papel: papel });
+      renderConfigGeralModal();
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-order-up]"), function(btn){
+      btn.addEventListener("click", function(){
+        var i = parseInt(btn.getAttribute("data-order-up"), 10);
+        if(i > 0){ var t = draft.ordem[i-1]; draft.ordem[i-1] = draft.ordem[i]; draft.ordem[i] = t; }
+        renderConfigGeralModal();
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-order-down]"), function(btn){
+      btn.addEventListener("click", function(){
+        var i = parseInt(btn.getAttribute("data-order-down"), 10);
+        if(i < draft.ordem.length-1){ var t = draft.ordem[i+1]; draft.ordem[i+1] = draft.ordem[i]; draft.ordem[i] = t; }
+        renderConfigGeralModal();
+      });
+    });
+  }
+
+  // ---- Configuração (Ciclo de vida / Abas & Campos) — estado em "draft", -
+  // ---- independente do cache, para nunca perder edição em andamento. -----
+  function rawConfigFor(key){
+    var ctx = contextFor(key);
+    if(ctx.type === "categoria") return ctx.categoria || {};
+    return byId(cache.config_entidade, key) || {};
+  }
+  function buildDraft(key, seed){
+    var base = seed || rawConfigFor(key);
+    if(key === "pessoa"){
+      var v = base.ciclo_de_vida_variantes || {};
+      return { pessoa:true, fisica:(v.fisica||[]).slice(), juridica:(v.juridica||[]).slice(), abas: clone(base.abas||[]) };
+    }
+    return { pessoa:false, ciclo_de_vida_valores:(base.ciclo_de_vida_valores||[]).slice(), abas: clone(base.abas||[]) };
+  }
+
+  function openConfigModal(key, seed){
+    configTab = "ciclo";
+    configSelection = null;
+    modal = { type:"config", key:key, draft: buildDraft(key, seed) };
+    renderConfigModal();
+    openModalShell();
+  }
+
+  async function saveConfigDoc(key, patch){
+    var ctx = contextFor(key);
+    if(!db) return false;
+    try{
+      if(ctx.type === "categoria"){
+        await db.doc("categoria/" + ctx.categoria.id).update(patch);
+      } else {
+        var existing = byId(cache.config_entidade, key);
+        if(existing){ await db.doc("config_entidade/" + key).update(patch); }
+        else { await db.doc("config_entidade/" + key).set(Object.assign({ciclo_de_vida_valores:[],abas:[]}, patch)); }
+      }
+      return true;
+    }catch(err){ return false; }
+  }
+
+  function renderConfigModal(){
+    var key = modal.key, ctx = contextFor(key), draft = modal.draft;
+    var title = ctx.type === "fixed" ? ctx.def.label : (ctx.categoria ? ctx.categoria.nome : "—");
+    var m = document.getElementById("modal");
+    m.classList.toggle("wide", configTab === "abas");
+
+    m.innerHTML =
+      '<div class="modal-head"><div><h3>Configurar — '+escapeHtml(title)+'</h3>'+
+      '<p>Ciclo de vida, abas, campos, tipos e propriedades — configurável por Entidade ou Formulário.</p></div>'+
+      '<button class="icon-btn" id="modal-close">✕</button></div>'+
+      '<div class="modal-tabs">'+tabBtn("ciclo","Ciclo de vida")+tabBtn("abas","Abas & Campos")+'</div>'+
+      '<div class="modal-body" id="modal-body"></div>'+
+      '<div class="modal-foot"><button class="btn" id="cfg-cancel">Cancelar</button>'+
+      '<button class="btn primary" id="cfg-save-close">Salvar e fechar</button></div>';
+
+    document.getElementById("modal-close").addEventListener("click", closeModal);
+    document.getElementById("cfg-cancel").addEventListener("click", closeModal);
+    document.getElementById("cfg-save-close").addEventListener("click", async function(){
+      var btn = this; btn.textContent = "Salvando…"; btn.disabled = true;
+      var patch = draft.pessoa
+        ? {ciclo_de_vida_variantes:{fisica:draft.fisica, juridica:draft.juridica}, abas: draft.abas}
+        : {ciclo_de_vida_valores: draft.ciclo_de_vida_valores, abas: draft.abas};
+      var ok = await saveConfigDoc(key, patch);
+      if(ok){ closeModal(); }
+      else { btn.textContent = "Erro ao salvar"; btn.disabled = false; setTimeout(function(){ btn.textContent = "Salvar e fechar"; }, 1600); }
+    });
+    Array.prototype.forEach.call(m.querySelectorAll(".modal-tab"), function(btn){
+      btn.addEventListener("click", function(){ configTab = btn.getAttribute("data-tab"); renderConfigModal(); });
+    });
+
+    var body = document.getElementById("modal-body");
+    body.innerHTML = configTab === "ciclo" ? cicloTabHtml(draft) : abasTabHtml(draft);
+    wireConfigTabEvents(key);
+
+    function tabBtn(id, label){ return '<button class="modal-tab'+(configTab===id?" active":"")+'" data-tab="'+id+'">'+label+'</button>'; }
+  }
+
+  function cicloTabHtml(draft){
+    if(draft.pessoa){
+      return '<div class="field"><label>Pessoa física (CPF)</label>'+chipEditorHtml("fisica", draft.fisica)+'</div>'+
+             '<div class="field"><label>Pessoa jurídica (CNPJ)</label>'+chipEditorHtml("juridica", draft.juridica)+'</div>'+
+             '<p class="empty-note">Pessoa é a única Entidade cujo vocabulário de ciclo de vida depende de um sub-tipo. Também pode ficar sem nenhum valor.</p>';
+    }
+    return '<div class="field"><label>Valores do ciclo de vida (em ordem) — opcional, pode remover todos</label>'+chipEditorHtml("_", draft.ciclo_de_vida_valores)+'</div>';
+  }
+
+  function chipEditorHtml(group, valores){
+    return '<div class="chip-editor" data-ciclo-group="'+group+'">' +
+      (valores.length ? valores.map(function(v, i){
+        return '<span class="chip-editable">'+escapeHtml(v)+'<button data-remove-ciclo="'+group+'" data-idx="'+i+'">✕</button></span>';
+      }).join("") : '<span class="empty-note">Nenhum valor — ciclo de vida desativado para este caso.</span>') + '</div>' +
+      '<div class="chip-add-row"><input type="text" placeholder="Novo valor…" data-ciclo-input="'+group+'">' +
+      '<button class="btn sm" data-add-ciclo="'+group+'">+ Adicionar</button></div>' +
+      '<div class="small-btn-row"><button class="btn primary sm" data-save-ciclo="'+group+'">Salvar ciclo de vida</button></div>';
+  }
+
+  var CONDICAO_LABELS = {livre:"Sempre visível (livre)", abas:"Depois que outra(s) aba(s) forem preenchidas", campos:"Depois que certos campos forem preenchidos"};
+
+  // Construtor de Abas & Campos — inspirado no designer online do ArcGIS
+  // Survey123: paleta de tipos à esquerda, canvas com preview ao vivo no
+  // centro (clique para selecionar), painel de propriedades à direita.
+  var PALETTE_GROUPS = [
+    { label:"Texto, número e data", types:["texto","numero","data","codigo"] },
+    { label:"Identificação", types:["cpf_cnpj","email"] },
+    { label:"Localização", types:["endereco","cep","uf","municipio","localidade"] },
+    { label:"Escolha e referência", types:["lista","consulta"] },
+    { label:"Arquivo", types:["arquivo"] }
+  ];
+  function abasTabHtml(draft){
+    var abas = draft.abas;
+    if(configSelection){
+      var stillValid = configSelection.type === "aba"
+        ? !!abas[configSelection.ai]
+        : !!(abas[configSelection.ai] && abas[configSelection.ai].campos && abas[configSelection.ai].campos[configSelection.ci]);
+      if(!stillValid) configSelection = null;
+    }
+    var html = '<div class="cfg-builder">' + paletteHtml() + canvasHtml(abas) + propsHtml(draft) + '</div>';
+    html += flowSummaryHtml(abas);
+    return html;
+  }
+
+  function paletteHtml(){
+    var html = '<div class="cfg-pane cfg-palette"><div class="palette-title">Adicionar campo</div>';
+    PALETTE_GROUPS.forEach(function(g){
+      html += '<div class="palette-group"><div class="palette-group-label">'+escapeHtml(g.label)+'</div>' +
+        g.types.map(function(t){ return '<button type="button" class="palette-item" data-add-campo-tipo="'+t+'">+ '+escapeHtml(FIELD_TYPE_LABEL[t]||t)+'</button>'; }).join("") +
+        '</div>';
+    });
+    html += '<div class="small-btn-row"><button type="button" class="btn sm" id="add-aba-btn">+ Aba (página)</button></div>';
+    html += '<div class="small-btn-row"><button type="button" class="btn primary sm" id="save-abas-btn">Salvar abas & campos</button></div>';
+    html += '</div>';
+    return html;
+  }
+
+  function canvasHtml(abas){
+    var html = '<div class="cfg-pane cfg-canvas">';
+    if(abas.length === 0){
+      html += '<div class="canvas-empty">Nenhuma aba ainda — clique em "+ Aba (página)" na paleta à esquerda, ou em qualquer tipo de campo para começar.</div>';
+    }
+    abas.forEach(function(aba, ai){
+      var abaSelected = configSelection && configSelection.type==="aba" && configSelection.ai===ai;
+      html += '<div class="canvas-page">' +
+        '<div class="canvas-page-head'+(abaSelected?" selected":"")+'" data-select-aba="'+ai+'">' +
+          '<span class="nav-glyph">'+(ai+1)+'</span>' +
+          '<input type="text" value="'+escapeHtml(aba.nome||"")+'" data-aba-nome="'+ai+'" placeholder="Nome da aba">' +
+          '<button type="button" class="cf-remove" data-remove-aba="'+ai+'" title="Remover aba">✕</button>' +
+        '</div>' +
+        '<div class="canvas-page-cond">'+condicaoLabel(aba, abas)+'</div>' +
+        '<div class="canvas-page-body">' +
+          (aba.campos||[]).map(function(c, ci){
+            var campoSelected = configSelection && configSelection.type==="campo" && configSelection.ai===ai && configSelection.ci===ci;
+            return '<div class="canvas-field'+(campoSelected?" selected":"")+'" data-select-campo="'+ai+':'+ci+'">' +
+              '<span><span class="cf-label">'+escapeHtml(c.label||"(sem nome)")+(c.obrigatorio?' *':'')+'</span>' +
+              '<div class="cf-meta">'+escapeHtml(FIELD_TYPE_LABEL[c.tipo]||c.tipo)+(c.calculado?" · calculado":"")+(c.dependeCampo?" · dependente":"")+(c.visivel===false?" · oculto":"")+'</div></span>' +
+              '<button type="button" class="cf-remove" data-remove-campo="'+ai+':'+ci+'" title="Remover campo">✕</button>' +
+            '</div>';
+          }).join("") +
+          ((aba.campos||[]).length ? "" : '<p class="empty-note">Nenhum campo nesta aba — use a paleta à esquerda.</p>') +
+        '</div>' +
+      '</div>';
+    });
+    html += '</div>';
+    return html;
+  }
+
+  function propsHtml(draft){
+    var abas = draft.abas;
+    var html = '<div class="cfg-pane cfg-props">';
+    if(!configSelection){
+      html += '<div class="props-title">Propriedades</div><div class="props-empty">Selecione uma aba ou um campo no canvas para editar, ou adicione um campo pela paleta.</div>';
+      html += '</div>';
+      return html;
+    }
+    if(configSelection.type === "aba"){
+      var ai = configSelection.ai, aba = abas[ai];
+      var cond = aba.condicao || {tipo:"livre"};
+      var otherAbas = abas.filter(function(a,i){ return i !== ai; });
+      var allCamposOutras = [];
+      abas.forEach(function(a,i){ if(i===ai) return; (a.campos||[]).forEach(function(c){ allCamposOutras.push({abaNome:a.nome, id:c.id, label:c.label}); }); });
+      html += '<div class="props-title">Propriedades da aba</div>' +
+        '<div class="props-heading">'+escapeHtml(aba.nome||"(sem nome)")+'</div>' +
+        '<div class="condicao-block">' +
+          '<label class="cb-label">Condição para esta aba aparecer</label>' +
+          '<select data-cond-tipo="'+ai+'">' +
+            ["livre","abas","campos"].map(function(t){ return '<option value="'+t+'"'+(cond.tipo===t?" selected":"")+'>'+CONDICAO_LABELS[t]+'</option>'; }).join("") +
+          '</select>' +
+          (cond.tipo === "abas" ? '<div class="checklist">' + (otherAbas.length ? otherAbas.map(function(a){
+              return '<label><input type="checkbox" data-cond-aba="'+ai+':'+a.id+'" '+((cond.abas||[]).indexOf(a.id)>-1?"checked":"")+'> '+escapeHtml(a.nome)+'</label>';
+            }).join("") : '<span class="empty-note">Crie outra aba primeiro.</span>') + '</div>' : '') +
+          (cond.tipo === "campos" ? '<div class="checklist">' + (allCamposOutras.length ? allCamposOutras.map(function(c){
+              return '<label><input type="checkbox" data-cond-campo="'+ai+':'+c.id+'" '+((cond.campos||[]).indexOf(c.id)>-1?"checked":"")+'> '+escapeHtml(c.label)+' <span class="empty-note">('+escapeHtml(c.abaNome)+')</span></label>';
+            }).join("") : '<span class="empty-note">Crie campos em outras abas primeiro.</span>') + '</div>' : '') +
+        '</div>' +
+        '<div class="small-btn-row"><button type="button" class="btn sm danger" data-remove-aba="'+ai+'">Remover esta aba</button></div>';
+    } else {
+      var ai2 = configSelection.ai, ci2 = configSelection.ci;
+      var c = abas[ai2].campos[ci2];
+      var allCamposGlobal = [];
+      abas.forEach(function(a){ (a.campos||[]).forEach(function(cc){ allCamposGlobal.push({abaNome:a.nome, id:cc.id, label:cc.label}); }); });
+      var deps = allCamposGlobal.filter(function(o){ return o.id !== c.id; });
+      var options = FIELD_TYPES.map(function(t){ return '<option value="'+t.v+'"'+(c.tipo===t.v?" selected":"")+'>'+t.l+'</option>'; }).join("");
+      html += '<div class="props-title">Propriedades do campo</div>' +
+        '<div class="field"><label>Rótulo</label><input type="text" value="'+escapeHtml(c.label||"")+'" data-campo-label="'+ai2+':'+ci2+'"></div>' +
+        '<div class="field"><label>Tipo</label><select data-campo-tipo="'+ai2+':'+ci2+'">'+options+'</select></div>' +
+        '<div class="field"><label>Texto de ajuda</label><input type="text" value="'+escapeHtml(c.ajuda||"")+'" data-campo-ajuda="'+ai2+':'+ci2+'" placeholder="Instrução exibida junto ao campo"></div>' +
+        '<div class="field"><label>Valor padrão</label><input type="text" value="'+escapeHtml(c.valorPadrao||"")+'" data-campo-padrao="'+ai2+':'+ci2+'"></div>' +
+        '<div class="field"><label>Aparência</label><input type="text" value="'+escapeHtml(c.aparencia||"")+'" data-campo-aparencia="'+ai2+':'+ci2+'" placeholder="ex.: multiline, minimal"></div>' +
+        '<div class="campo-props">' +
+          propCheck(ai2,ci2,"obrigatorio","Obrigatório",c.obrigatorio) +
+          propCheck(ai2,ci2,"calculado","Calculado",c.calculado) +
+          propCheck(ai2,ci2,"visivel","Visível",c.visivel !== false) +
+        '</div>' +
+        (c.calculado ? '<div class="field"><label>Fórmula (some/subtraia com {id_do_campo}, ou junte texto)</label>' +
+          '<input type="text" data-campo-formula="'+ai2+':'+ci2+'" value="'+escapeHtml(c.formula||"")+'" placeholder="Ex.: {area_a} + {area_b}"></div>' : '') +
+        '<div class="field"><label>Dependente de (só aparece quando o campo escolhido tiver valor)</label>' +
+          '<select data-campo-dependecampo="'+ai2+':'+ci2+'"><option value="">Nenhuma dependência</option>' +
+          deps.map(function(o){ return '<option value="'+o.id+'"'+(c.dependeCampo===o.id?" selected":"")+'>'+escapeHtml(o.label)+' ('+escapeHtml(o.abaNome)+')</option>'; }).join("") +
+          '</select></div>' +
+        (c.dependeCampo ? '<div class="field"><label>Valor esperado (opcional — vazio = qualquer valor)</label>' +
+          '<input type="text" data-campo-dependevalor="'+ai2+':'+ci2+'" value="'+escapeHtml(c.dependeValor||"")+'"></div>' : '') +
+        '<div class="small-btn-row"><button type="button" class="btn sm danger" data-remove-campo="'+ai2+':'+ci2+'">Remover este campo</button></div>';
+    }
+    html += '</div>';
+    return html;
+    function propCheck(ai,ci,key,label,checked){
+      return '<label><input type="checkbox" data-campo-prop="'+ai+':'+ci+':'+key+'" '+(checked?"checked":"")+'> '+label+'</label>';
+    }
+  }
+
+  function flowSummaryHtml(abas){
+    if(abas.length === 0) return "";
+    return '<div class="flow-summary"><h4>Como o preenchimento avança</h4><ol>' +
+      abas.map(function(aba){ return '<li><strong>'+escapeHtml(aba.nome)+'</strong> — '+condicaoLabel(aba, abas)+'</li>'; }).join("") +
+      '</ol></div>';
+  }
+
+  function wireConfigTabEvents(key){
+    var m = document.getElementById("modal");
+    var draft = modal.draft;
+
+    // ---- Ciclo de vida ----
+    Array.prototype.forEach.call(m.querySelectorAll("[data-add-ciclo]"), function(btn){
+      btn.addEventListener("click", function(){
+        var group = btn.getAttribute("data-add-ciclo");
+        var input = m.querySelector('[data-ciclo-input="'+group+'"]');
+        var val = input.value.trim(); if(!val) return;
+        (draft.pessoa ? draft[group] : draft.ciclo_de_vida_valores).push(val);
+        renderConfigModal();
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-remove-ciclo]"), function(btn){
+      btn.addEventListener("click", function(){
+        var group = btn.getAttribute("data-remove-ciclo"), idx = parseInt(btn.getAttribute("data-idx"),10);
+        (draft.pessoa ? draft[group] : draft.ciclo_de_vida_valores).splice(idx,1);
+        renderConfigModal();
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-save-ciclo]"), function(btn){
+      btn.addEventListener("click", async function(){
+        var group = btn.getAttribute("data-save-ciclo");
+        btn.textContent = "Salvando…";
+        var ok;
+        if(draft.pessoa){ ok = await saveConfigDoc(key, {ciclo_de_vida_variantes:{fisica:draft.fisica, juridica:draft.juridica}}); }
+        else { ok = await saveConfigDoc(key, {ciclo_de_vida_valores: draft.ciclo_de_vida_valores}); }
+        btn.textContent = ok ? "Salvo ✓" : "Erro ao salvar";
+        setTimeout(function(){ btn.textContent = "Salvar ciclo de vida"; }, 1400);
+      });
+    });
+
+    // ---- Abas & campos (construtor estilo Survey123) ----
+    var addAbaBtn = document.getElementById("add-aba-btn");
+    if(addAbaBtn) addAbaBtn.addEventListener("click", function(){
+      draft.abas.push({id:uid("aba"), nome:"Nova aba", condicao:{tipo:"livre"}, campos:[]});
+      configSelection = {type:"aba", ai: draft.abas.length-1};
+      renderConfigModal();
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-select-aba]"), function(el){
+      el.addEventListener("click", function(){
+        configSelection = {type:"aba", ai: parseInt(el.getAttribute("data-select-aba"),10)};
+        renderConfigModal();
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-select-campo]"), function(el){
+      el.addEventListener("click", function(){
+        var p = el.getAttribute("data-select-campo").split(":");
+        configSelection = {type:"campo", ai:+p[0], ci:+p[1]};
+        renderConfigModal();
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-add-campo-tipo]"), function(btn){
+      btn.addEventListener("click", function(){
+        var tipo = btn.getAttribute("data-add-campo-tipo");
+        var ai = (configSelection && draft.abas[configSelection.ai]) ? configSelection.ai : (draft.abas.length ? draft.abas.length-1 : -1);
+        if(ai === -1){
+          draft.abas.push({id:uid("aba"), nome:"Nova aba", condicao:{tipo:"livre"}, campos:[]});
+          ai = 0;
+        }
+        draft.abas[ai].campos = draft.abas[ai].campos || [];
+        draft.abas[ai].campos.push({id:uid("campo"), label:"Novo campo", tipo:tipo, obrigatorio:false, visivel:true});
+        configSelection = {type:"campo", ai:ai, ci: draft.abas[ai].campos.length-1};
+        renderConfigModal();
+      });
+    });
+    var saveAbasBtn = document.getElementById("save-abas-btn");
+    if(saveAbasBtn) saveAbasBtn.addEventListener("click", async function(){
+      saveAbasBtn.textContent = "Salvando…";
+      var ok = await saveConfigDoc(key, {abas: draft.abas});
+      saveAbasBtn.textContent = ok ? "Salvo ✓" : "Erro ao salvar";
+      setTimeout(function(){ saveAbasBtn.textContent = "Salvar abas & campos"; }, 1400);
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-remove-aba]"), function(btn){
+      btn.addEventListener("click", function(e){
+        e.stopPropagation();
+        draft.abas.splice(parseInt(btn.getAttribute("data-remove-aba"),10),1);
+        configSelection = null;
+        renderConfigModal();
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-aba-nome]"), function(inp){
+      inp.addEventListener("click", function(e){
+        e.stopPropagation();
+        var ai = parseInt(inp.getAttribute("data-aba-nome"),10);
+        // Só re-renderiza (e assim seleciona a aba, trocando o painel de
+        // propriedades) se ainda não estava selecionada — clicar de novo no
+        // campo já selecionado apenas foca para digitar, sem perder o foco.
+        if(!(configSelection && configSelection.type==="aba" && configSelection.ai===ai)){
+          configSelection = {type:"aba", ai:ai};
+          renderConfigModal();
+        }
+      });
+      inp.addEventListener("input", function(){
+        draft.abas[parseInt(inp.getAttribute("data-aba-nome"),10)].nome = inp.value;
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-cond-tipo]"), function(sel){
+      sel.addEventListener("change", function(){
+        var ai = parseInt(sel.getAttribute("data-cond-tipo"),10);
+        draft.abas[ai].condicao = {tipo: sel.value, abas:[], campos:[]};
+        renderConfigModal();
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-cond-aba]"), function(inp){
+      inp.addEventListener("change", function(){
+        var p = inp.getAttribute("data-cond-aba").split(":"); var ai=+p[0], abaId=p[1];
+        var cond = draft.abas[ai].condicao; cond.abas = cond.abas || [];
+        var idx = cond.abas.indexOf(abaId);
+        if(inp.checked && idx<0) cond.abas.push(abaId);
+        if(!inp.checked && idx>-1) cond.abas.splice(idx,1);
+        renderConfigModal();
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-cond-campo]"), function(inp){
+      inp.addEventListener("change", function(){
+        var p = inp.getAttribute("data-cond-campo").split(":"); var ai=+p[0], campoId=p[1];
+        var cond = draft.abas[ai].condicao; cond.campos = cond.campos || [];
+        var idx = cond.campos.indexOf(campoId);
+        if(inp.checked && idx<0) cond.campos.push(campoId);
+        if(!inp.checked && idx>-1) cond.campos.splice(idx,1);
+        renderConfigModal();
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-remove-campo]"), function(btn){
+      btn.addEventListener("click", function(e){
+        e.stopPropagation();
+        var p = btn.getAttribute("data-remove-campo").split(":");
+        draft.abas[+p[0]].campos.splice(+p[1],1);
+        configSelection = null;
+        renderConfigModal();
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-label]"), function(inp){
+      inp.addEventListener("input", function(){
+        var p=inp.getAttribute("data-campo-label").split(":");
+        var c = draft.abas[+p[0]].campos[+p[1]];
+        c.label = inp.value;
+        var canvasLabel = m.querySelector('.canvas-field[data-select-campo="'+p[0]+':'+p[1]+'"] .cf-label');
+        if(canvasLabel) canvasLabel.textContent = (inp.value || "(sem nome)") + (c.obrigatorio ? " *" : "");
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-tipo]"), function(sel){
+      sel.addEventListener("change", function(){
+        var p=sel.getAttribute("data-campo-tipo").split(":");
+        draft.abas[+p[0]].campos[+p[1]].tipo = sel.value;
+        renderConfigModal();
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-prop]"), function(inp){
+      inp.addEventListener("change", function(){
+        var p=inp.getAttribute("data-campo-prop").split(":");
+        draft.abas[+p[0]].campos[+p[1]][p[2]] = inp.checked;
+        renderConfigModal(); // "calculado" muda a UI (mostra/esconde a fórmula)
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-formula]"), function(inp){
+      inp.addEventListener("input", function(){ var p=inp.getAttribute("data-campo-formula").split(":"); draft.abas[+p[0]].campos[+p[1]].formula = inp.value; });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-dependecampo]"), function(sel){
+      sel.addEventListener("change", function(){
+        var p = sel.getAttribute("data-campo-dependecampo").split(":");
+        var c = draft.abas[+p[0]].campos[+p[1]];
+        c.dependeCampo = sel.value || null;
+        if(!sel.value) c.dependeValor = "";
+        renderConfigModal();
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-dependevalor]"), function(inp){
+      inp.addEventListener("input", function(){ var p=inp.getAttribute("data-campo-dependevalor").split(":"); draft.abas[+p[0]].campos[+p[1]].dependeValor = inp.value; });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-padrao]"), function(inp){
+      inp.addEventListener("input", function(){ var p=inp.getAttribute("data-campo-padrao").split(":"); draft.abas[+p[0]].campos[+p[1]].valorPadrao = inp.value; });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-ajuda]"), function(inp){
+      inp.addEventListener("input", function(){ var p=inp.getAttribute("data-campo-ajuda").split(":"); draft.abas[+p[0]].campos[+p[1]].ajuda = inp.value; });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-aparencia]"), function(inp){
+      inp.addEventListener("input", function(){ var p=inp.getAttribute("data-campo-aparencia").split(":"); draft.abas[+p[0]].campos[+p[1]].aparencia = inp.value; });
+    });
+  }
+
+  // ---- Novo Formulário (Categoria) ----
+  function openNewCategoriaModal(){
+    modal = {type:"new-categoria"};
+    var m = document.getElementById("modal");
+    m.innerHTML =
+      '<div class="modal-head"><div><h3>Novo Formulário</h3><p>Cria uma nova Entidade configurável — por baixo, sempre um Formulário Personalizado com uma Categoria própria.</p></div>' +
+      '<button class="icon-btn" id="modal-close">✕</button></div>' +
+      '<div class="modal-body">' +
+        '<div class="field"><label>Nome do Formulário</label><input type="text" id="nc-nome" placeholder="Ex.: Alerta de Invasão"></div>' +
+        '<div class="field"><label>Código</label><input type="text" id="nc-codigo" placeholder="Ex.: CAT-INVASAO"></div>' +
+        '<p class="empty-note">Depois de criado, abrimos direto a Configuração para você montar as abas e o ciclo de vida (ou removê-lo).</p>' +
+      '</div>' +
+      '<div class="modal-foot"><span></span><button class="btn primary" id="nc-submit">Criar Formulário</button></div>';
+    document.getElementById("modal-close").addEventListener("click", closeModal);
+    document.getElementById("nc-submit").addEventListener("click", async function(){
+      var nome = document.getElementById("nc-nome").value.trim();
+      var codigoRaw = document.getElementById("nc-codigo").value.trim();
+      if(!nome){ document.getElementById("nc-nome").focus(); return; }
+      var codigo = codigoRaw || ("CAT-" + nome.normalize("NFD").replace(/[̀-ͯ]/g,"").toUpperCase().replace(/[^A-Z0-9]+/g,"-").replace(/^-+|-+$/g,""));
+      var newDoc = { codigo: codigo, nome: nome, ciclo_de_vida_ativo: true, ciclo_de_vida_valores: ["Ativo","Inativo"], abas: [] };
+      if(!db){
+        // Sem conexão — ainda assim deixamos configurar localmente; ao salvar, o aviso de erro aparece.
+        var fakeId = uid("categoria");
+        closeModal(); selectKey("form:" + fakeId);
+        openConfigModal("form:" + fakeId, newDoc);
+        return;
+      }
+      var ref = await db.collection("categoria").add(newDoc);
+      closeModal();
+      selectKey("form:" + ref.id);
+      // Abre a Configuração já com os dados que acabamos de criar — não depende
+      // do onSnapshot ter chegado, então "+ Aba" e "+ Adicionar" funcionam de imediato.
+      openConfigModal("form:" + ref.id, newDoc);
+    });
+    openModalShell();
+  }
+
+  // ---- Novo registro (Formulário Personalizado), com abas progressivas ----
+  function openNewRecordModal(cat){
+    modal = {type:"new-record", categoriaId:cat.id};
+    var m = document.getElementById("modal");
+    var abas = cat.abas || [];
+    var allCampos = []; abas.forEach(function(a){ (a.campos||[]).forEach(function(c){ allCampos.push(c); }); });
+
+    function fieldHtml(c){
+      if(c.tipo === "arquivo"){
+        return '<div class="field" data-campo-wrap="'+c.id+'"><label>'+escapeHtml(c.label)+'</label><input type="text" disabled placeholder="Upload não implementado neste protótipo"></div>';
+      }
+      var htmlType = c.calculado ? "text" : (INPUT_HTML_TYPE[c.tipo] || "text");
+      return '<div class="field" data-campo-wrap="'+c.id+'"><label>'+escapeHtml(c.label)+(c.obrigatorio?' *':'')+(c.calculado?' · calculado':'')+'</label>' +
+        '<input type="'+htmlType+'" data-nr-campo="'+c.id+'"'+(c.calculado?" disabled":"")+' placeholder="'+escapeHtml(c.ajuda||FIELD_TYPE_LABEL[c.tipo]||"")+'" value="'+escapeHtml(c.valorPadrao||"")+'"></div>';
+    }
+
+    var body = '<div class="field"><label>Nome do registro</label><input type="text" id="nr-nome" placeholder="Identificação curta deste caso"></div>';
+    abas.forEach(function(aba, ai){
+      body += '<div class="aba-heading" data-aba-section="'+ai+'">'+escapeHtml(aba.nome)+'</div>';
+      body += '<div data-aba-fields="'+ai+'">' + (aba.campos||[]).map(fieldHtml).join("") + '</div>';
+      body += '<div class="aba-locked" data-aba-locked="'+ai+'" style="display:none;">🔒 <span></span></div>';
+    });
+
+    m.innerHTML =
+      '<div class="modal-head"><div><h3>Novo registro — '+escapeHtml(cat.nome)+'</h3><p>Campos * são obrigatórios. Abas bloqueadas aparecem conforme você preenche.</p></div>'+
+      '<button class="icon-btn" id="modal-close">✕</button></div>'+
+      '<div class="modal-body" id="nr-body">'+body+'</div>'+
+      '<div class="modal-foot"><span id="nr-msg" class="empty-note"></span><button class="btn primary" id="nr-submit">Criar registro</button></div>';
+    document.getElementById("modal-close").addEventListener("click", closeModal);
+
+    function getVal(campoId){ return abaCampoValue(campoId); }
+    function updateCalculados(){
+      allCampos.forEach(function(c){
+        if(c.calculado && c.formula){
+          var el = m.querySelector('[data-nr-campo="'+c.id+'"]');
+          if(el) el.value = evalFormula(c.formula, getVal);
+        }
+      });
+    }
+    function updateVisibility(){
+      abas.forEach(function(aba, ai){
+        var unlocked = isAbaUnlocked(aba, abas, getVal);
+        var heading = m.querySelector('[data-aba-section="'+ai+'"]');
+        var fields = m.querySelector('[data-aba-fields="'+ai+'"]');
+        var locked = m.querySelector('[data-aba-locked="'+ai+'"]');
+        if(heading) heading.style.display = unlocked ? "" : "none";
+        if(fields) fields.style.display = unlocked ? "" : "none";
+        if(locked){
+          locked.style.display = unlocked ? "none" : "flex";
+          locked.querySelector("span").innerHTML = "\"" + escapeHtml(aba.nome) + "\" " + condicaoLabel(aba, abas) + ".";
+        }
+      });
+      allCampos.forEach(function(c){
+        var wrap = m.querySelector('[data-campo-wrap="'+c.id+'"]');
+        if(wrap) wrap.style.display = campoVisible(c, getVal) ? "" : "none";
+      });
+    }
+    m.addEventListener("input", function(){ updateCalculados(); updateVisibility(); });
+    m.addEventListener("change", function(){ updateCalculados(); updateVisibility(); });
+    updateCalculados(); updateVisibility();
+
+    document.getElementById("nr-submit").addEventListener("click", async function(){
+      var nome = document.getElementById("nr-nome").value.trim();
+      var msg = document.getElementById("nr-msg");
+      var campos = {}; var missing = [];
+      abas.forEach(function(aba){
+        if(!isAbaUnlocked(aba, abas, getVal)) return; // campos de aba ainda bloqueada não contam
+        (aba.campos||[]).forEach(function(c){
+          if(!campoVisible(c, getVal)) return;
+          var val = getVal(c.id);
+          if(c.obrigatorio && !val) missing.push(c.label);
+          if(val) campos[c.id] = val;
+        });
+      });
+      if(!nome || missing.length){
+        msg.style.color = "var(--selo)";
+        msg.textContent = !nome ? "Informe um nome para o registro." : "Faltando: " + missing.join(", ");
+        return;
+      }
+      if(!db) return;
+      var valores = cat.ciclo_de_vida_valores || [];
+      await db.collection("formulario_personalizado").add({
+        codigo: "FRM-" + Date.now().toString(36).toUpperCase(),
+        nome: nome, categoria_id: cat.id, ciclo_de_vida: valores[0] || null, campos: campos
+      });
+      closeModal();
+    });
+    openModalShell();
+  }
+
+  // ---- Novo registro de Entidade fixa (Terreno, Titularidade, Empreendimento,
+  // ---- Edificação, Pessoa) — campos nativos próprios da Entidade + abas
+  // ---- configuradas via Configuração (mesma lógica de desbloqueio/dependência).
+  function openNewFixedModal(def){
+    modal = {type:"new-fixed", key:def.key};
+    var m = document.getElementById("modal");
+    var cfg = byId(cache.config_entidade, def.key);
+    var abas = (cfg && cfg.abas) || [];
+    var allCampos = []; abas.forEach(function(a){ (a.campos||[]).forEach(function(c){ allCampos.push(c); }); });
+
+    function fieldHtml(c){
+      if(c.tipo === "arquivo"){
+        return '<div class="field" data-campo-wrap="'+c.id+'"><label>'+escapeHtml(c.label)+'</label><input type="text" disabled placeholder="Upload não implementado neste protótipo"></div>';
+      }
+      var htmlType = c.calculado ? "text" : (INPUT_HTML_TYPE[c.tipo] || "text");
+      return '<div class="field" data-campo-wrap="'+c.id+'"><label>'+escapeHtml(c.label)+(c.obrigatorio?' *':'')+(c.calculado?' · calculado':'')+'</label>' +
+        '<input type="'+htmlType+'" data-nr-campo="'+c.id+'"'+(c.calculado?" disabled":"")+' placeholder="'+escapeHtml(c.ajuda||FIELD_TYPE_LABEL[c.tipo]||"")+'" value="'+escapeHtml(c.valorPadrao||"")+'"></div>';
+    }
+
+    var nativeHtml = '<div class="field"><label>Nome *</label><input type="text" id="nf-nome" placeholder="Nome do registro"></div>';
+    if(def.key === "pessoa"){
+      nativeHtml += '<div class="field"><label>Tipo de pessoa</label><select id="nf-tipo-pessoa"><option value="fisica">Física</option><option value="juridica">Jurídica</option></select></div>';
+    }
+    if(def.key === "titularidade"){
+      var cartOpts = cache.cartorio.map(function(c){ return '<option value="'+c.id+'">'+escapeHtml(c.nome)+'</option>'; }).join("");
+      nativeHtml +=
+        '<div class="field"><label>Tipo de evidência</label><select id="nf-tipo-evidencia">' +
+          Object.keys(EVIDENCIA_LABEL).map(function(v){ return '<option value="'+v+'">'+EVIDENCIA_LABEL[v]+'</option>'; }).join("") +
+        '</select></div>' +
+        '<div id="nf-tit-extra">' +
+          '<div class="field"><label>Cartório</label><select id="nf-cartorio"><option value="">—</option>'+cartOpts+'</select></div>' +
+          '<div class="field"><label>Município</label><input type="text" id="nf-municipio"></div>' +
+          '<div class="field"><label>UF</label><input type="text" id="nf-uf" maxlength="2"></div>' +
+          '<div class="field" id="nf-numero-wrap"><label id="nf-numero-label">Número da matrícula</label><input type="text" id="nf-numero"></div>' +
+        '</div>' +
+        '<div class="field"><label>Titular(es) *</label>' +
+          '<div id="nf-titulares-chips"></div>' +
+          '<div class="search-row"><input type="text" id="nf-titular-search" placeholder="Buscar pessoa por nome ou código… (Enter para buscar)">'+
+          '<button type="button" class="btn sm" id="nf-titular-search-go">Buscar</button></div>' +
+          '<div id="nf-titular-results"></div>' +
+        '</div>';
+    }
+
+    var body = nativeHtml;
+    abas.forEach(function(aba, ai){
+      body += '<div class="aba-heading" data-aba-section="'+ai+'">'+escapeHtml(aba.nome)+'</div>';
+      body += '<div data-aba-fields="'+ai+'">' + (aba.campos||[]).map(fieldHtml).join("") + '</div>';
+      body += '<div class="aba-locked" data-aba-locked="'+ai+'" style="display:none;">🔒 <span></span></div>';
+    });
+
+    m.innerHTML =
+      '<div class="modal-head"><div><h3>Novo '+escapeHtml(def.label)+'</h3><p>Campos * são obrigatórios. Abas bloqueadas aparecem conforme você preenche.</p></div>'+
+      '<button class="icon-btn" id="modal-close">✕</button></div>'+
+      '<div class="modal-body" id="nf-body">'+body+'</div>'+
+      '<div class="modal-foot"><span id="nf-msg" class="empty-note"></span><button class="btn primary" id="nf-submit">Criar '+escapeHtml(def.label)+'</button></div>';
+    document.getElementById("modal-close").addEventListener("click", closeModal);
+
+    var pendingTitulares = [];
+    if(def.key === "titularidade"){
+      var syncTitExtra = function(){
+        var tipo = document.getElementById("nf-tipo-evidencia").value;
+        var isPosseSemTitulo = tipo === "posse_sem_justo_titulo";
+        document.getElementById("nf-tit-extra").style.display = isPosseSemTitulo ? "none" : "";
+        var numeroWrap = document.getElementById("nf-numero-wrap");
+        var showNumero = tipo === "matricula" || tipo === "transcricao";
+        numeroWrap.style.display = showNumero ? "" : "none";
+        document.getElementById("nf-numero-label").textContent = tipo === "transcricao" ? "Número da transcrição" : "Número da matrícula";
+      };
+      document.getElementById("nf-tipo-evidencia").addEventListener("change", syncTitExtra);
+      syncTitExtra();
+
+      // Titular(es) — busca dentro da própria Pessoa cadastrada; adicionado à
+      // lista pendente e só vira vínculo real (titularidade_pessoa) ao criar.
+      var renderTitularChips = function(){
+        var wrap = document.getElementById("nf-titulares-chips");
+        if(pendingTitulares.length === 0){ wrap.innerHTML = '<p class="empty-note">Nenhum titular adicionado ainda.</p>'; return; }
+        wrap.innerHTML = '<div class="chip-list">' + pendingTitulares.map(function(t){
+          return '<span class="chip">'+escapeHtml(t.nome)+'<button type="button" class="chip-x" data-remove-titular="'+t.id+'" title="Remover">✕</button></span>';
+        }).join("") + '</div>';
+        Array.prototype.forEach.call(wrap.querySelectorAll("[data-remove-titular]"), function(btn){
+          btn.addEventListener("click", function(){
+            var rid = btn.getAttribute("data-remove-titular");
+            pendingTitulares = pendingTitulares.filter(function(t){ return t.id !== rid; });
+            renderTitularChips();
+          });
+        });
+      };
+      var renderTitularResults = function(q){
+        q = (q||"").trim().toLowerCase();
+        var out = document.getElementById("nf-titular-results");
+        var addedIds = pendingTitulares.map(function(t){ return t.id; });
+        var base = cache.pessoa.filter(function(p){ return addedIds.indexOf(p.id) === -1; });
+        var filtered = !q ? base : base.filter(function(p){
+          return (p.nome||"").toLowerCase().indexOf(q) > -1 || (p.codigo||"").toLowerCase().indexOf(q) > -1;
+        });
+        var shown = filtered.slice(0, 20);
+        if(shown.length === 0){ out.innerHTML = '<p class="empty-note">Nenhuma Pessoa encontrada — cadastre-a primeiro em Pessoa.</p>'; return; }
+        out.innerHTML = '<div class="assoc-results">' + shown.map(function(p){
+          return '<button type="button" class="assoc-result" data-pick-titular="'+p.id+'"><strong>'+escapeHtml(p.nome)+'</strong><span>'+escapeHtml(p.codigo||"")+'</span></button>';
+        }).join("") + (filtered.length > 20 ? '<p class="empty-note">Mostrando 20 de '+filtered.length+' — refine a busca.</p>' : "");
+        Array.prototype.forEach.call(out.querySelectorAll("[data-pick-titular]"), function(btn){
+          btn.addEventListener("click", function(){
+            var p = byId(cache.pessoa, btn.getAttribute("data-pick-titular"));
+            if(p) pendingTitulares.push({id:p.id, nome:p.nome});
+            document.getElementById("nf-titular-search").value = "";
+            out.innerHTML = "";
+            renderTitularChips();
+          });
+        });
+      };
+      var runTitularSearch = function(){ renderTitularResults(document.getElementById("nf-titular-search").value); };
+      document.getElementById("nf-titular-search").addEventListener("keydown", function(e){ if(e.key === "Enter") runTitularSearch(); });
+      document.getElementById("nf-titular-search-go").addEventListener("click", runTitularSearch);
+      renderTitularChips();
+    }
+
+    function getVal(campoId){ return abaCampoValue(campoId); }
+    function updateCalculados(){
+      allCampos.forEach(function(c){
+        if(c.calculado && c.formula){
+          var el = m.querySelector('[data-nr-campo="'+c.id+'"]');
+          if(el) el.value = evalFormula(c.formula, getVal);
+        }
+      });
+    }
+    function updateVisibility(){
+      abas.forEach(function(aba, ai){
+        var unlocked = isAbaUnlocked(aba, abas, getVal);
+        var heading = m.querySelector('[data-aba-section="'+ai+'"]');
+        var fields = m.querySelector('[data-aba-fields="'+ai+'"]');
+        var locked = m.querySelector('[data-aba-locked="'+ai+'"]');
+        if(heading) heading.style.display = unlocked ? "" : "none";
+        if(fields) fields.style.display = unlocked ? "" : "none";
+        if(locked){
+          locked.style.display = unlocked ? "none" : "flex";
+          locked.querySelector("span").innerHTML = "\"" + escapeHtml(aba.nome) + "\" " + condicaoLabel(aba, abas) + ".";
+        }
+      });
+      allCampos.forEach(function(c){
+        var wrap = m.querySelector('[data-campo-wrap="'+c.id+'"]');
+        if(wrap) wrap.style.display = campoVisible(c, getVal) ? "" : "none";
+      });
+    }
+    m.addEventListener("input", function(){ updateCalculados(); updateVisibility(); });
+    m.addEventListener("change", function(){ updateCalculados(); updateVisibility(); });
+    updateCalculados(); updateVisibility();
+
+    document.getElementById("nf-submit").addEventListener("click", async function(){
+      var msg = document.getElementById("nf-msg");
+      var nome = document.getElementById("nf-nome").value.trim();
+      if(!nome){ msg.style.color = "var(--selo)"; msg.textContent = "Informe um nome."; return; }
+
+      var nativePayload = {};
+      if(def.key === "pessoa"){
+        nativePayload.tipo_pessoa = document.getElementById("nf-tipo-pessoa").value;
+      }
+      if(def.key === "titularidade"){
+        var tipo = document.getElementById("nf-tipo-evidencia").value;
+        var cartorioId = document.getElementById("nf-cartorio").value;
+        var municipio = document.getElementById("nf-municipio").value.trim();
+        var uf = document.getElementById("nf-uf").value.trim().toUpperCase();
+        var numero = document.getElementById("nf-numero").value.trim();
+        if(tipo !== "posse_sem_justo_titulo"){
+          if(!cartorioId || !municipio || uf.length !== 2){
+            msg.style.color = "var(--selo)"; msg.textContent = "Informe cartório, município e UF (2 letras) — obrigatórios para esse tipo de evidência."; return;
+          }
+          if((tipo === "matricula" || tipo === "transcricao") && !numero){
+            msg.style.color = "var(--selo)"; msg.textContent = "Informe o número da " + (tipo === "transcricao" ? "transcrição" : "matrícula") + "."; return;
+          }
+        }
+        nativePayload.tipo_evidencia = tipo;
+        nativePayload.cartorio_id = cartorioId || null;
+        nativePayload.municipio = municipio || null;
+        nativePayload.uf = uf || null;
+        nativePayload.numero_matricula = numero || null;
+        if(pendingTitulares.length === 0){
+          msg.style.color = "var(--selo)"; msg.textContent = "Informe ao menos um titular (Pessoa)."; return;
+        }
+      }
+
+      var campos = {}; var missing = [];
+      abas.forEach(function(aba){
+        if(!isAbaUnlocked(aba, abas, getVal)) return;
+        (aba.campos||[]).forEach(function(c){
+          if(!campoVisible(c, getVal)) return;
+          var val = getVal(c.id);
+          if(c.obrigatorio && !val) missing.push(c.label);
+          if(val) campos[c.id] = val;
+        });
+      });
+      if(missing.length){ msg.style.color = "var(--selo)"; msg.textContent = "Faltando: " + missing.join(", "); return; }
+      if(!db) return;
+      var ciclo = cicloValoresFor(def.key, nativePayload)[0] || null;
+      var payload = Object.assign({ codigo: genCodigo(def.key), nome: nome, ciclo_de_vida: ciclo, campos: campos }, nativePayload);
+      var ref = await db.collection(def.key).add(payload);
+      if(def.key === "titularidade"){
+        for(var ti=0; ti<pendingTitulares.length; ti++){
+          await db.collection("titularidade_pessoa").add({ titularidade_id: ref.id, pessoa_id: pendingTitulares[ti].id });
+        }
+      }
+      closeModal();
+    });
+    openModalShell();
+  }
+
+  // =========================================================================
+  // Conexão com a base
+  // =========================================================================
+  async function boot(){
+    render();
+    try{ db = await window.claude.use("db"); }catch(e){ db = null; }
+    if(!db){ dbReady = true; render(); return; }
+
+    COLLECTIONS.forEach(function(colName){
+      db.collection(colName).onSnapshot(function(snap){
+        cache[colName] = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()||{}); });
+        dbReady = true;
+        render();
+      }, function(err){ dbReady = true; render(); });
+    });
+  }
+
+  boot();
+})();
+</script>
+</body></html>
