@@ -1,4 +1,11 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body><title>Registro ABA</title>
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<title>Registro ABA</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -48,6 +55,10 @@
   a{color:var(--accent);}
   button{font-family:inherit; cursor:pointer;}
   input,select,textarea{font-family:inherit;}
+  /* Placeholder discreto e em itálico — em toda a aplicação, para qualquer
+     campo (nativo ou configurado) — o padrão de alguns navegadores é escuro
+     demais e reto, parecendo texto já preenchido. */
+  input::placeholder, textarea::placeholder{ color:var(--ink-faint); opacity:1; font-style:italic; }
 
   .app{display:flex; min-height:100vh;}
 
@@ -285,7 +296,24 @@
   .field textarea{font-family:inherit; resize:vertical; min-height:64px; line-height:1.45;}
   .field input:disabled, .field select:disabled, .field textarea:disabled,
   .field input[readonly], .field textarea[readonly]{background:var(--surface-2); color:var(--ink-muted); cursor:not-allowed;}
+  /* Números digitados diretamente — sem as setas de incremento/decremento
+     (spin buttons) que os navegadores desenham por padrão em input[type=number]. */
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
+  input[type="number"]{ -moz-appearance:textfield; appearance:textfield; }
+  .calc-block{border:1px solid var(--border); border-radius:8px; padding:10px 12px; margin-bottom:14px; background:var(--surface-2);}
+  .calc-block.is-on{border-color:var(--accent);}
+  .calc-toggle{display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; color:var(--ink); cursor:pointer;}
+  .calc-block .field{margin:10px 0 0;}
   .aba-heading{font-size:12px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.06em; font-weight:600; margin:18px 0 10px; padding-top:14px; border-top:1px solid var(--border-soft);}
+  /* Abas de registro (criação e edição) — cada uma mostra só seu conteúdo */
+  .record-tabs{display:flex; gap:4px; flex-wrap:wrap; margin-bottom:16px; border-bottom:1px solid var(--border-soft);}
+  .record-tab{
+    padding:7px 13px; border-radius:8px 8px 0 0; border:1px solid transparent; border-bottom:none;
+    background:none; color:var(--ink-muted); font-size:12.5px; font-weight:500; position:relative; top:1px;
+  }
+  .record-tab.active{background:var(--surface-2); color:var(--ink); border-color:var(--border-soft);}
+  .record-tab:disabled{color:var(--ink-faint); cursor:not-allowed; opacity:.65;}
   .aba-heading:first-child{margin-top:0; padding-top:0; border-top:none;}
 
   .chip-editor{display:flex; flex-wrap:wrap; gap:7px; margin-bottom:10px;}
@@ -336,9 +364,16 @@
     border:1px solid var(--border-soft); background:var(--surface); color:var(--ink); font-size:12.5px; text-align:left;
   }
   .palette-item:hover{border-color:var(--accent); color:var(--accent);}
-  .canvas-page{border:1px solid var(--border-soft); border-radius:10px; margin-bottom:14px; overflow:hidden; background:var(--surface);}
-  .canvas-page-head{display:flex; align-items:center; gap:8px; padding:9px 11px; background:var(--surface-2); border-bottom:1px solid var(--border-soft); cursor:pointer;}
-  .canvas-page-head.selected{background:var(--accent); color:var(--accent-ink);}
+  .canvas-page{border:1px solid var(--border-soft); border-radius:10px; margin-bottom:14px; overflow:hidden; background:var(--surface); cursor:pointer;}
+  .canvas-page.selected{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
+  .canvas-page-head{display:flex; align-items:center; gap:8px; padding:9px 11px; background:var(--surface-2); border-bottom:1px solid var(--border-soft);}
+  .canvas-page.selected .canvas-page-head{background:var(--accent); color:var(--accent-ink);}
+  .add-aba-btn{
+    display:block; width:100%; padding:10px 14px; margin-top:2px;
+    border:1px dashed var(--border); border-radius:10px; background:none;
+    color:var(--ink-muted); font-size:12.5px; text-align:left; cursor:pointer;
+  }
+  .add-aba-btn:hover{border-color:var(--accent); color:var(--accent);}
   .canvas-page-head .nav-glyph{background:transparent; border:1px solid currentColor; color:inherit;}
   .canvas-page-head input{
     flex:1; background:none; border:none; font-family:"IBM Plex Serif",serif; font-weight:600;
@@ -494,19 +529,26 @@
   var FIXED_BY_KEY = {};
   FIXED_ENTITIES.forEach(function(e){ FIXED_BY_KEY[e.key] = e; });
 
+  // Tipo "E-mail" foi removido daqui — já é coberto por Texto com Aparência
+  // "E-mail" (validação de formato + limite de 500 caracteres).
   var FIELD_TYPES = [
     {v:"texto", l:"Texto"}, {v:"numero", l:"Número"}, {v:"data", l:"Data"}, {v:"endereco", l:"Endereço"},
-    {v:"cpf_cnpj", l:"CPF/CNPJ"}, {v:"email", l:"E-mail"}, {v:"codigo", l:"Código"}, {v:"cep", l:"CEP"},
+    {v:"cpf_cnpj", l:"CPF/CNPJ"}, {v:"codigo", l:"Código"}, {v:"cep", l:"CEP"},
     {v:"uf", l:"UF"}, {v:"municipio", l:"Município"}, {v:"consulta", l:"Consulta (referência)"},
     {v:"lista", l:"Lista (opções)"}, {v:"arquivo", l:"Arquivo"}, {v:"localidade", l:"Localidade"}
   ];
   var FIELD_TYPE_LABEL = {}; FIELD_TYPES.forEach(function(t){ FIELD_TYPE_LABEL[t.v] = t.l; });
-  var INPUT_HTML_TYPE = { numero:"number", data:"date", email:"email" };
+  var INPUT_HTML_TYPE = { numero:"number", data:"date" };
   // Aparência específica de campos tipo "texto" — única linha, múltiplas
   // linhas (textarea), ou com validação de formato (e-mail/link).
   var APARENCIA_TEXTO = [
     {v:"unica_linha", l:"Única linha"}, {v:"multiplas_linhas", l:"Múltiplas linhas"},
     {v:"email", l:"E-mail"}, {v:"link", l:"Link"}
+  ];
+  // Aparência específica de campos tipo "número" — Inteiro ou Decimal (este
+  // último ganha uma Precisão própria, número de casas após a vírgula).
+  var APARENCIA_NUMERO = [
+    {v:"inteiro", l:"Inteiro"}, {v:"decimal", l:"Decimal"}
   ];
 
   var EVIDENCIA_LABEL = { matricula:"Matrícula", transcricao:"Transcrição", posse_com_justo_titulo:"Posse c/ justo título", posse_sem_justo_titulo:"Posse s/ justo título" };
@@ -583,13 +625,13 @@
     var v = record.campos ? record.campos[campoId] : undefined;
     return (v === undefined || v === null) ? "" : String(v).trim();
   }
+  // "Preenchida" = TODOS os campos visíveis/aplicáveis da aba têm valor —
+  // não basta um campo qualquer (é essa regra que decide o avanço entre
+  // abas, o "segredo" do sistema, então é intencionalmente rígida).
   function isAbaFilled(aba, getVal){
-    var campos = aba.campos || [];
-    if(campos.length === 0) return true;
-    var obrig = campos.filter(function(c){ return c.obrigatorio; });
-    var check = obrig.length ? obrig : campos;
-    return check.some(function(c){ return getVal(c.id) !== ""; }) &&
-           (obrig.length === 0 || obrig.every(function(c){ return getVal(c.id) !== ""; }));
+    var campos = (aba.campos || []).filter(function(c){ return c.visivel !== false && campoVisible(c, getVal); });
+    if(campos.length === 0) return true; // nada a preencher (aba vazia, ou tudo oculto) conta como preenchida
+    return campos.every(function(c){ return getVal(c.id) !== ""; });
   }
   function isAbaUnlocked(aba, abas, getVal){
     var cond = aba.condicao || {tipo:"livre"};
@@ -652,14 +694,6 @@
     return resolved;
   }
 
-  // "Valor padrão" pode ser um texto fixo ou referenciar outro campo já
-  // criado no mesmo formulário via {id_do_campo} — mesma sintaxe do Cálculo,
-  // resolvida com evalFormula. Isso só é "reativo" (ver updateDefaults nos
-  // formulários) quando contém pelo menos uma referência.
-  function campoDefaultIsVariable(c){
-    return !!(c.valorPadrao && /\{[^}]+\}/.test(c.valorPadrao));
-  }
-
   // Número de caracteres — livre para texto normal, fixo em 500 (e travado
   // na UI) quando a aparência é E-mail ou Link.
   function campoMaxLength(c){
@@ -668,11 +702,21 @@
     return v > 0 ? v : null;
   }
 
-  // Validação de formato — só para campos tipo texto com aparência E-mail/Link.
+  // Validação de formato — texto com aparência E-mail/Link, e número com
+  // Valor mínimo/máximo (Inteiro ou Decimal).
   function campoFormatError(c, val){
-    if(c.tipo !== "texto" || !val) return null;
-    if(c.aparencia === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) return "formato de e-mail inválido";
-    if(c.aparencia === "link" && !/^https?:\/\/\S+$/i.test(val)) return "formato de link inválido (use http:// ou https://)";
+    if(!val) return null;
+    if(c.tipo === "texto"){
+      if(c.aparencia === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) return "formato de e-mail inválido";
+      if(c.aparencia === "link" && !/^https?:\/\/\S+$/i.test(val)) return "formato de link inválido (use http:// ou https://)";
+    }
+    if(c.tipo === "numero"){
+      var n = parseFloat(val);
+      if(isNaN(n)) return "valor numérico inválido";
+      if(c.aparencia === "inteiro" && !Number.isInteger(n)) return "deve ser um número inteiro";
+      if(c.valorMinimo != null && n < c.valorMinimo) return "mínimo " + c.valorMinimo;
+      if(c.valorMaximo != null && n > c.valorMaximo) return "máximo " + c.valorMaximo;
+    }
     return null;
   }
 
@@ -690,7 +734,14 @@
       return '<textarea '+attrName+'="'+c.id+'"'+dis+ro+maxAttr+' placeholder="'+placeholder+'" rows="3">'+escapeHtml(value||"")+'</textarea>';
     }
     var htmlType = c.calculado ? "text" : (c.tipo === "texto" ? (c.aparencia === "email" ? "email" : (c.aparencia === "link" ? "url" : "text")) : (INPUT_HTML_TYPE[c.tipo] || "text"));
-    return '<input type="'+htmlType+'" '+attrName+'="'+c.id+'"'+dis+ro+maxAttr+' placeholder="'+placeholder+'" value="'+escapeHtml(value||"")+'">';
+    var numAttr = "";
+    if(c.tipo === "numero" && !c.calculado){
+      if(c.valorMinimo != null) numAttr += ' min="'+escapeHtml(String(c.valorMinimo))+'"';
+      if(c.valorMaximo != null) numAttr += ' max="'+escapeHtml(String(c.valorMaximo))+'"';
+      var precisao = c.precisao != null ? c.precisao : 2;
+      numAttr += ' step="'+(c.aparencia === "decimal" ? (1/Math.pow(10, precisao)) : 1)+'"';
+    }
+    return '<input type="'+htmlType+'" '+attrName+'="'+c.id+'"'+dis+ro+maxAttr+numAttr+' placeholder="'+placeholder+'" value="'+escapeHtml(value||"")+'">';
   }
 
   var CODIGO_PREFIX = { terreno:"TER", titularidade:"TIT", empreendimento:"EMP", edificacao:"EDF", pessoa:"PES" };
@@ -1074,8 +1125,7 @@
     searchInput.focus();
   }
 
-  function openDrawer(entityKey, id, mode){
-    mode = mode || "view";
+  function openDrawer(entityKey, id){
     var ctx = contextFor(entityKey);
     var row = byId(recordsFor(entityKey), id);
     if(!row) return;
@@ -1085,14 +1135,6 @@
     document.getElementById("drawer-sub").textContent = (ctx.type==="fixed"?ctx.def.label:(ctx.categoria&&ctx.categoria.nome)) + " · " + row.codigo;
 
     var body = document.getElementById("drawer-body");
-
-    if(mode === "edit"){
-      renderDrawerEdit(entityKey, row, ctx, body);
-      document.getElementById("overlay").classList.add("show");
-      document.getElementById("drawer").classList.add("show");
-      render();
-      return;
-    }
 
     var html = '<div class="small-btn-row"><button type="button" class="btn sm" id="drawer-edit-btn">✎ Editar</button></div>';
 
@@ -1151,17 +1193,25 @@
       });
     });
     var editBtn = document.getElementById("drawer-edit-btn");
-    if(editBtn) editBtn.addEventListener("click", function(){ openDrawer(entityKey, id, "edit"); });
+    if(editBtn) editBtn.addEventListener("click", function(){ openEditModal(entityKey, id); });
 
     document.getElementById("overlay").classList.add("show");
     document.getElementById("drawer").classList.add("show");
     render();
   }
 
-  // Edição de um registro existente — mostra todos os campos nativos e
-  // configurados como campos comuns e editáveis, sem bloqueio/dependência
-  // (isso é o fluxo de preenchimento guiado, não de edição posterior).
-  function renderDrawerEdit(entityKey, row, ctx, body){
+  // Edição de um registro existente — modal com abas (como a criação), mas
+  // mostra todos os campos nativos e configurados de uma vez, sem bloqueio
+  // por aba/dependência (fluxo de corrigir o que já existe, não o de
+  // preenchimento guiado — por isso reaproveita abaTabsBuilder só para a
+  // organização visual em abas, sem chamar tabs.update()/isAbaUnlocked).
+  function openEditModal(entityKey, id){
+    var ctx = contextFor(entityKey);
+    var row = byId(recordsFor(entityKey), id);
+    if(!row) return;
+    closeDrawer();
+    modal = {type:"edit-record", entityKey:entityKey, rowId:id};
+    var m = document.getElementById("modal");
     var col = ctx.type === "categoria" ? "formulario_personalizado" : entityKey;
     var abas = ctx.type === "categoria" ? ((ctx.categoria && ctx.categoria.abas) || []) : (((byId(cache.config_entidade, entityKey)||{}).abas) || []);
     var allCampos = []; abas.forEach(function(a){ (a.campos||[]).forEach(function(c){ allCampos.push(c); }); });
@@ -1169,7 +1219,7 @@
     function editFieldHtml(c){
       if(c.visivel === false) return ""; // campo marcado não-visível: nem aparece para editar
       var val = row.campos ? row.campos[c.id] : "";
-      if((val === undefined || val === null || val === "") && c.valorPadrao && !campoDefaultIsVariable(c)) val = c.valorPadrao;
+      if((val === undefined || val === null || val === "") && c.valorPadrao) val = c.valorPadrao;
       if(c.tipo === "arquivo"){
         return '<div class="field"><label>'+escapeHtml(c.label)+'</label><input type="text" disabled placeholder="Upload não implementado neste protótipo"></div>';
       }
@@ -1197,17 +1247,23 @@
         '</div>';
     }
 
-    var html = nativeHtml;
-    html += '<div id="ed-ciclo-wrap"></div>';
-    abas.forEach(function(aba, ai){
-      html += '<div class="aba-heading">'+escapeHtml(aba.nome)+'</div>';
-      html += (aba.campos||[]).map(editFieldHtml).join("");
-    });
-    html += '<div class="modal-foot" style="padding:14px 0 0; border-top:1px solid var(--border-soft); margin-top:18px;">'+
-      '<span id="ed-msg" class="empty-note"></span>'+
+    var basicosHtml = nativeHtml + '<div id="ed-ciclo-wrap"></div>';
+    var tabs = abaTabsBuilder(abas, editFieldHtml, {nome:"Dados Básicos", html: basicosHtml});
+    var bodyHtml = tabs.html();
+
+    m.innerHTML =
+      '<div class="modal-head"><div><h3>Editar — '+escapeHtml(row.nome||row.codigo||"registro")+'</h3><p>Mostra todos os campos de uma vez, sem bloqueio por aba — é o fluxo de corrigir o que já existe.</p></div>'+
+      '<button class="icon-btn" id="modal-close">✕</button></div>'+
+      '<div class="modal-body" id="ed-body">'+bodyHtml+'</div>'+
+      '<div class="modal-foot"><span id="ed-msg" class="empty-note"></span>'+
       '<span style="display:flex; gap:8px;"><button type="button" class="btn sm" id="ed-cancel">Cancelar</button>'+
       '<button type="button" class="btn primary sm" id="ed-save">Salvar</button></span></div>';
-    body.innerHTML = html;
+    var bodyEl = document.getElementById("ed-body");
+    tabs.wire(m); // só organiza em abas (sem update() — nada aqui trava por dependência)
+
+    function backToView(){ closeModal(); openDrawer(entityKey, id); }
+    document.getElementById("modal-close").addEventListener("click", backToView);
+    document.getElementById("ed-cancel").addEventListener("click", backToView);
 
     function renderCicloOptions(){
       var probe = entityKey === "pessoa" ? {tipo_pessoa: document.getElementById("ed-tipo-pessoa").value} : row;
@@ -1238,38 +1294,21 @@
     }
 
     function getValEdit(campoId){
-      var el = body.querySelector('[data-edit-campo="'+campoId+'"]');
+      var el = bodyEl.querySelector('[data-edit-campo="'+campoId+'"]');
       return el ? el.value.trim() : "";
     }
     function updateCalculados(){
       allCampos.forEach(function(c){
         if(c.calculado && c.formula){
-          var el = body.querySelector('[data-edit-campo="'+c.id+'"]');
+          var el = bodyEl.querySelector('[data-edit-campo="'+c.id+'"]');
           if(el) el.value = evalFormula(c.formula, getValEdit);
         }
       });
     }
-    // "Valor padrão" com {variável}: enquanto o campo estiver vazio (ou só
-    // contiver o que a própria variável preencheu), acompanha o valor do
-    // campo referenciado. Assim que a pessoa edita o campo diretamente, para
-    // de sobrescrever.
-    function updateDefaultsEdit(changedEl){
-      allCampos.forEach(function(c){
-        if(!campoDefaultIsVariable(c)) return;
-        var el = body.querySelector('[data-edit-campo="'+c.id+'"]');
-        if(!el) return;
-        if(el === changedEl){ el.dataset.autoDefault = ""; return; }
-        if(el.value === "" || el.dataset.autoDefault === "1"){
-          el.value = evalFormula(c.valorPadrao, getValEdit);
-          el.dataset.autoDefault = "1";
-        }
-      });
-    }
-    body.addEventListener("input", function(e){ updateCalculados(); updateDefaultsEdit(e.target); });
-    body.addEventListener("change", function(e){ updateCalculados(); updateDefaultsEdit(e.target); });
-    updateCalculados(); updateDefaultsEdit(null);
+    bodyEl.addEventListener("input", updateCalculados);
+    bodyEl.addEventListener("change", updateCalculados);
+    updateCalculados();
 
-    document.getElementById("ed-cancel").addEventListener("click", function(){ openDrawer(entityKey, row.id, "view"); });
     document.getElementById("ed-save").addEventListener("click", async function(){
       var msg = document.getElementById("ed-msg");
       var nome = document.getElementById("ed-nome").value.trim();
@@ -1320,8 +1359,10 @@
 
       if(!db) return;
       await db.doc(col + "/" + row.id).update(patch);
-      openDrawer(entityKey, row.id, "view");
+      closeModal();
+      openDrawer(entityKey, row.id);
     });
+    openModalShell();
   }
 
   function closeDrawer(){
@@ -1362,7 +1403,7 @@
   // Ajuda — explica os conceitos do sistema; atualizar HELP_SECTIONS e
   // HELP_CHANGELOG a cada nova versão publicada.
   // =========================================================================
-  var APP_VERSION = "v9";
+  var APP_VERSION = "v14";
   var HELP_SECTIONS = [
     { titulo:"O que é o Registro ABA",
       corpo:"<p>Protótipo funcional de um sistema de gestão fundiária — pensado para substituir o modelo rígido de \"processo/formulário\" por Entidades e Formulários totalmente configuráveis. Os dados aqui são de exemplo.</p>" },
@@ -1382,14 +1423,14 @@
       corpo:"<p>Em Configuração → Abas & Campos, cada aba pode ter uma condição de quando aparece:</p>" +
         "<ul>" +
         "<li><strong>Livre</strong> — sempre visível.</li>" +
-        "<li><strong>Depende de aba(s)</strong> — só aparece depois que outra(s) aba(s) estiverem preenchidas.</li>" +
+        "<li><strong>Depende de aba(s)</strong> — só aparece depois que outra(s) aba(s) estiverem <em>inteiramente</em> preenchidas (todos os campos visíveis dela, não só um).</li>" +
         "<li><strong>Depende de campo(s)</strong> — só aparece depois que campo(s) específicos tiverem valor.</li>" +
         "</ul>" +
         "<p>É assim que o preenchimento guiado (o \"ciclo de vida\" do preenchimento) funciona, sem precisar de um fluxograma separado.</p>" },
-    { titulo:"Campos — tipos, dependência e cálculo",
+    { titulo:"Campos — tipos, campo requisito e cálculo",
       corpo:"<p>Cada campo tem um tipo (texto, número, data, lista, arquivo...), pode ser marcado como obrigatório, e tem dois recursos avançados:</p>" +
         "<ul>" +
-        "<li><strong>Dependente de</strong> — mostra o campo só depois que outro campo específico tiver um valor (ou um valor esperado exato).</li>" +
+        "<li><strong>Campo requisito</strong> — mostra o campo só depois que outro campo específico tiver um valor (ou um valor exato, o \"Valor do Requisito\").</li>" +
         "<li><strong>Calculado</strong> — o valor é gerado por uma fórmula usando <code>{id_do_campo}</code>: soma/operações quando os valores são numéricos, ou junção de texto quando não são.</li>" +
         "</ul>" },
     { titulo:"Ciclo de vida",
@@ -1397,18 +1438,27 @@
     { titulo:"Associação entre registros",
       corpo:"<p>Relações como Terreno↔Titularidade, Terreno↔Edificação e Titularidade↔Pessoa (Titular) aparecem no drawer de detalhe como chips. Clicar em <strong>+ Associar…</strong> abre uma busca (por nome ou código) em vez de uma lista solta — pensado para escalar a milhares de registros. O ✕ no chip desassocia.</p>" },
     { titulo:"Editar um registro existente",
-      corpo:"<p>Abra o registro (clique na linha da tabela) e use o botão <strong>✎ Editar</strong> no topo do drawer. O modo de edição mostra todos os campos nativos e configurados de uma vez, sem bloqueio por aba — é o fluxo de corrigir o que já existe, não o de preenchimento guiado.</p>" },
+      corpo:"<p>Abra o registro (clique na linha da tabela) e use o botão <strong>✎ Editar</strong> no topo do drawer — abre uma janela com abas, parecida com a de criação, mas mostra todos os campos nativos e configurados de uma vez, sem bloqueio por aba/campo requisito — é o fluxo de corrigir o que já existe, não o de preenchimento guiado.</p>" },
+    { titulo:"Aba \"Dados Básicos\"",
+      corpo:"<p>Na criação e na edição, os campos padrão do registro (Nome, campos nativos da Entidade como Tipo de pessoa/Tipo de evidência, e o Ciclo de vida na edição) aparecem numa primeira aba chamada <strong>Dados Básicos</strong> — ela faz parte da mesma estrutura de abas configuradas, só que nunca é bloqueada.</p>" },
     { titulo:"Configuração por Entidade vs. Configuração geral",
       corpo:"<p><strong>⚙ Configurar</strong> (no topo, por Entidade) ajusta ciclo de vida, abas e campos daquela Entidade/Formulário específico.</p>" +
         "<p><strong>⚙ Configuração geral</strong> (na barra lateral) é do sistema como um todo: usuários com acesso e a ordem das Entidades no menu — outras configurações globais entram aqui no futuro.</p>" },
     { titulo:"Modo de demonstração local",
       corpo:"<p>Dentro do claude.ai os dados ficam numa base compartilhada de verdade. Quando este arquivo é aberto fora do claude.ai (por exemplo, publicado como <code>index.html</code> no GitHub Pages), esse recurso não existe — então o sistema entra sozinho em <strong>modo de demonstração local</strong> (aviso amarelo no topo): tudo que você criar ou editar fica salvo só no seu navegador (localStorage), não é compartilhado com ninguém e some se você limpar os dados do site. É o jeito de mandar o app para alguém testar a navegação e o preenchimento sem precisar de acesso ao claude.ai.</p>" },
     { titulo:"Propriedades de um campo tipo Texto",
-      corpo:"<p>Além de Rótulo, Dica, Valor padrão e Cálculo, um campo tipo Texto tem uma <strong>Aparência</strong> específica: Única linha, Múltiplas linhas, E-mail ou Link — as duas últimas validam o formato ao salvar e travam o Número de caracteres em 500.</p>" +
-        "<p><strong>Valor padrão</strong> pode ser um texto fixo ou uma variável <code>{id_do_campo}</code> apontando para outro campo já criado no mesmo formulário — nesse caso ele acompanha o valor desse campo até a pessoa editar diretamente.</p>" +
-        "<p><strong>Visível</strong> tira o campo de circulação por completo (nem na criação, nem na edição, nem no cálculo obrigatório). <strong>Somente leitura</strong> mostra o campo mas não deixa editar. <strong>Campo requisito</strong> é o antigo \"Dependente de\" — só aparece depois que o campo escolhido tiver um valor.</p>" }
+      corpo:"<p>Além de Rótulo, Dica, Valor padrão (sempre um valor fixo) e Cálculo, um campo tipo Texto tem uma <strong>Aparência</strong> específica: Única linha, Múltiplas linhas, E-mail ou Link — as duas últimas validam o formato ao salvar e travam o Número de caracteres em 500. Não existe mais um tipo \"E-mail\" separado — use Texto com Aparência E-mail.</p>" +
+        "<p><strong>Cálculo</strong> é uma caixinha própria: marque para revelar a Fórmula.</p>" +
+        "<p><strong>Visível</strong> tira o campo de circulação por completo (nem na criação, nem na edição, nem no cálculo obrigatório). <strong>Somente leitura</strong> mostra o campo mas não deixa editar. <strong>Campo requisito</strong> só aparece depois que o campo escolhido tiver um valor, e o \"Valor do Requisito\" é opcional: deixe em branco para aparecer assim que qualquer valor for preenchido, ou informe um valor específico que ele precisa ter.</p>" },
+    { titulo:"Propriedades de um campo tipo Número",
+      corpo:"<p>Um campo tipo Número tem uma <strong>Aparência</strong> própria — <strong>Inteiro</strong> ou <strong>Decimal</strong> — mais <strong>Valor mínimo</strong> e <strong>Valor máximo</strong> (opcionais, deixe em branco para não limitar). Quando a aparência é Decimal, aparece também a <strong>Precisão</strong>: quantas casas depois da vírgula são aceitas.</p>" }
   ];
   var HELP_CHANGELOG = [
+    { versao:"v14", texto:"Removido o tipo de campo \"E-mail\" (já coberto por Texto com Aparência E-mail); campo tipo Número ganhou Aparência (Inteiro/Decimal), Valor mínimo, Valor máximo e, quando Decimal, Precisão (casas decimais) — tudo validado ao salvar." },
+    { versao:"v13", texto:"Placeholder em itálico agora vale para todo campo, em toda Entidade/Formulário — inclusive campos nativos como Nome (antes só campos com Dica configurada ficavam em itálico)." },
+    { versao:"v12", texto:"Os campos padrão do registro (Nome, campos nativos da Entidade e, na edição, Ciclo de vida) agora aparecem dentro de uma primeira aba \"Dados Básicos\", como parte da mesma estrutura de abas — antes ficavam soltos antes das abas; placeholder que vem da Dica configurada no campo agora aparece em itálico, para se distinguir do placeholder genérico." },
+    { versao:"v11", texto:"Valor padrão voltou a ser sempre um valor fixo (sem variável/seletor de campo); Cálculo e Campo requisito com textos mais enxutos (\"Valor do Requisito\" no lugar do parágrafo explicativo); \"+ Aba\" foi para dentro do canvas (sem o botão \"Salvar abas & campos\" separado); abas não podem ter nomes repetidos; clique em qualquer parte do cartão da aba para selecioná-la; \"aba preenchida\" agora exige todos os campos dela, não só um; abas de registro (criação e edição) viraram abas de verdade, uma de cada vez; edição passou de barra lateral para uma janela com abas; placeholder mais discreto." },
+    { versao:"v10", texto:"Valor padrão ganhou seletor de campo ao lado (sem digitar {id_do_campo} na mão); Cálculo virou uma caixinha própria e mais visível em vez de um checkbox perdido na lista; label de \"Valor esperado\" explicada; número de caracteres sem as setas de aumentar/diminuir (spin buttons) — só digitar." },
     { versao:"v9", texto:"Modo claro sempre como padrão (escuro só por escolha, botão 🌙/☀ na barra lateral); layout centralizado em telas largas; campo tipo Texto ganhou Aparência (única linha/múltiplas linhas/e-mail/link, com validação e limite de caracteres), Somente leitura, e Valor padrão pode referenciar outro campo com {id_do_campo}; \"Dependente de\" renomeado para Campo requisito." },
     { versao:"v8", texto:"Busca em modais de relação (associar registro, Titular(es)) também só filtra ao confirmar; visual claro mais corporativo (fundo cinza-azulado, azul de destaque); modo de demonstração local (localStorage) quando o app roda fora do claude.ai, para mandar o link/arquivo do GitHub para alguém testar de verdade." },
     { versao:"v7", texto:"Busca só filtra ao confirmar (Enter/botão); Configuração geral (usuários + ordem do menu); este botão de Ajuda; construtor de Abas & Campos em três painéis (paleta, tela, propriedades), estilo formulário arrastar-e-configurar; visual atualizado (barra lateral escura fixa)." },
@@ -1652,12 +1702,27 @@
 
   var CONDICAO_LABELS = {livre:"Sempre visível (livre)", abas:"Depois que outra(s) aba(s) forem preenchidas", campos:"Depois que certos campos forem preenchidos"};
 
+  // Nomes de aba não podem se repetir dentro do mesmo Formulário/Entidade —
+  // gera "Nova aba 2", "Nova aba 3"... quando o nome pedido já existe.
+  // (Nomes de campo podem repetir por ora — quando formos exportar dados,
+  // vamos precisar de um identificador único por campo; o id interno já
+  // gerado via uid("campo") cobre isso, falta só decidir se/como aplicar
+  // essa regra também ao rótulo visível.)
+  function uniqueAbaName(base, existingNames){
+    var name = (base||"").trim() || "Nova aba";
+    var lower = existingNames.map(function(n){ return (n||"").trim().toLowerCase(); });
+    if(lower.indexOf(name.toLowerCase()) === -1) return name;
+    var i = 2;
+    while(lower.indexOf((name+" "+i).toLowerCase()) > -1) i++;
+    return name + " " + i;
+  }
+
   // Construtor de Abas & Campos — inspirado no designer online do ArcGIS
   // Survey123: paleta de tipos à esquerda, canvas com preview ao vivo no
   // centro (clique para selecionar), painel de propriedades à direita.
   var PALETTE_GROUPS = [
     { label:"Texto, número e data", types:["texto","numero","data","codigo"] },
-    { label:"Identificação", types:["cpf_cnpj","email"] },
+    { label:"Identificação", types:["cpf_cnpj"] },
     { label:"Localização", types:["endereco","cep","uf","municipio","localidade"] },
     { label:"Escolha e referência", types:["lista","consulta"] },
     { label:"Arquivo", types:["arquivo"] }
@@ -1682,8 +1747,6 @@
         g.types.map(function(t){ return '<button type="button" class="palette-item" data-add-campo-tipo="'+t+'">+ '+escapeHtml(FIELD_TYPE_LABEL[t]||t)+'</button>'; }).join("") +
         '</div>';
     });
-    html += '<div class="small-btn-row"><button type="button" class="btn sm" id="add-aba-btn">+ Aba (página)</button></div>';
-    html += '<div class="small-btn-row"><button type="button" class="btn primary sm" id="save-abas-btn">Salvar abas & campos</button></div>';
     html += '</div>';
     return html;
   }
@@ -1691,12 +1754,12 @@
   function canvasHtml(abas){
     var html = '<div class="cfg-pane cfg-canvas">';
     if(abas.length === 0){
-      html += '<div class="canvas-empty">Nenhuma aba ainda — clique em "+ Aba (página)" na paleta à esquerda, ou em qualquer tipo de campo para começar.</div>';
+      html += '<div class="canvas-empty">Nenhuma aba ainda — clique em "+ Aba (página)" abaixo, ou em qualquer tipo de campo na paleta à esquerda para começar.</div>';
     }
     abas.forEach(function(aba, ai){
       var abaSelected = configSelection && configSelection.type==="aba" && configSelection.ai===ai;
-      html += '<div class="canvas-page">' +
-        '<div class="canvas-page-head'+(abaSelected?" selected":"")+'" data-select-aba="'+ai+'">' +
+      html += '<div class="canvas-page'+(abaSelected?" selected":"")+'" data-select-aba="'+ai+'">' +
+        '<div class="canvas-page-head">' +
           '<span class="nav-glyph">'+(ai+1)+'</span>' +
           '<input type="text" value="'+escapeHtml(aba.nome||"")+'" data-aba-nome="'+ai+'" placeholder="Nome da aba">' +
           '<button type="button" class="cf-remove" data-remove-aba="'+ai+'" title="Remover aba">✕</button>' +
@@ -1715,6 +1778,7 @@
         '</div>' +
       '</div>';
     });
+    html += '<button type="button" class="add-aba-btn" id="add-aba-btn">+ Aba (página)</button>';
     html += '</div>';
     return html;
   }
@@ -1759,27 +1823,36 @@
       html += '<div class="props-title">Propriedades do campo</div>' +
         '<div class="field"><label>Rótulo</label><input type="text" value="'+escapeHtml(c.label||"")+'" data-campo-label="'+ai2+':'+ci2+'"></div>' +
         '<div class="field"><label>Tipo</label><select data-campo-tipo="'+ai2+':'+ci2+'">'+options+'</select></div>' +
-        '<div class="field"><label>Dica (exibida enquanto o campo está vazio)</label><input type="text" value="'+escapeHtml(c.ajuda||"")+'" data-campo-ajuda="'+ai2+':'+ci2+'" placeholder="Instrução exibida junto ao campo"></div>' +
-        '<div class="field"><label>Valor padrão</label><input type="text" value="'+escapeHtml(c.valorPadrao||"")+'" data-campo-padrao="'+ai2+':'+ci2+'" placeholder="Valor fixo, ou {id_do_campo} para usar outro campo já criado"></div>' +
+        '<div class="field"><label>Dica</label><input type="text" value="'+escapeHtml(c.ajuda||"")+'" data-campo-ajuda="'+ai2+':'+ci2+'" placeholder="Instrução exibida junto ao campo"></div>' +
+        '<div class="field"><label>Valor padrão</label><input type="text" value="'+escapeHtml(c.valorPadrao||"")+'" data-campo-padrao="'+ai2+':'+ci2+'" placeholder="Valor padrão fixo"></div>' +
         (c.tipo === "texto" ?
           '<div class="field"><label>Aparência</label><select data-campo-aparencia-texto="'+ai2+':'+ci2+'">' +
             APARENCIA_TEXTO.map(function(o){ return '<option value="'+o.v+'"'+((c.aparencia||"unica_linha")===o.v?" selected":"")+'>'+o.l+'</option>'; }).join("") +
           '</select></div>' +
           '<div class="field"><label>Número de caracteres (máximo)</label><input type="number" min="1" value="'+escapeHtml(String(maxLenAtual))+'" data-campo-maxlength="'+ai2+':'+ci2+'"'+((c.aparencia==="email"||c.aparencia==="link")?" disabled":"")+'></div>'
+        : c.tipo === "numero" ?
+          '<div class="field"><label>Aparência</label><select data-campo-aparencia-numero="'+ai2+':'+ci2+'">' +
+            APARENCIA_NUMERO.map(function(o){ return '<option value="'+o.v+'"'+((c.aparencia||"inteiro")===o.v?" selected":"")+'>'+o.l+'</option>'; }).join("") +
+          '</select></div>' +
+          '<div class="field"><label>Valor mínimo</label><input type="number" value="'+(c.valorMinimo!=null&&c.valorMinimo!==""?escapeHtml(String(c.valorMinimo)):"")+'" data-campo-num-min="'+ai2+':'+ci2+'" placeholder="Sem mínimo"></div>' +
+          '<div class="field"><label>Valor máximo</label><input type="number" value="'+(c.valorMaximo!=null&&c.valorMaximo!==""?escapeHtml(String(c.valorMaximo)):"")+'" data-campo-num-max="'+ai2+':'+ci2+'" placeholder="Sem máximo"></div>' +
+          (c.aparencia === "decimal" ? '<div class="field"><label>Precisão (casas decimais)</label><input type="number" min="0" max="10" value="'+escapeHtml(c.precisao!=null?String(c.precisao):"2")+'" data-campo-precisao="'+ai2+':'+ci2+'"></div>' : "")
         : '<div class="field"><label>Aparência</label><input type="text" value="'+escapeHtml(c.aparencia||"")+'" data-campo-aparencia="'+ai2+':'+ci2+'" placeholder="ex.: multiline, minimal"></div>') +
         '<div class="campo-props">' +
           propCheck(ai2,ci2,"obrigatorio","Obrigatório",c.obrigatorio) +
           propCheck(ai2,ci2,"visivel","Visível",c.visivel !== false) +
           propCheck(ai2,ci2,"leitura","Somente leitura",c.leitura) +
-          propCheck(ai2,ci2,"calculado","Calculado",c.calculado) +
         '</div>' +
-        (c.calculado ? '<div class="field"><label>Fórmula (some/subtraia com {id_do_campo}, ou junte texto)</label>' +
-          '<input type="text" data-campo-formula="'+ai2+':'+ci2+'" value="'+escapeHtml(c.formula||"")+'" placeholder="Ex.: {area_a} + {area_b}"></div>' : '') +
-        '<div class="field"><label>Campo requisito (só aparece quando o campo escolhido tiver valor)</label>' +
+        '<div class="calc-block'+(c.calculado?' is-on':'')+'">' +
+          '<label class="calc-toggle"><input type="checkbox" data-campo-prop="'+ai2+':'+ci2+':calculado" '+(c.calculado?"checked":"")+'> Cálculo</label>' +
+          (c.calculado ? '<div class="field"><label>Fórmula</label>' +
+            '<input type="text" data-campo-formula="'+ai2+':'+ci2+'" value="'+escapeHtml(c.formula||"")+'" placeholder="Ex.: {area_a} + {area_b}"></div>' : '') +
+        '</div>' +
+        '<div class="field"><label>Campo requisito</label>' +
           '<select data-campo-dependecampo="'+ai2+':'+ci2+'"><option value="">Nenhum — sempre aparece</option>' +
           deps.map(function(o){ return '<option value="'+o.id+'"'+(c.dependeCampo===o.id?" selected":"")+'>'+escapeHtml(o.label)+' ('+escapeHtml(o.abaNome)+')</option>'; }).join("") +
           '</select></div>' +
-        (c.dependeCampo ? '<div class="field"><label>Valor esperado (opcional — vazio = qualquer valor)</label>' +
+        (c.dependeCampo ? '<div class="field"><label>Valor do Requisito</label>' +
           '<input type="text" data-campo-dependevalor="'+ai2+':'+ci2+'" value="'+escapeHtml(c.dependeValor||"")+'"></div>' : '') +
         '<div class="small-btn-row"><button type="button" class="btn sm danger" data-remove-campo="'+ai2+':'+ci2+'">Remover este campo</button></div>';
     }
@@ -1833,10 +1906,14 @@
     // ---- Abas & campos (construtor estilo Survey123) ----
     var addAbaBtn = document.getElementById("add-aba-btn");
     if(addAbaBtn) addAbaBtn.addEventListener("click", function(){
-      draft.abas.push({id:uid("aba"), nome:"Nova aba", condicao:{tipo:"livre"}, campos:[]});
+      var nome = uniqueAbaName("Nova aba", draft.abas.map(function(a){ return a.nome; }));
+      draft.abas.push({id:uid("aba"), nome:nome, condicao:{tipo:"livre"}, campos:[]});
       configSelection = {type:"aba", ai: draft.abas.length-1};
       renderConfigModal();
     });
+    // Clicar em qualquer lugar do "cartão" da aba a seleciona (não só o
+    // cabeçalho) — cliques em campos/botões internos param a propagação
+    // antes de chegar aqui (ver stopPropagation abaixo).
     Array.prototype.forEach.call(m.querySelectorAll("[data-select-aba]"), function(el){
       el.addEventListener("click", function(){
         configSelection = {type:"aba", ai: parseInt(el.getAttribute("data-select-aba"),10)};
@@ -1844,7 +1921,8 @@
       });
     });
     Array.prototype.forEach.call(m.querySelectorAll("[data-select-campo]"), function(el){
-      el.addEventListener("click", function(){
+      el.addEventListener("click", function(e){
+        e.stopPropagation();
         var p = el.getAttribute("data-select-campo").split(":");
         configSelection = {type:"campo", ai:+p[0], ci:+p[1]};
         renderConfigModal();
@@ -1861,17 +1939,11 @@
         draft.abas[ai].campos = draft.abas[ai].campos || [];
         var novoCampo = {id:uid("campo"), label:"Novo campo", tipo:tipo, obrigatorio:false, visivel:true};
         if(tipo === "texto") novoCampo.aparencia = "unica_linha";
+        if(tipo === "numero") novoCampo.aparencia = "inteiro";
         draft.abas[ai].campos.push(novoCampo);
         configSelection = {type:"campo", ai:ai, ci: draft.abas[ai].campos.length-1};
         renderConfigModal();
       });
-    });
-    var saveAbasBtn = document.getElementById("save-abas-btn");
-    if(saveAbasBtn) saveAbasBtn.addEventListener("click", async function(){
-      saveAbasBtn.textContent = "Salvando…";
-      var ok = await saveConfigDoc(key, {abas: draft.abas});
-      saveAbasBtn.textContent = ok ? "Salvo ✓" : "Erro ao salvar";
-      setTimeout(function(){ saveAbasBtn.textContent = "Salvar abas & campos"; }, 1400);
     });
     Array.prototype.forEach.call(m.querySelectorAll("[data-remove-aba]"), function(btn){
       btn.addEventListener("click", function(e){
@@ -1895,6 +1967,15 @@
       });
       inp.addEventListener("input", function(){
         draft.abas[parseInt(inp.getAttribute("data-aba-nome"),10)].nome = inp.value;
+      });
+      // Ao sair do campo (blur/"change"), normaliza e garante nome único —
+      // abas não podem ter o mesmo nome.
+      inp.addEventListener("change", function(){
+        var ai = parseInt(inp.getAttribute("data-aba-nome"),10);
+        var outrosNomes = draft.abas.filter(function(a,i){ return i!==ai; }).map(function(a){ return a.nome; });
+        var unico = uniqueAbaName(inp.value, outrosNomes);
+        draft.abas[ai].nome = unico;
+        if(unico !== inp.value.trim()) renderConfigModal();
       });
     });
     Array.prototype.forEach.call(m.querySelectorAll("[data-cond-tipo]"), function(sel){
@@ -1945,7 +2026,11 @@
     Array.prototype.forEach.call(m.querySelectorAll("[data-campo-tipo]"), function(sel){
       sel.addEventListener("change", function(){
         var p=sel.getAttribute("data-campo-tipo").split(":");
-        draft.abas[+p[0]].campos[+p[1]].tipo = sel.value;
+        var campo = draft.abas[+p[0]].campos[+p[1]];
+        campo.tipo = sel.value;
+        // Aparência é específica de cada tipo — zera a de outro tipo que
+        // possa ter ficado (ex.: "unica_linha" de quando era Texto).
+        campo.aparencia = sel.value === "texto" ? "unica_linha" : (sel.value === "numero" ? "inteiro" : null);
         renderConfigModal();
       });
     });
@@ -1994,6 +2079,32 @@
         draft.abas[+p[0]].campos[+p[1]].maxLength = (isNaN(v) || v <= 0) ? null : v;
       });
     });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-aparencia-numero]"), function(sel){
+      sel.addEventListener("change", function(){
+        var p = sel.getAttribute("data-campo-aparencia-numero").split(":");
+        draft.abas[+p[0]].campos[+p[1]].aparencia = sel.value;
+        renderConfigModal(); // Decimal revela o campo de Precisão
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-num-min]"), function(inp){
+      inp.addEventListener("input", function(){
+        var p = inp.getAttribute("data-campo-num-min").split(":");
+        draft.abas[+p[0]].campos[+p[1]].valorMinimo = inp.value === "" ? null : parseFloat(inp.value);
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-num-max]"), function(inp){
+      inp.addEventListener("input", function(){
+        var p = inp.getAttribute("data-campo-num-max").split(":");
+        draft.abas[+p[0]].campos[+p[1]].valorMaximo = inp.value === "" ? null : parseFloat(inp.value);
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-precisao]"), function(inp){
+      inp.addEventListener("input", function(){
+        var p = inp.getAttribute("data-campo-precisao").split(":");
+        var v = parseInt(inp.value, 10);
+        draft.abas[+p[0]].campos[+p[1]].precisao = (isNaN(v) || v < 0) ? 0 : v;
+      });
+    });
   }
 
   // ---- Novo Formulário (Categoria) ----
@@ -2033,6 +2144,85 @@
     openModalShell();
   }
 
+  // Faixa de abas (estilo modal-tabs) + painéis para os fluxos de criação de
+  // registro — cada aba mostra só o próprio conteúdo por vez (antes era uma
+  // lista comprida de seções, uma embaixo da outra). abas bloqueadas ficam
+  // desabilitadas na faixa (🔒) e, se a aba ativa travar, pula sozinho para
+  // a primeira desbloqueada.
+  // basicos (opcional): {nome, html} — vira a "aba 0" com os campos
+  // padrão/nativos do registro (Nome, campos próprios da Entidade, ciclo de
+  // vida na edição). Faz parte da mesma estrutura de abas, sempre a primeira
+  // e nunca bloqueada por condição de aba.
+  function abaTabsBuilder(abas, fieldHtml, basicos){
+    var offset = basicos ? 1 : 0;
+    var totalPages = abas.length + offset;
+    var activeIdx = 0;
+    function html(){
+      if(totalPages === 0) return "";
+      var tabsHtml = '<div class="record-tabs">' +
+        (basicos ? '<button type="button" class="record-tab" data-record-tab="0">'+escapeHtml(basicos.nome)+'</button>' : "") +
+        abas.map(function(aba, ai){
+          return '<button type="button" class="record-tab" data-record-tab="'+(ai+offset)+'">'+escapeHtml(aba.nome)+'</button>';
+        }).join("") +
+      '</div>';
+      var panelsHtml =
+        (basicos ? '<div class="record-tab-panel" data-record-panel="0">'+basicos.html+'</div>' : "") +
+        abas.map(function(aba, ai){
+          var pi = ai + offset;
+          return '<div class="record-tab-panel" data-record-panel="'+pi+'"'+(pi===0?"":' style="display:none;"')+'>' +
+            '<div data-aba-fields="'+ai+'">' + (aba.campos||[]).map(fieldHtml).join("") + '</div>' +
+            '<div class="aba-locked" data-aba-locked="'+ai+'" style="display:none;">🔒 <span></span></div>' +
+          '</div>';
+        }).join("");
+      return tabsHtml + panelsHtml;
+    }
+    function selectTab(m, idx){
+      activeIdx = idx;
+      Array.prototype.forEach.call(m.querySelectorAll("[data-record-tab]"), function(btn){
+        btn.classList.toggle("active", parseInt(btn.getAttribute("data-record-tab"),10) === idx);
+      });
+      Array.prototype.forEach.call(m.querySelectorAll("[data-record-panel]"), function(panel){
+        panel.style.display = (parseInt(panel.getAttribute("data-record-panel"),10) === idx) ? "" : "none";
+      });
+    }
+    function wire(m){
+      if(totalPages === 0) return;
+      Array.prototype.forEach.call(m.querySelectorAll("[data-record-tab]"), function(btn){
+        btn.addEventListener("click", function(){
+          if(btn.disabled) return;
+          selectTab(m, parseInt(btn.getAttribute("data-record-tab"),10));
+        });
+      });
+      selectTab(m, activeIdx);
+    }
+    function update(m, getVal){
+      if(abas.length === 0) return; // só "Dados Básicos" — nada para (des)bloquear
+      abas.forEach(function(aba, ai){
+        var unlocked = isAbaUnlocked(aba, abas, getVal);
+        var pi = ai + offset;
+        var tabBtn = m.querySelector('[data-record-tab="'+pi+'"]');
+        var fields = m.querySelector('[data-aba-fields="'+ai+'"]');
+        var locked = m.querySelector('[data-aba-locked="'+ai+'"]');
+        if(tabBtn){ tabBtn.disabled = !unlocked; tabBtn.textContent = (unlocked ? "" : "🔒 ") + (aba.nome||""); }
+        if(fields) fields.style.display = unlocked ? "" : "none";
+        if(locked){
+          locked.style.display = unlocked ? "none" : "flex";
+          locked.querySelector("span").innerHTML = "\"" + escapeHtml(aba.nome) + "\" " + condicaoLabel(aba, abas) + ".";
+        }
+      });
+      var activeAi = activeIdx - offset;
+      var activeAba = activeAi >= 0 ? abas[activeAi] : null;
+      if(activeAba && !isAbaUnlocked(activeAba, abas, getVal)){
+        var firstUnlockedPi = basicos ? 0 : -1; // "Dados Básicos" nunca trava
+        if(firstUnlockedPi === -1){
+          abas.forEach(function(a, i){ if(firstUnlockedPi === -1 && isAbaUnlocked(a, abas, getVal)) firstUnlockedPi = i + offset; });
+        }
+        if(firstUnlockedPi > -1 && firstUnlockedPi !== activeIdx) selectTab(m, firstUnlockedPi);
+      }
+    }
+    return { html: html, wire: wire, update: update };
+  }
+
   // ---- Novo registro (Formulário Personalizado), com abas progressivas ----
   function openNewRecordModal(cat){
     modal = {type:"new-record", categoriaId:cat.id};
@@ -2045,17 +2235,13 @@
       if(c.tipo === "arquivo"){
         return '<div class="field" data-campo-wrap="'+c.id+'"><label>'+escapeHtml(c.label)+'</label><input type="text" disabled placeholder="Upload não implementado neste protótipo"></div>';
       }
-      var initial = (c.valorPadrao && !campoDefaultIsVariable(c)) ? c.valorPadrao : "";
       return '<div class="field" data-campo-wrap="'+c.id+'"><label>'+escapeHtml(c.label)+(c.obrigatorio?' *':'')+(c.calculado?' · calculado':'')+(c.leitura?' · leitura':'')+'</label>' +
-        campoControlHtml(c, "data-nr-campo", initial) + '</div>';
+        campoControlHtml(c, "data-nr-campo", c.valorPadrao||"") + '</div>';
     }
 
-    var body = '<div class="field"><label>Nome do registro</label><input type="text" id="nr-nome" placeholder="Identificação curta deste caso"></div>';
-    abas.forEach(function(aba, ai){
-      body += '<div class="aba-heading" data-aba-section="'+ai+'">'+escapeHtml(aba.nome)+'</div>';
-      body += '<div data-aba-fields="'+ai+'">' + (aba.campos||[]).map(fieldHtml).join("") + '</div>';
-      body += '<div class="aba-locked" data-aba-locked="'+ai+'" style="display:none;">🔒 <span></span></div>';
-    });
+    var basicosHtml = '<div class="field"><label>Nome do registro</label><input type="text" id="nr-nome" placeholder="Identificação curta deste caso"></div>';
+    var tabs = abaTabsBuilder(abas, fieldHtml, {nome:"Dados Básicos", html: basicosHtml});
+    var body = tabs.html();
 
     m.innerHTML =
       '<div class="modal-head"><div><h3>Novo registro — '+escapeHtml(cat.nome)+'</h3><p>Campos * são obrigatórios. Abas bloqueadas aparecem conforme você preenche.</p></div>'+
@@ -2063,6 +2249,7 @@
       '<div class="modal-body" id="nr-body">'+body+'</div>'+
       '<div class="modal-foot"><span id="nr-msg" class="empty-note"></span><button class="btn primary" id="nr-submit">Criar registro</button></div>';
     document.getElementById("modal-close").addEventListener("click", closeModal);
+    tabs.wire(m);
 
     function getVal(campoId){ return abaCampoValue(campoId); }
     function updateCalculados(){
@@ -2074,40 +2261,15 @@
       });
     }
     function updateVisibility(){
-      abas.forEach(function(aba, ai){
-        var unlocked = isAbaUnlocked(aba, abas, getVal);
-        var heading = m.querySelector('[data-aba-section="'+ai+'"]');
-        var fields = m.querySelector('[data-aba-fields="'+ai+'"]');
-        var locked = m.querySelector('[data-aba-locked="'+ai+'"]');
-        if(heading) heading.style.display = unlocked ? "" : "none";
-        if(fields) fields.style.display = unlocked ? "" : "none";
-        if(locked){
-          locked.style.display = unlocked ? "none" : "flex";
-          locked.querySelector("span").innerHTML = "\"" + escapeHtml(aba.nome) + "\" " + condicaoLabel(aba, abas) + ".";
-        }
-      });
+      tabs.update(m, getVal);
       allCampos.forEach(function(c){
         var wrap = m.querySelector('[data-campo-wrap="'+c.id+'"]');
         if(wrap) wrap.style.display = campoVisible(c, getVal) ? "" : "none";
       });
     }
-    // "Valor padrão" com {variável}: acompanha o campo referenciado enquanto
-    // esta pessoa não editar diretamente este campo.
-    function updateDefaults(changedEl){
-      allCampos.forEach(function(c){
-        if(!campoDefaultIsVariable(c)) return;
-        var el = m.querySelector('[data-nr-campo="'+c.id+'"]');
-        if(!el) return;
-        if(el === changedEl){ el.dataset.autoDefault = ""; return; }
-        if(el.value === "" || el.dataset.autoDefault === "1"){
-          el.value = evalFormula(c.valorPadrao, getVal);
-          el.dataset.autoDefault = "1";
-        }
-      });
-    }
-    m.addEventListener("input", function(e){ updateCalculados(); updateDefaults(e.target); updateVisibility(); });
-    m.addEventListener("change", function(e){ updateCalculados(); updateDefaults(e.target); updateVisibility(); });
-    updateCalculados(); updateDefaults(null); updateVisibility();
+    m.addEventListener("input", function(){ updateCalculados(); updateVisibility(); });
+    m.addEventListener("change", function(){ updateCalculados(); updateVisibility(); });
+    updateCalculados(); updateVisibility();
 
     document.getElementById("nr-submit").addEventListener("click", async function(){
       var nome = document.getElementById("nr-nome").value.trim();
@@ -2157,9 +2319,8 @@
       if(c.tipo === "arquivo"){
         return '<div class="field" data-campo-wrap="'+c.id+'"><label>'+escapeHtml(c.label)+'</label><input type="text" disabled placeholder="Upload não implementado neste protótipo"></div>';
       }
-      var initial = (c.valorPadrao && !campoDefaultIsVariable(c)) ? c.valorPadrao : "";
       return '<div class="field" data-campo-wrap="'+c.id+'"><label>'+escapeHtml(c.label)+(c.obrigatorio?' *':'')+(c.calculado?' · calculado':'')+(c.leitura?' · leitura':'')+'</label>' +
-        campoControlHtml(c, "data-nr-campo", initial) + '</div>';
+        campoControlHtml(c, "data-nr-campo", c.valorPadrao||"") + '</div>';
     }
 
     var nativeHtml = '<div class="field"><label>Nome *</label><input type="text" id="nf-nome" placeholder="Nome do registro"></div>';
@@ -2186,12 +2347,8 @@
         '</div>';
     }
 
-    var body = nativeHtml;
-    abas.forEach(function(aba, ai){
-      body += '<div class="aba-heading" data-aba-section="'+ai+'">'+escapeHtml(aba.nome)+'</div>';
-      body += '<div data-aba-fields="'+ai+'">' + (aba.campos||[]).map(fieldHtml).join("") + '</div>';
-      body += '<div class="aba-locked" data-aba-locked="'+ai+'" style="display:none;">🔒 <span></span></div>';
-    });
+    var tabs = abaTabsBuilder(abas, fieldHtml, {nome:"Dados Básicos", html: nativeHtml});
+    var body = tabs.html();
 
     m.innerHTML =
       '<div class="modal-head"><div><h3>Novo '+escapeHtml(def.label)+'</h3><p>Campos * são obrigatórios. Abas bloqueadas aparecem conforme você preenche.</p></div>'+
@@ -2199,6 +2356,7 @@
       '<div class="modal-body" id="nf-body">'+body+'</div>'+
       '<div class="modal-foot"><span id="nf-msg" class="empty-note"></span><button class="btn primary" id="nf-submit">Criar '+escapeHtml(def.label)+'</button></div>';
     document.getElementById("modal-close").addEventListener("click", closeModal);
+    tabs.wire(m);
 
     var pendingTitulares = [];
     if(def.key === "titularidade"){
@@ -2269,40 +2427,15 @@
       });
     }
     function updateVisibility(){
-      abas.forEach(function(aba, ai){
-        var unlocked = isAbaUnlocked(aba, abas, getVal);
-        var heading = m.querySelector('[data-aba-section="'+ai+'"]');
-        var fields = m.querySelector('[data-aba-fields="'+ai+'"]');
-        var locked = m.querySelector('[data-aba-locked="'+ai+'"]');
-        if(heading) heading.style.display = unlocked ? "" : "none";
-        if(fields) fields.style.display = unlocked ? "" : "none";
-        if(locked){
-          locked.style.display = unlocked ? "none" : "flex";
-          locked.querySelector("span").innerHTML = "\"" + escapeHtml(aba.nome) + "\" " + condicaoLabel(aba, abas) + ".";
-        }
-      });
+      tabs.update(m, getVal);
       allCampos.forEach(function(c){
         var wrap = m.querySelector('[data-campo-wrap="'+c.id+'"]');
         if(wrap) wrap.style.display = campoVisible(c, getVal) ? "" : "none";
       });
     }
-    // "Valor padrão" com {variável}: acompanha o campo referenciado enquanto
-    // esta pessoa não editar diretamente este campo.
-    function updateDefaults(changedEl){
-      allCampos.forEach(function(c){
-        if(!campoDefaultIsVariable(c)) return;
-        var el = m.querySelector('[data-nr-campo="'+c.id+'"]');
-        if(!el) return;
-        if(el === changedEl){ el.dataset.autoDefault = ""; return; }
-        if(el.value === "" || el.dataset.autoDefault === "1"){
-          el.value = evalFormula(c.valorPadrao, getVal);
-          el.dataset.autoDefault = "1";
-        }
-      });
-    }
-    m.addEventListener("input", function(e){ updateCalculados(); updateDefaults(e.target); updateVisibility(); });
-    m.addEventListener("change", function(e){ updateCalculados(); updateDefaults(e.target); updateVisibility(); });
-    updateCalculados(); updateDefaults(null); updateVisibility();
+    m.addEventListener("input", function(){ updateCalculados(); updateVisibility(); });
+    m.addEventListener("change", function(){ updateCalculados(); updateVisibility(); });
+    updateCalculados(); updateVisibility();
 
     document.getElementById("nf-submit").addEventListener("click", async function(){
       var msg = document.getElementById("nf-msg");
@@ -2492,4 +2625,6 @@
   boot();
 })();
 </script>
-</body></html>
+
+</body>
+</html>
