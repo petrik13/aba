@@ -1,11 +1,4 @@
-<!doctype html>
-<html lang="pt-BR">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-</head>
-<body>
-<title>Registro ABA</title>
+<!doctype html><html><head><meta charset="utf-8"><title>Registro ABA</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -240,6 +233,10 @@
   .order-row{display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--border-soft);}
   .order-row:last-child{border-bottom:none;}
   .order-label{flex:1; font-size:13px;}
+  .segmento-row{display:flex; align-items:center; gap:8px; padding:5px 0;}
+  .segmento-row > span, .segmento-row > input{flex:1; font-size:12.5px;}
+  .segmento-row input{padding:5px 8px; border-radius:6px; border:1px solid var(--border); background:var(--surface); color:var(--ink);}
+  .disabled-note{display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--ink-faint);}
   .help-section{margin-bottom:22px;}
   .help-section h4{font-size:13.5px; margin-bottom:7px; color:var(--ink); font-weight:600;}
   .help-body{font-size:13px; color:var(--ink-muted); line-height:1.65;}
@@ -301,6 +298,33 @@
   input[type="number"]::-webkit-outer-spin-button,
   input[type="number"]::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
   input[type="number"]{ -moz-appearance:textfield; appearance:textfield; }
+  /* Linha "seletor de data + botão Hoje" — usada em Valor padrão, Data
+     mínima e Data máxima de um campo tipo Data. */
+  .data-var-row{display:flex; gap:8px; align-items:center;}
+  .data-var-row input{flex:1; width:auto;}
+  .toggle-hoje{flex:0 0 auto; white-space:nowrap;}
+  .toggle-hoje.active{background:var(--accent); border-color:var(--accent); color:var(--accent-ink);}
+  /* Calendário próprio (v19) — substitui o <input type="date"> nativo (não
+     renderiza de forma confiável dentro do iframe do Artifact e sempre usa o
+     formato do SO, não o brasileiro). Conteúdo normal da página, nunca um
+     popup do navegador. */
+  .date-picker{position:relative;}
+  .date-picker-toggle{width:100%; text-align:left; font-weight:400;}
+  .date-picker-toggle:disabled{opacity:.65; cursor:not-allowed;}
+  .date-picker-panel{border:1px solid var(--border); border-radius:8px; padding:10px; margin-top:8px; background:var(--surface-2);}
+  .date-picker-panel[hidden]{display:none;}
+  .cal-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;}
+  .cal-title{font-size:12.5px; font-weight:600; color:var(--ink);}
+  .cal-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:2px; text-align:center;}
+  .cal-weekdays{margin-bottom:2px; font-size:11px; color:var(--ink-muted); font-weight:600;}
+  .cal-day{border:1px solid transparent; background:transparent; border-radius:6px; padding:5px 0; font-size:12.5px; cursor:pointer; color:var(--ink);}
+  .cal-day:hover:not(:disabled){border-color:var(--border);}
+  .cal-day.cal-today{font-weight:700; color:var(--accent);}
+  .cal-day.cal-selected{background:var(--accent); border-color:var(--accent); color:var(--accent-ink); font-weight:700;}
+  .cal-day.cal-disabled{opacity:.35; cursor:not-allowed;}
+  .cal-time{display:flex; align-items:center; gap:6px; margin-top:10px; font-size:12.5px;}
+  .cal-time select{width:auto;}
+  .cfg-cal{max-width:260px;}
   .calc-block{border:1px solid var(--border); border-radius:8px; padding:10px 12px; margin-bottom:14px; background:var(--surface-2);}
   .calc-block.is-on{border-color:var(--accent);}
   .calc-toggle{display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; color:var(--ink); cursor:pointer;}
@@ -550,6 +574,17 @@
   var APARENCIA_NUMERO = [
     {v:"inteiro", l:"Inteiro"}, {v:"decimal", l:"Decimal"}
   ];
+  // Aparência específica de campos tipo "data" — Só data ou Data e Hora.
+  var APARENCIA_DATA = [
+    {v:"data", l:"Só data"}, {v:"data_hora", l:"Data e Hora"}
+  ];
+  // Lógica específica de campos tipo "código" — como o valor é gerado ao
+  // salvar. Uma vez configurada, o campo é sempre obrigatório e somente
+  // leitura, sem Dica, Valor padrão, Cálculo ou Campo requisito.
+  var LOGICA_TIPOS = [
+    {v:"sequencial", l:"Sequencial"}, {v:"globalid", l:"GlobalID"}, {v:"personalizado", l:"Personalizado"}
+  ];
+  var LOGICA_SEGMENTO_LABEL = { ano:"Ano", mes:"Mês", dia:"Dia", sequencial:"Sequencial" };
 
   var EVIDENCIA_LABEL = { matricula:"Matrícula", transcricao:"Transcrição", posse_com_justo_titulo:"Posse c/ justo título", posse_sem_justo_titulo:"Posse s/ justo título" };
   var TIPO_PESSOA_LABEL = { fisica:"Física", juridica:"Jurídica" };
@@ -581,6 +616,7 @@
   var modal = { type:null };       // 'config' | 'new-record' | 'new-categoria'
   var configTab = "ciclo";
   var configSelection = null; // {type:"aba", ai} | {type:"campo", ai, ci} | null — seleção no construtor de Abas & Campos
+  var calendarOpen = null; // {ai, ci, field, viewYear, viewMonth} | null — calendário próprio (não nativo) aberto na Configuração
 
   function byId(list, id){ for(var i=0;i<list.length;i++){ if(list[i].id === id) return list[i]; } return null; }
   function catById(id){ return byId(cache.categoria, id); }
@@ -702,8 +738,96 @@
     return v > 0 ? v : null;
   }
 
-  // Validação de formato — texto com aparência E-mail/Link, e número com
-  // Valor mínimo/máximo (Inteiro ou Decimal).
+  // "Hoje" / "today()" — variável de data ao estilo Survey123 (a função
+  // today() do XLSForm), usada em Valor padrão, Data mínima e Data máxima
+  // de campos tipo Data. É uma opção a mais no mesmo campo de texto livre —
+  // não um modo separado/obrigatório: quem não usar a variável digita uma
+  // data fixa (aaaa-mm-dd) normalmente, que passa direto sem alteração.
+  function todayISO(){
+    var d = new Date();
+    var mm = String(d.getMonth()+1); if(mm.length<2) mm = "0"+mm;
+    var dd = String(d.getDate()); if(dd.length<2) dd = "0"+dd;
+    return d.getFullYear() + "-" + mm + "-" + dd;
+  }
+  function nowHHMM(){
+    var d = new Date();
+    var hh = String(d.getHours()); if(hh.length<2) hh = "0"+hh;
+    var mm = String(d.getMinutes()); if(mm.length<2) mm = "0"+mm;
+    return hh + ":" + mm;
+  }
+  // isDH (Data e Hora): resolve "hoje"/"today()" para a data E hora atuais —
+  // não só o dia, também o momento exato — em vez de sempre 00:00.
+  function resolveDataVar(v, isDH){
+    if(!v) return v;
+    var norm = String(v).trim().toLowerCase().replace(/\s+/g,"");
+    if(norm === "hoje" || norm === "today()" || norm === "today"){
+      return isDH ? (todayISO() + "T" + nowHHMM()) : todayISO();
+    }
+    return v;
+  }
+
+  // ---- Calendário próprio (v19) ------------------------------------------
+  // O <input type="date">/"datetime-local"> nativo do v18 tem dois problemas
+  // que nenhum teste automatizado pega (só se enxerga o .value, nunca o
+  // popup): o formato mostrado é o do SO/navegador (americano, mm/dd/aaaa) e
+  // o popup do calendário pode simplesmente não aparecer dentro do iframe do
+  // Artifact. A partir daqui o calendário é conteúdo normal da página — sem
+  // depender de nenhum popup nativo — sempre em formato brasileiro, e o valor
+  // guardado continua sendo o mesmo texto ISO de sempre (aaaa-mm-dd, ou
+  // aaaa-mm-ddThh:mm), então resolveDataVar/campoFormatError e as regras de
+  // mínimo/máximo não precisam mudar em nada.
+  function formatBR(iso, withTime){
+    if(!iso) return "";
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso));
+    if(!m) return iso;
+    var out = m[3] + "/" + m[2] + "/" + m[1];
+    if(withTime){
+      var tm = /T(\d{2}):(\d{2})/.exec(iso);
+      out += " " + (tm ? tm[1] + ":" + tm[2] : "00:00");
+    }
+    return out;
+  }
+  var MESES_PT = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+  var DIAS_PT = ["D","S","T","Q","Q","S","S"];
+  // Grade de um mês (viewYear/viewMonth), com o dia selecionado/hoje marcados
+  // e dias fora de Data mínima/máxima desabilitados — usada tanto no
+  // calendário da Configuração (Valor padrão/Data mínima/máxima) quanto no
+  // dos formulários de novo registro/edição.
+  function calendarGridHtml(viewYear, viewMonth, selectedISO, minISO, maxISO){
+    var startWeekday = new Date(viewYear, viewMonth, 1).getDay();
+    var daysInMonth = new Date(viewYear, viewMonth+1, 0).getDate();
+    var hoje = todayISO();
+    var html = '<div class="cal-head">' +
+      '<button type="button" class="icon-btn" data-cal-nav="-1" title="Mês anterior">‹</button>' +
+      '<span class="cal-title">'+MESES_PT[viewMonth]+' de '+viewYear+'</span>' +
+      '<button type="button" class="icon-btn" data-cal-nav="1" title="Próximo mês">›</button>' +
+    '</div>';
+    html += '<div class="cal-grid cal-weekdays">' + DIAS_PT.map(function(d){ return '<span>'+d+'</span>'; }).join("") + '</div>';
+    html += '<div class="cal-grid">';
+    for(var i=0;i<startWeekday;i++) html += '<span></span>';
+    for(var day=1; day<=daysInMonth; day++){
+      var mm = String(viewMonth+1); if(mm.length<2) mm = "0"+mm;
+      var dd = String(day); if(dd.length<2) dd = "0"+dd;
+      var iso = viewYear + "-" + mm + "-" + dd;
+      var disabled = (minISO && iso < minISO) || (maxISO && iso > maxISO);
+      var cls = "cal-day" + (iso===selectedISO?" cal-selected":"") + (iso===hoje?" cal-today":"") + (disabled?" cal-disabled":"");
+      html += '<button type="button" class="'+cls+'" data-cal-pick="'+iso+'"'+(disabled?" disabled":"")+'>'+day+'</button>';
+    }
+    html += '</div>';
+    return html;
+  }
+  // Seletor de hora/minuto (Data e Hora) — evita depender do relógio nativo
+  // do <input type="time">, pela mesma razão do calendário.
+  function timeSelectHtml(h, min){
+    var hh = "", mm = "";
+    for(var i=0;i<24;i++){ var v=String(i); if(v.length<2)v="0"+v; hh += '<option value="'+v+'"'+(v===h?" selected":"")+'>'+v+'</option>'; }
+    for(var j=0;j<60;j++){ var v2=String(j); if(v2.length<2)v2="0"+v2; mm += '<option value="'+v2+'"'+(v2===min?" selected":"")+'>'+v2+'</option>'; }
+    return '<div class="cal-time"><label>Hora</label><select data-cal-hour>'+hh+'</select>' +
+           '<label>Min.</label><select data-cal-minute>'+mm+'</select></div>';
+  }
+
+  // Validação de formato — texto com aparência E-mail/Link, número com Valor
+  // mínimo/máximo (Inteiro ou Decimal), e data com Data mínima/máxima.
   function campoFormatError(c, val){
     if(!val) return null;
     if(c.tipo === "texto"){
@@ -716,6 +840,13 @@
       if(c.aparencia === "inteiro" && !Number.isInteger(n)) return "deve ser um número inteiro";
       if(c.valorMinimo != null && n < c.valorMinimo) return "mínimo " + c.valorMinimo;
       if(c.valorMaximo != null && n > c.valorMaximo) return "máximo " + c.valorMaximo;
+    }
+    if(c.tipo === "data"){
+      var dt = new Date(val);
+      if(isNaN(dt.getTime())) return "data inválida";
+      var minR = resolveDataVar(c.dataMinima, c.aparencia === "data_hora"), maxR = resolveDataVar(c.dataMaxima, c.aparencia === "data_hora");
+      if(minR){ var dmin = new Date(minR); if(!isNaN(dmin.getTime()) && dt < dmin) return "não pode ser antes de " + minR; }
+      if(maxR){ var dmax = new Date(maxR); if(!isNaN(dmax.getTime()) && dt > dmax) return "não pode ser depois de " + maxR; }
     }
     return null;
   }
@@ -733,7 +864,13 @@
     if(c.tipo === "texto" && c.aparencia === "multiplas_linhas"){
       return '<textarea '+attrName+'="'+c.id+'"'+dis+ro+maxAttr+' placeholder="'+placeholder+'" rows="3">'+escapeHtml(value||"")+'</textarea>';
     }
-    var htmlType = c.calculado ? "text" : (c.tipo === "texto" ? (c.aparencia === "email" ? "email" : (c.aparencia === "link" ? "url" : "text")) : (INPUT_HTML_TYPE[c.tipo] || "text"));
+    if(c.tipo === "data" && !c.calculado){
+      return dataPickerControlHtml(c, attrName, value);
+    }
+    var htmlType = c.calculado ? "text" : (
+      c.tipo === "texto" ? (c.aparencia === "email" ? "email" : (c.aparencia === "link" ? "url" : "text")) :
+      (INPUT_HTML_TYPE[c.tipo] || "text")
+    );
     var numAttr = "";
     if(c.tipo === "numero" && !c.calculado){
       if(c.valorMinimo != null) numAttr += ' min="'+escapeHtml(String(c.valorMinimo))+'"';
@@ -744,8 +881,143 @@
     return '<input type="'+htmlType+'" '+attrName+'="'+c.id+'"'+dis+ro+maxAttr+numAttr+' placeholder="'+placeholder+'" value="'+escapeHtml(value||"")+'">';
   }
 
+  // Controle de campo tipo Data (não calculado) nos formulários de novo
+  // registro/edição — um botão mostrando a data já em formato brasileiro que
+  // expande um calendário próprio da página (nunca o popup nativo do
+  // navegador) + um <input type="hidden"> guardando o mesmo valor ISO de
+  // sempre sob o mesmo atributo (attrName=c.id) — getVal()/cálculo/validação
+  // continuam lendo e escrevendo exatamente como antes, só a aparência muda.
+  function dataPickerControlHtml(c, attrName, value){
+    var isDH = c.aparencia === "data_hora";
+    var minR = resolveDataVar(c.dataMinima, isDH), maxR = resolveDataVar(c.dataMaxima, isDH);
+    var minISO = minR ? minR.slice(0,10) : "";
+    var maxISO = maxR ? maxR.slice(0,10) : "";
+    if(value){
+      value = resolveDataVar(value, isDH);
+      if(isDH && /^\d{4}-\d{2}-\d{2}$/.test(value)) value = value + "T00:00"; // salvaguarda p/ data fixa sem hora
+    }
+    var display = value ? formatBR(value, isDH) : "Selecionar data…";
+    var roAttr = c.leitura ? " disabled" : "";
+    return '<div class="date-picker" data-datepicker="'+c.id+'" data-cal-dh="'+(isDH?"1":"0")+'" data-cal-min="'+escapeHtml(minISO)+'" data-cal-max="'+escapeHtml(maxISO)+'">' +
+      '<input type="hidden" '+attrName+'="'+c.id+'" value="'+escapeHtml(value||"")+'">' +
+      '<button type="button" class="btn sm date-picker-toggle" data-date-toggle'+roAttr+'>'+escapeHtml(display)+'</button>' +
+      '<div class="date-picker-panel" data-date-panel hidden></div>' +
+    '</div>';
+  }
+
+  // Liga o comportamento dos calendários (dataPickerControlHtml) dentro de um
+  // formulário de novo registro/edição — chamada uma vez por modal, logo após
+  // seu innerHTML ser montado (mesmo momento de tabs.wire(m)). O painel de
+  // cada campo é reconstruído (e rewireado) a cada abertura/navegação de mês/
+  // escolha de hora, no mesmo padrão de openAssocModal.wireResults().
+  function wireDatePickers(root){
+    Array.prototype.forEach.call(root.querySelectorAll("[data-datepicker]"), function(wrap){
+      var hidden = wrap.querySelector("input[type=hidden]");
+      var toggleBtn = wrap.querySelector("[data-date-toggle]");
+      var panel = wrap.querySelector("[data-date-panel]");
+      if(!hidden || !toggleBtn || !panel || toggleBtn.disabled) return; // leitura: só exibe, não abre
+      var isDH = wrap.getAttribute("data-cal-dh") === "1";
+      var minISO = wrap.getAttribute("data-cal-min") || "";
+      var maxISO = wrap.getAttribute("data-cal-max") || "";
+      var view = null; // {y, m} do mês exibido no calendário aberto
+
+      function currentISO(){ return hidden.value ? hidden.value.slice(0,10) : ""; }
+      function currentTime(){
+        var m = /T(\d{2}):(\d{2})/.exec(hidden.value||"");
+        return m ? {h:m[1], min:m[2]} : {h:"00", min:"00"};
+      }
+      function setValue(iso, h, min){
+        hidden.value = isDH ? (iso + "T" + h + ":" + min) : iso;
+        toggleBtn.textContent = formatBR(hidden.value, isDH);
+        hidden.dispatchEvent(new Event("input", {bubbles:true}));
+      }
+      function renderPanel(){
+        var sel = currentISO(), t = currentTime();
+        if(!view){
+          var base = sel ? new Date(sel+"T00:00:00") : new Date();
+          view = {y: base.getFullYear(), m: base.getMonth()};
+        }
+        panel.innerHTML = calendarGridHtml(view.y, view.m, sel, minISO, maxISO) + (isDH ? timeSelectHtml(t.h, t.min) : "");
+        Array.prototype.forEach.call(panel.querySelectorAll("[data-cal-nav]"), function(btn){
+          btn.addEventListener("click", function(){
+            view.m += parseInt(btn.getAttribute("data-cal-nav"),10);
+            if(view.m < 0){ view.m = 11; view.y--; } else if(view.m > 11){ view.m = 0; view.y++; }
+            renderPanel();
+          });
+        });
+        Array.prototype.forEach.call(panel.querySelectorAll("[data-cal-pick]"), function(btn){
+          btn.addEventListener("click", function(){
+            if(btn.disabled) return;
+            var iso = btn.getAttribute("data-cal-pick");
+            var t2 = isDH ? currentTime() : {h:"00", min:"00"};
+            var hSel = panel.querySelector("[data-cal-hour]"), mSel = panel.querySelector("[data-cal-minute]");
+            if(isDH && hSel && mSel){ t2 = {h:hSel.value, min:mSel.value}; }
+            setValue(iso, t2.h, t2.min);
+            panel.hidden = true;
+          });
+        });
+        if(isDH){
+          var hSel2 = panel.querySelector("[data-cal-hour]"), mSel2 = panel.querySelector("[data-cal-minute]");
+          var onTimeChange = function(){
+            var iso = currentISO() || todayISO();
+            setValue(iso, hSel2.value, mSel2.value);
+          };
+          if(hSel2) hSel2.addEventListener("change", onTimeChange);
+          if(mSel2) mSel2.addEventListener("change", onTimeChange);
+        }
+      }
+      toggleBtn.addEventListener("click", function(){
+        var willOpen = panel.hidden;
+        panel.hidden = !willOpen;
+        if(willOpen){ view = null; renderPanel(); }
+      });
+    });
+  }
+
   var CODIGO_PREFIX = { terreno:"TER", titularidade:"TIT", empreendimento:"EMP", edificacao:"EDF", pessoa:"PES" };
   function genCodigo(key){ return (CODIGO_PREFIX[key]||"REG") + "-" + Date.now().toString(36).toUpperCase(); }
+
+  // ---- Geração do valor de um campo tipo "Código" com Lógica configurada
+  // (Sequencial, GlobalID, ou Personalizado) — usado só ao criar um registro,
+  // nunca reeditado depois (o campo é sempre somente leitura).
+  function padNumero(n, digitos){
+    var s = String(n);
+    if(!digitos) return s;
+    while(s.length < digitos) s = "0" + s;
+    return s;
+  }
+  // "existentes" = quantos registros já têm esse campo preenchido — usado
+  // como aproximação simples do próximo número da sequência (prototipagem
+  // com dados de exemplo, sem um serviço de contador dedicado).
+  function proximoSequencial(c, existentes){
+    var inicio = (c.logica && c.logica.inicio != null) ? c.logica.inicio : 1;
+    return inicio + existentes;
+  }
+  function gerarSegmentoData(tipo, d){
+    d = d || new Date();
+    if(tipo === "ano") return String(d.getFullYear());
+    if(tipo === "mes") { var m = String(d.getMonth()+1); return m.length<2 ? "0"+m : m; }
+    if(tipo === "dia") { var dd = String(d.getDate()); return dd.length<2 ? "0"+dd : dd; }
+    return "";
+  }
+  function gerarGlobalId(){
+    function hex(n){ var s=""; for(var i=0;i<n;i++) s += Math.floor(Math.random()*16).toString(16); return s; }
+    var variant = (8 + Math.floor(Math.random()*4)).toString(16); // 8, 9, a ou b
+    return ("{" + hex(8) + "-" + hex(4) + "-4" + hex(3) + "-" + variant + hex(3) + "-" + hex(12) + "}").toUpperCase();
+  }
+  function gerarCodigoValor(c, existentes){
+    var logica = c.logica || {tipo:"sequencial", inicio:1};
+    if(logica.tipo === "globalid") return gerarGlobalId();
+    if(logica.tipo === "personalizado"){
+      var segs = (logica.segmentos && logica.segmentos.length) ? logica.segmentos : [{tipo:"sequencial"}];
+      return segs.map(function(s){
+        if(s.tipo === "literal") return s.valor || "";
+        if(s.tipo === "sequencial") return padNumero(proximoSequencial(c, existentes), logica.padding);
+        return gerarSegmentoData(s.tipo);
+      }).join("");
+    }
+    return padNumero(proximoSequencial(c, existentes), logica.padding); // sequencial puro
+  }
 
   // Seção de abas reutilizada tanto pela Categoria (Formulário) quanto por
   // uma Entidade fixa com abas configuradas — mesma lógica de desbloqueio.
@@ -763,6 +1035,7 @@
       html += '<div class="drawer-section"><h4>'+escapeHtml(aba.nome)+'</h4>' +
         visibleCampos.map(function(c){
           var v = getVal(c.id);
+          if(v && c.tipo === "data") v = formatBR(v, c.aparencia === "data_hora");
           return '<div class="field-row"><span class="k">'+escapeHtml(c.label)+'</span><span class="v">'+(v?escapeHtml(v):'<span class="empty-note">—</span>')+'</span></div>';
         }).join("") + '</div>';
     });
@@ -884,7 +1157,7 @@
     var cols = [{k:"codigo", l:"Código", mono:true}, {k:"nome", l:"Nome"}];
     var campos = [];
     (cat.abas || []).forEach(function(aba){ (aba.campos || []).forEach(function(c){ if(c.tipo !== "arquivo") campos.push(c); }); });
-    campos.slice(0,2).forEach(function(c){ cols.push({k:"_campo:"+c.id, l:c.label, campoId:c.id}); });
+    campos.slice(0,2).forEach(function(c){ cols.push({k:"_campo:"+c.id, l:c.label, campoId:c.id, campoTipo:c.tipo, campoAparencia:c.aparencia}); });
     if((cat.ciclo_de_vida_valores||[]).length) cols.push({k:"ciclo_de_vida", l:"Ciclo de vida", badge:true});
     return cols;
   }
@@ -931,7 +1204,10 @@
       if(row.id === selectedId) tr.className = "selected";
       tr.innerHTML = cols.map(function(col){
         var val;
-        if(col.campoId){ val = row.campos ? row.campos[col.campoId] : undefined; }
+        if(col.campoId){
+          val = row.campos ? row.campos[col.campoId] : undefined;
+          if(val && col.campoTipo === "data") val = formatBR(val, col.campoAparencia === "data_hora");
+        }
         else if(ctx.type === "fixed"){ val = fixedCellValue(row, col); }
         else { val = row[col.k]; }
 
@@ -1260,6 +1536,7 @@
       '<button type="button" class="btn primary sm" id="ed-save">Salvar</button></span></div>';
     var bodyEl = document.getElementById("ed-body");
     tabs.wire(m); // só organiza em abas (sem update() — nada aqui trava por dependência)
+    wireDatePickers(bodyEl);
 
     function backToView(){ closeModal(); openDrawer(entityKey, id); }
     document.getElementById("modal-close").addEventListener("click", backToView);
@@ -1371,6 +1648,14 @@
     document.getElementById("drawer").classList.remove("show");
   }
   document.getElementById("drawer-close").addEventListener("click", closeDrawer);
+  // Rolar o mouse sobre um <input type="number"> focado muda o valor — bom
+  // para alguns casos, mas surpreende em campos de configuração (Valor
+  // mínimo/máximo etc.). Desativado em toda a aplicação.
+  document.addEventListener("wheel", function(e){
+    if(document.activeElement && document.activeElement.tagName === "INPUT" && document.activeElement.type === "number"){
+      e.preventDefault();
+    }
+  }, { passive:false });
   // Busca só dispara ao confirmar (Enter ou botão) — não filtra a cada tecla.
   // Campo vazio confirmado volta a mostrar todos os registros.
   function runSearch(){ searchText = document.getElementById("search").value; render(); }
@@ -1403,7 +1688,7 @@
   // Ajuda — explica os conceitos do sistema; atualizar HELP_SECTIONS e
   // HELP_CHANGELOG a cada nova versão publicada.
   // =========================================================================
-  var APP_VERSION = "v14";
+  var APP_VERSION = "v20";
   var HELP_SECTIONS = [
     { titulo:"O que é o Registro ABA",
       corpo:"<p>Protótipo funcional de um sistema de gestão fundiária — pensado para substituir o modelo rígido de \"processo/formulário\" por Entidades e Formulários totalmente configuráveis. Os dados aqui são de exemplo.</p>" },
@@ -1451,9 +1736,24 @@
         "<p><strong>Cálculo</strong> é uma caixinha própria: marque para revelar a Fórmula.</p>" +
         "<p><strong>Visível</strong> tira o campo de circulação por completo (nem na criação, nem na edição, nem no cálculo obrigatório). <strong>Somente leitura</strong> mostra o campo mas não deixa editar. <strong>Campo requisito</strong> só aparece depois que o campo escolhido tiver um valor, e o \"Valor do Requisito\" é opcional: deixe em branco para aparecer assim que qualquer valor for preenchido, ou informe um valor específico que ele precisa ter.</p>" },
     { titulo:"Propriedades de um campo tipo Número",
-      corpo:"<p>Um campo tipo Número tem uma <strong>Aparência</strong> própria — <strong>Inteiro</strong> ou <strong>Decimal</strong> — mais <strong>Valor mínimo</strong> e <strong>Valor máximo</strong> (opcionais, deixe em branco para não limitar). Quando a aparência é Decimal, aparece também a <strong>Precisão</strong>: quantas casas depois da vírgula são aceitas.</p>" }
+      corpo:"<p>Um campo tipo Número tem uma <strong>Aparência</strong> própria — <strong>Inteiro</strong> ou <strong>Decimal</strong> — mais <strong>Valor mínimo</strong> e <strong>Valor máximo</strong> (opcionais, deixe em branco para não limitar). Quando a aparência é Decimal, aparece também a <strong>Precisão</strong>: quantas casas depois da vírgula são aceitas.</p>" },
+    { titulo:"Propriedades de um campo tipo Data",
+      corpo:"<p>Um campo tipo Data tem uma <strong>Aparência</strong> — <strong>Só data</strong> ou <strong>Data e Hora</strong> — seguida de <strong>Valor padrão</strong>, <strong>Data mínima</strong> e <strong>Data máxima</strong> (todos opcionais), cada um com um calendário próprio do sistema (sempre em formato brasileiro, dd/mm/aaaa — nunca o seletor nativo do navegador) e um botão ao lado. Com Aparência \"Só data\" o botão é <strong>Hoje</strong>: aperta e o calendário fica desabilitado, mostrando sempre a data de hoje (recalculada a cada novo registro). Com Aparência \"Data e Hora\" o mesmo botão vira <strong>Atual</strong>: marca o dia de hoje e também a hora exata do momento. Apertar de novo devolve um calendário normal, vazio, para escolher uma data (e hora) fixa. O mesmo calendário aparece ao preencher ou editar um registro.</p>" },
+    { titulo:"Propriedades de um campo tipo Código",
+      corpo:"<p>Um campo tipo Código não tem Dica, Valor padrão, Cálculo nem Campo requisito — o valor é sempre gerado sozinho ao salvar, e o campo é sempre obrigatório e somente leitura. A <strong>Lógica</strong> escolhe como:</p>" +
+        "<ul>" +
+        "<li><strong>Sequencial</strong> — um número que aumenta a cada registro, a partir de um Início configurável; pode manter sempre o mesmo número de casas (000001, 000002...) ou não (1, 2...).</li>" +
+        "<li><strong>GlobalID</strong> — um identificador único gerado na hora, no formato do ArcGIS (ex.: <code>{3D2FA6E2-1EAE-4C1E-9F2E-2A6B4B3F1A2C}</code>).</li>" +
+        "<li><strong>Personalizado</strong> — você monta a estrutura do código combinando Ano, Mês, Dia, texto fixo e um Sequencial (sempre presente, com as mesmas opções do Sequencial puro), na ordem que quiser — ex.: <code>CAL0001-2026</code> ou <code>060920261</code>.</li>" +
+        "</ul>" }
   ];
   var HELP_CHANGELOG = [
+    { versao:"v20", texto:"Na Configuração de um campo Data, \"Valor padrão\" passou a aparecer depois de \"Aparência\" (antes vinha antes, junto com Dica). Além disso, quando a Aparência é \"Data e Hora\", o botão \"Hoje\" (em Valor padrão, Data mínima e Data máxima) vira \"Atual\": além do dia de hoje, marca também a hora exata do momento — recalculada a cada novo registro, igual já acontecia só com a data em \"Só data\"." },
+    { versao:"v19", texto:"O seletor de data nativo do v18 não aparecia de forma confiável (o popup de calendário do navegador não é garantido dentro do iframe do Artifact) e sempre mostrava a data no formato americano (mm/dd/aaaa), algo que não dá para mudar num <input> nativo. Substituído por um calendário próprio, desenhado como conteúdo normal da página — sempre visível, sempre em formato brasileiro (dd/mm/aaaa) — usado tanto na Configuração (Valor padrão/Data mínima/máxima, com o botão \"Hoje\" preservado do jeito que estava) quanto ao preencher ou editar um registro. O valor guardado por baixo continua o mesmo texto de sempre — só a aparência mudou." },
+    { versao:"v18", texto:"Valor padrão, Data mínima e Data máxima de um campo Data ganharam um seletor de data nativo (calendário) com um botão \"Hoje\" ao lado — aperta o botão e o seletor fica desabilitado, sempre mostrando a data de hoje (recalculada a cada novo registro); aperta de novo e volta a um seletor normal, vazio, para escolher uma data fixa. Sem mais texto livre nem placeholder de exemplo nesses três campos." },
+    { versao:"v17", texto:"Revertido o checkbox do v16 (forçava um modo separado) — Valor padrão, Data mínima e Data máxima de um campo Data voltaram a ser um texto livre onde \"hoje\" ou \"today()\" (ao estilo da função today() do Survey123) são só mais uma opção entre outras, nunca obrigatória: quem não usar a variável digita a data fixa normalmente." },
+    { versao:"v16", texto:"Valor padrão de um campo Data: \"Hoje\" deixou de ser só uma dica no placeholder — agora é um checkbox (\"Usar 'Hoje' (data atual) como variável\") que, quando ligado, mostra a própria data de hoje resolvida no campo (desabilitado, porque é sempre recalculada a cada novo registro, não um valor fixo digitado)." },
+    { versao:"v15", texto:"Rolar o mouse sobre um campo numérico focado não muda mais o valor sem querer; selecionar ou remover uma aba/campo na Configuração não volta mais ao topo, fica no mesmo lugar; campo tipo Data ganhou Aparência (Só data/Data e Hora), Data mínima/máxima e a variável \"hoje\" (também disponível no Valor padrão); campo tipo Código perdeu a Aparência solta e ganhou Lógica (Sequencial, GlobalID, ou um construtor Personalizado com Ano/Mês/Dia/texto fixo/Sequencial) — uma vez configurado, o campo é sempre obrigatório e somente leitura, sem Dica, Cálculo ou Campo requisito." },
     { versao:"v14", texto:"Removido o tipo de campo \"E-mail\" (já coberto por Texto com Aparência E-mail); campo tipo Número ganhou Aparência (Inteiro/Decimal), Valor mínimo, Valor máximo e, quando Decimal, Precisão (casas decimais) — tudo validado ao salvar." },
     { versao:"v13", texto:"Placeholder em itálico agora vale para todo campo, em toda Entidade/Formulário — inclusive campos nativos como Nome (antes só campos com Dica configurada ficavam em itálico)." },
     { versao:"v12", texto:"Os campos padrão do registro (Nome, campos nativos da Entidade e, na edição, Ciclo de vida) agora aparecem dentro de uma primeira aba \"Dados Básicos\", como parte da mesma estrutura de abas — antes ficavam soltos antes das abas; placeholder que vem da Dica configurada no campo agora aparece em itálico, para se distinguir do placeholder genérico." },
@@ -1624,6 +1924,7 @@
   function openConfigModal(key, seed){
     configTab = "ciclo";
     configSelection = null;
+    calendarOpen = null;
     modal = { type:"config", key:key, draft: buildDraft(key, seed) };
     renderConfigModal();
     openModalShell();
@@ -1649,6 +1950,12 @@
     var title = ctx.type === "fixed" ? ctx.def.label : (ctx.categoria ? ctx.categoria.nome : "—");
     var m = document.getElementById("modal");
     m.classList.toggle("wide", configTab === "abas");
+
+    // Selecionar uma aba/campo, ou remover um deles, reconstrói o modal
+    // inteiro — sem isso a rolagem do canvas (que pode ter muitas abas e
+    // campos) voltaria sempre ao topo a cada clique. Guarda e restaura.
+    var prevCanvas = m.querySelector(".cfg-canvas");
+    var canvasScroll = prevCanvas ? prevCanvas.scrollTop : 0;
 
     m.innerHTML =
       '<div class="modal-head"><div><h3>Configurar — '+escapeHtml(title)+'</h3>'+
@@ -1677,6 +1984,9 @@
     var body = document.getElementById("modal-body");
     body.innerHTML = configTab === "ciclo" ? cicloTabHtml(draft) : abasTabHtml(draft);
     wireConfigTabEvents(key);
+
+    var newCanvas = m.querySelector(".cfg-canvas");
+    if(newCanvas) newCanvas.scrollTop = canvasScroll;
 
     function tabBtn(id, label){ return '<button class="modal-tab'+(configTab===id?" active":"")+'" data-tab="'+id+'">'+label+'</button>'; }
   }
@@ -1734,6 +2044,9 @@
         ? !!abas[configSelection.ai]
         : !!(abas[configSelection.ai] && abas[configSelection.ai].campos && abas[configSelection.ai].campos[configSelection.ci]);
       if(!stillValid) configSelection = null;
+    }
+    if(calendarOpen && (!configSelection || configSelection.type !== "campo" || configSelection.ai !== calendarOpen.ai || configSelection.ci !== calendarOpen.ci)){
+      calendarOpen = null; // trocou de seleção — fecha o calendário aberto do campo anterior
     }
     var html = '<div class="cfg-builder">' + paletteHtml() + canvasHtml(abas) + propsHtml(draft) + '</div>';
     html += flowSummaryHtml(abas);
@@ -1820,11 +2133,14 @@
       var deps = allCamposGlobal.filter(function(o){ return o.id !== c.id; });
       var options = FIELD_TYPES.map(function(t){ return '<option value="'+t.v+'"'+(c.tipo===t.v?" selected":"")+'>'+t.l+'</option>'; }).join("");
       var maxLenAtual = (c.aparencia==="email"||c.aparencia==="link") ? 500 : (c.maxLength||"");
+      var isCodigo = c.tipo === "codigo";
       html += '<div class="props-title">Propriedades do campo</div>' +
         '<div class="field"><label>Rótulo</label><input type="text" value="'+escapeHtml(c.label||"")+'" data-campo-label="'+ai2+':'+ci2+'"></div>' +
         '<div class="field"><label>Tipo</label><select data-campo-tipo="'+ai2+':'+ci2+'">'+options+'</select></div>' +
-        '<div class="field"><label>Dica</label><input type="text" value="'+escapeHtml(c.ajuda||"")+'" data-campo-ajuda="'+ai2+':'+ci2+'" placeholder="Instrução exibida junto ao campo"></div>' +
-        '<div class="field"><label>Valor padrão</label><input type="text" value="'+escapeHtml(c.valorPadrao||"")+'" data-campo-padrao="'+ai2+':'+ci2+'" placeholder="Valor padrão fixo"></div>' +
+        (isCodigo ? "" :
+          '<div class="field"><label>Dica</label><input type="text" value="'+escapeHtml(c.ajuda||"")+'" data-campo-ajuda="'+ai2+':'+ci2+'" placeholder="Instrução exibida junto ao campo"></div>' +
+          (c.tipo === "data" ? "" :
+            '<div class="field"><label>Valor padrão</label><input type="text" value="'+escapeHtml(c.valorPadrao||"")+'" data-campo-padrao="'+ai2+':'+ci2+'" placeholder="Valor padrão fixo"></div>')) +
         (c.tipo === "texto" ?
           '<div class="field"><label>Aparência</label><select data-campo-aparencia-texto="'+ai2+':'+ci2+'">' +
             APARENCIA_TEXTO.map(function(o){ return '<option value="'+o.v+'"'+((c.aparencia||"unica_linha")===o.v?" selected":"")+'>'+o.l+'</option>'; }).join("") +
@@ -1837,23 +2153,37 @@
           '<div class="field"><label>Valor mínimo</label><input type="number" value="'+(c.valorMinimo!=null&&c.valorMinimo!==""?escapeHtml(String(c.valorMinimo)):"")+'" data-campo-num-min="'+ai2+':'+ci2+'" placeholder="Sem mínimo"></div>' +
           '<div class="field"><label>Valor máximo</label><input type="number" value="'+(c.valorMaximo!=null&&c.valorMaximo!==""?escapeHtml(String(c.valorMaximo)):"")+'" data-campo-num-max="'+ai2+':'+ci2+'" placeholder="Sem máximo"></div>' +
           (c.aparencia === "decimal" ? '<div class="field"><label>Precisão (casas decimais)</label><input type="number" min="0" max="10" value="'+escapeHtml(c.precisao!=null?String(c.precisao):"2")+'" data-campo-precisao="'+ai2+':'+ci2+'"></div>' : "")
+        : c.tipo === "data" ?
+          '<div class="field"><label>Aparência</label><select data-campo-aparencia-data="'+ai2+':'+ci2+'">' +
+            APARENCIA_DATA.map(function(o){ return '<option value="'+o.v+'"'+((c.aparencia||"data")===o.v?" selected":"")+'>'+o.l+'</option>'; }).join("") +
+          '</select></div>' +
+          dataVarFieldHtml("Valor padrão", c.valorPadrao, c.aparencia, "valorPadrao", "data-campo-padrao-hoje", ai2, ci2) +
+          dataVarFieldHtml("Data mínima", c.dataMinima, c.aparencia, "dataMinima", "data-campo-data-min-hoje", ai2, ci2) +
+          dataVarFieldHtml("Data máxima", c.dataMaxima, c.aparencia, "dataMaxima", "data-campo-data-max-hoje", ai2, ci2)
+        : isCodigo ? campoLogicaHtml(c, ai2, ci2)
         : '<div class="field"><label>Aparência</label><input type="text" value="'+escapeHtml(c.aparencia||"")+'" data-campo-aparencia="'+ai2+':'+ci2+'" placeholder="ex.: multiline, minimal"></div>') +
         '<div class="campo-props">' +
-          propCheck(ai2,ci2,"obrigatorio","Obrigatório",c.obrigatorio) +
-          propCheck(ai2,ci2,"visivel","Visível",c.visivel !== false) +
-          propCheck(ai2,ci2,"leitura","Somente leitura",c.leitura) +
+          (isCodigo ?
+            '<label class="disabled-note"><input type="checkbox" checked disabled> Obrigatório (sempre, com Lógica configurada)</label>' +
+            propCheck(ai2,ci2,"visivel","Visível",c.visivel !== false) +
+            '<label class="disabled-note"><input type="checkbox" checked disabled> Somente leitura (sempre)</label>'
+          :
+            propCheck(ai2,ci2,"obrigatorio","Obrigatório",c.obrigatorio) +
+            propCheck(ai2,ci2,"visivel","Visível",c.visivel !== false) +
+            propCheck(ai2,ci2,"leitura","Somente leitura",c.leitura)) +
         '</div>' +
-        '<div class="calc-block'+(c.calculado?' is-on':'')+'">' +
-          '<label class="calc-toggle"><input type="checkbox" data-campo-prop="'+ai2+':'+ci2+':calculado" '+(c.calculado?"checked":"")+'> Cálculo</label>' +
-          (c.calculado ? '<div class="field"><label>Fórmula</label>' +
-            '<input type="text" data-campo-formula="'+ai2+':'+ci2+'" value="'+escapeHtml(c.formula||"")+'" placeholder="Ex.: {area_a} + {area_b}"></div>' : '') +
-        '</div>' +
-        '<div class="field"><label>Campo requisito</label>' +
-          '<select data-campo-dependecampo="'+ai2+':'+ci2+'"><option value="">Nenhum — sempre aparece</option>' +
-          deps.map(function(o){ return '<option value="'+o.id+'"'+(c.dependeCampo===o.id?" selected":"")+'>'+escapeHtml(o.label)+' ('+escapeHtml(o.abaNome)+')</option>'; }).join("") +
-          '</select></div>' +
-        (c.dependeCampo ? '<div class="field"><label>Valor do Requisito</label>' +
-          '<input type="text" data-campo-dependevalor="'+ai2+':'+ci2+'" value="'+escapeHtml(c.dependeValor||"")+'"></div>' : '') +
+        (isCodigo ? "" :
+          '<div class="calc-block'+(c.calculado?' is-on':'')+'">' +
+            '<label class="calc-toggle"><input type="checkbox" data-campo-prop="'+ai2+':'+ci2+':calculado" '+(c.calculado?"checked":"")+'> Cálculo</label>' +
+            (c.calculado ? '<div class="field"><label>Fórmula</label>' +
+              '<input type="text" data-campo-formula="'+ai2+':'+ci2+'" value="'+escapeHtml(c.formula||"")+'" placeholder="Ex.: {area_a} + {area_b}"></div>' : '') +
+          '</div>' +
+          '<div class="field"><label>Campo requisito</label>' +
+            '<select data-campo-dependecampo="'+ai2+':'+ci2+'"><option value="">Nenhum — sempre aparece</option>' +
+            deps.map(function(o){ return '<option value="'+o.id+'"'+(c.dependeCampo===o.id?" selected":"")+'>'+escapeHtml(o.label)+' ('+escapeHtml(o.abaNome)+')</option>'; }).join("") +
+            '</select></div>' +
+          (c.dependeCampo ? '<div class="field"><label>Valor do Requisito</label>' +
+            '<input type="text" data-campo-dependevalor="'+ai2+':'+ci2+'" value="'+escapeHtml(c.dependeValor||"")+'"></div>' : '')) +
         '<div class="small-btn-row"><button type="button" class="btn sm danger" data-remove-campo="'+ai2+':'+ci2+'">Remover este campo</button></div>';
     }
     html += '</div>';
@@ -1861,6 +2191,92 @@
     function propCheck(ai,ci,key,label,checked){
       return '<label><input type="checkbox" data-campo-prop="'+ai+':'+ci+':'+key+'" '+(checked?"checked":"")+'> '+label+'</label>';
     }
+  }
+
+  // Campo de data (Valor padrão, Data mínima, Data máxima) — um botão
+  // mostrando a data em formato brasileiro que expande um calendário próprio
+  // da página (calendarGridHtml, nunca o popup nativo do navegador) + um
+  // botão "Hoje" ao lado. Aperta "Hoje" e o botão do calendário fica
+  // desabilitado (cinza), sempre mostrando a data de hoje já resolvida
+  // (recalculada a cada novo registro). Apertar de novo desativa e devolve
+  // um calendário normal, vazio, para escolher uma data fixa.
+  function dataVarFieldHtml(label, value, aparencia, fieldKey, toggleAttr, ai2, ci2){
+    var isHoje = (String(value||"").trim().toLowerCase() === "hoje");
+    var isDH = aparencia === "data_hora";
+    var hojeResolvido = isDH ? (todayISO() + "T" + nowHHMM()) : todayISO();
+    var shown = isHoje ? hojeResolvido : (value||"");
+    var isOpen = calendarOpen && calendarOpen.ai === ai2 && calendarOpen.ci === ci2 && calendarOpen.field === fieldKey;
+    var display = shown ? formatBR(shown, isDH) : "Selecionar data…";
+    var hojeLabel = isDH ? "Atual" : "Hoje";
+    var hojeTitle = isDH ? "Sempre a data e hora atuais" : "Sempre a data de hoje";
+    var html = '<div class="field"><label>'+escapeHtml(label)+'</label>' +
+      '<div class="data-var-row">' +
+        '<button type="button" class="btn sm date-picker-toggle" data-cal-toggle="'+fieldKey+':'+ai2+':'+ci2+'"'+(isHoje?" disabled":"")+'>'+escapeHtml(display)+'</button>' +
+        '<button type="button" class="btn sm toggle-hoje'+(isHoje?" active":"")+'" '+toggleAttr+'="'+ai2+':'+ci2+'" title="'+hojeTitle+'">'+hojeLabel+'</button>' +
+      '</div>';
+    if(isOpen && !isHoje){
+      var t = /T(\d{2}):(\d{2})/.exec(shown||"");
+      html += '<div class="date-picker-panel cfg-cal">' +
+        calendarGridHtml(calendarOpen.viewYear, calendarOpen.viewMonth, shown ? shown.slice(0,10) : null, null, null) +
+        (isDH ? timeSelectHtml(t?t[1]:"00", t?t[2]:"00") : "") +
+      '</div>';
+    }
+    html += '</div>';
+    return html;
+  }
+
+  // Configuração do Sequencial — Início (sempre inteiro e positivo) e o
+  // liga/desliga de "sempre com o mesmo número de casas" (zero à esquerda:
+  // 000001, 000002... em vez de 1, 2...). Reaproveitada tanto pela Lógica
+  // "Sequencial" pura quanto pelo segmento Sequencial dentro de "Personalizado".
+  function sequencialConfigHtml(c, ai2, ci2){
+    var logica = c.logica || {};
+    var temPadding = logica.padding != null;
+    return '<div class="field"><label>Início</label><input type="number" min="1" step="1" value="'+escapeHtml(String(logica.inicio!=null?logica.inicio:1))+'" data-campo-logica-inicio="'+ai2+':'+ci2+'"></div>' +
+      '<label class="calc-toggle"><input type="checkbox" data-campo-logica-padding-on="'+ai2+':'+ci2+'" '+(temPadding?"checked":"")+'> Sempre com o mesmo número de casas</label>' +
+      (temPadding ? '<div class="field"><label>Número de casas</label><input type="number" min="1" max="12" value="'+escapeHtml(String(logica.padding))+'" data-campo-logica-padding="'+ai2+':'+ci2+'"></div>' : '');
+  }
+
+  // Lógica de um campo tipo "Código" — Sequencial, GlobalID, ou um
+  // construtor Personalizado (Ano/Mês/Dia/texto fixo + Sequencial, este
+  // último sempre presente e não removível, na mesma ordem que o usuário montar).
+  function campoLogicaHtml(c, ai2, ci2){
+    var logica = c.logica || {tipo:"sequencial", inicio:1};
+    var html = '<div class="field"><label>Lógica</label><select data-campo-logica-tipo="'+ai2+':'+ci2+'">' +
+      LOGICA_TIPOS.map(function(o){ return '<option value="'+o.v+'"'+(logica.tipo===o.v?" selected":"")+'>'+o.l+'</option>'; }).join("") +
+    '</select></div>';
+    if(logica.tipo === "globalid"){
+      html += '<p class="empty-note">Gera um identificador único ao salvar — ex.: '+escapeHtml(gerarGlobalId())+'</p>';
+    } else if(logica.tipo === "personalizado"){
+      var segs = (logica.segmentos && logica.segmentos.length) ? logica.segmentos : [{tipo:"sequencial"}];
+      html += '<div class="field"><label>Estrutura do código (em ordem)</label><div class="checklist">' +
+        segs.map(function(s, si){
+          var label = s.tipo === "literal"
+            ? '<input type="text" value="'+escapeHtml(s.valor||"")+'" data-campo-seg-literal="'+ai2+':'+ci2+':'+si+'" placeholder="Texto fixo">'
+            : '<span>'+escapeHtml(LOGICA_SEGMENTO_LABEL[s.tipo]||s.tipo)+'</span>';
+          return '<div class="segmento-row">' + label +
+            '<span class="small-btn-row">' +
+              '<button type="button" class="btn sm" data-campo-seg-up="'+ai2+':'+ci2+':'+si+'"'+(si===0?" disabled":"")+'>↑</button>' +
+              '<button type="button" class="btn sm" data-campo-seg-down="'+ai2+':'+ci2+':'+si+'"'+(si===segs.length-1?" disabled":"")+'>↓</button>' +
+              (s.tipo !== "sequencial" ? '<button type="button" class="cf-remove" data-campo-seg-remove="'+ai2+':'+ci2+':'+si+'" title="Remover">✕</button>' : '') +
+            '</span></div>';
+        }).join("") +
+      '</div></div>' +
+      '<div class="small-btn-row">' +
+        '<button type="button" class="btn sm" data-campo-seg-add="'+ai2+':'+ci2+':literal">+ Texto fixo</button>' +
+        '<button type="button" class="btn sm" data-campo-seg-add="'+ai2+':'+ci2+':ano">+ Ano</button>' +
+        '<button type="button" class="btn sm" data-campo-seg-add="'+ai2+':'+ci2+':mes">+ Mês</button>' +
+        '<button type="button" class="btn sm" data-campo-seg-add="'+ai2+':'+ci2+':dia">+ Dia</button>' +
+      '</div>' +
+      '<div class="props-heading">Configuração do Sequencial</div>' +
+      sequencialConfigHtml(c, ai2, ci2);
+    } else {
+      html += sequencialConfigHtml(c, ai2, ci2);
+    }
+    if(logica.tipo !== "globalid"){
+      html += '<p class="empty-note">Exemplo: <strong>'+escapeHtml(gerarCodigoValor(c, 0))+'</strong></p>';
+    }
+    return html;
   }
 
   function flowSummaryHtml(abas){
@@ -1940,6 +2356,8 @@
         var novoCampo = {id:uid("campo"), label:"Novo campo", tipo:tipo, obrigatorio:false, visivel:true};
         if(tipo === "texto") novoCampo.aparencia = "unica_linha";
         if(tipo === "numero") novoCampo.aparencia = "inteiro";
+        if(tipo === "data") novoCampo.aparencia = "data";
+        if(tipo === "codigo"){ novoCampo.logica = {tipo:"sequencial", inicio:1}; novoCampo.obrigatorio = true; novoCampo.leitura = true; }
         draft.abas[ai].campos.push(novoCampo);
         configSelection = {type:"campo", ai:ai, ci: draft.abas[ai].campos.length-1};
         renderConfigModal();
@@ -1948,8 +2366,13 @@
     Array.prototype.forEach.call(m.querySelectorAll("[data-remove-aba]"), function(btn){
       btn.addEventListener("click", function(e){
         e.stopPropagation();
-        draft.abas.splice(parseInt(btn.getAttribute("data-remove-aba"),10),1);
-        configSelection = null;
+        var ai = parseInt(btn.getAttribute("data-remove-aba"),10);
+        draft.abas.splice(ai,1);
+        // Mantém a seleção "no mesmo lugar" — a aba que tomou o lugar da
+        // removida (ou a anterior, se era a última) — em vez de esvaziar
+        // o painel de propriedades.
+        if(draft.abas.length === 0) configSelection = null;
+        else configSelection = {type:"aba", ai: Math.min(ai, draft.abas.length-1)};
         renderConfigModal();
       });
     });
@@ -2010,7 +2433,9 @@
         e.stopPropagation();
         var p = btn.getAttribute("data-remove-campo").split(":");
         draft.abas[+p[0]].campos.splice(+p[1],1);
-        configSelection = null;
+        // Fica selecionada a aba do campo removido, em vez de esvaziar o
+        // painel de propriedades — "no mesmo lugar" em vez de voltar ao início.
+        configSelection = {type:"aba", ai:+p[0]};
         renderConfigModal();
       });
     });
@@ -2030,7 +2455,12 @@
         campo.tipo = sel.value;
         // Aparência é específica de cada tipo — zera a de outro tipo que
         // possa ter ficado (ex.: "unica_linha" de quando era Texto).
-        campo.aparencia = sel.value === "texto" ? "unica_linha" : (sel.value === "numero" ? "inteiro" : null);
+        campo.aparencia = sel.value === "texto" ? "unica_linha" : (sel.value === "numero" ? "inteiro" : (sel.value === "data" ? "data" : null));
+        if(sel.value === "codigo"){
+          campo.logica = campo.logica || {tipo:"sequencial", inicio:1};
+          campo.obrigatorio = true;
+          campo.leitura = true;
+        }
         renderConfigModal();
       });
     });
@@ -2056,8 +2486,15 @@
     Array.prototype.forEach.call(m.querySelectorAll("[data-campo-dependevalor]"), function(inp){
       inp.addEventListener("input", function(){ var p=inp.getAttribute("data-campo-dependevalor").split(":"); draft.abas[+p[0]].campos[+p[1]].dependeValor = inp.value; });
     });
-    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-padrao]"), function(inp){
-      inp.addEventListener("input", function(){ var p=inp.getAttribute("data-campo-padrao").split(":"); draft.abas[+p[0]].campos[+p[1]].valorPadrao = inp.value; });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-padrao-hoje]"), function(btn){
+      btn.addEventListener("click", function(){
+        var p = btn.getAttribute("data-campo-padrao-hoje").split(":");
+        var campo = draft.abas[+p[0]].campos[+p[1]];
+        var isHoje = (String(campo.valorPadrao||"").trim().toLowerCase() === "hoje");
+        campo.valorPadrao = isHoje ? "" : "hoje";
+        calendarOpen = null;
+        renderConfigModal();
+      });
     });
     Array.prototype.forEach.call(m.querySelectorAll("[data-campo-ajuda]"), function(inp){
       inp.addEventListener("input", function(){ var p=inp.getAttribute("data-campo-ajuda").split(":"); draft.abas[+p[0]].campos[+p[1]].ajuda = inp.value; });
@@ -2103,6 +2540,172 @@
         var p = inp.getAttribute("data-campo-precisao").split(":");
         var v = parseInt(inp.value, 10);
         draft.abas[+p[0]].campos[+p[1]].precisao = (isNaN(v) || v < 0) ? 0 : v;
+      });
+    });
+    // ---- Campo tipo Data — Aparência (Só data/Data e Hora), Data mínima/máxima ----
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-aparencia-data]"), function(sel){
+      sel.addEventListener("change", function(){
+        var p = sel.getAttribute("data-campo-aparencia-data").split(":");
+        draft.abas[+p[0]].campos[+p[1]].aparencia = sel.value;
+        calendarOpen = null;
+        renderConfigModal(); // Data e Hora troca o calendário para incluir hora/minuto
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-data-min-hoje]"), function(btn){
+      btn.addEventListener("click", function(){
+        var p = btn.getAttribute("data-campo-data-min-hoje").split(":");
+        var campo = draft.abas[+p[0]].campos[+p[1]];
+        var isHoje = (String(campo.dataMinima||"").trim().toLowerCase() === "hoje");
+        campo.dataMinima = isHoje ? "" : "hoje";
+        calendarOpen = null;
+        renderConfigModal();
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-data-max-hoje]"), function(btn){
+      btn.addEventListener("click", function(){
+        var p = btn.getAttribute("data-campo-data-max-hoje").split(":");
+        var campo = draft.abas[+p[0]].campos[+p[1]];
+        var isHoje = (String(campo.dataMaxima||"").trim().toLowerCase() === "hoje");
+        campo.dataMaxima = isHoje ? "" : "hoje";
+        calendarOpen = null;
+        renderConfigModal();
+      });
+    });
+    // ---- Calendário próprio (Valor padrão/Data mínima/máxima) — abre/fecha,
+    // navega mês e escolhe o dia (e, com Data e Hora, hora/minuto); um único
+    // calendário aberto por vez, guardado em calendarOpen. ----
+    Array.prototype.forEach.call(m.querySelectorAll("[data-cal-toggle]"), function(btn){
+      btn.addEventListener("click", function(){
+        var p = btn.getAttribute("data-cal-toggle").split(":");
+        var fieldKey = p[0], ai = +p[1], ci = +p[2];
+        var jaAberto = calendarOpen && calendarOpen.ai === ai && calendarOpen.ci === ci && calendarOpen.field === fieldKey;
+        if(jaAberto){
+          calendarOpen = null;
+        } else {
+          var campo = draft.abas[ai].campos[ci];
+          var iso = resolveDataVar(campo[fieldKey]) || todayISO();
+          var base = new Date(iso.slice(0,10) + "T00:00:00");
+          calendarOpen = {ai:ai, ci:ci, field:fieldKey, viewYear: base.getFullYear(), viewMonth: base.getMonth()};
+        }
+        renderConfigModal();
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-cal-nav]"), function(btn){
+      btn.addEventListener("click", function(){
+        if(!calendarOpen) return;
+        calendarOpen.viewMonth += parseInt(btn.getAttribute("data-cal-nav"), 10);
+        if(calendarOpen.viewMonth < 0){ calendarOpen.viewMonth = 11; calendarOpen.viewYear--; }
+        else if(calendarOpen.viewMonth > 11){ calendarOpen.viewMonth = 0; calendarOpen.viewYear++; }
+        renderConfigModal();
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-cal-pick]"), function(btn){
+      btn.addEventListener("click", function(){
+        if(!calendarOpen || btn.disabled) return;
+        var campo = draft.abas[calendarOpen.ai].campos[calendarOpen.ci];
+        var isDH = campo.aparencia === "data_hora";
+        var iso = btn.getAttribute("data-cal-pick");
+        var h = "00", min = "00";
+        if(isDH){
+          var hSel = m.querySelector("[data-cal-hour]"), mSel = m.querySelector("[data-cal-minute]");
+          if(hSel) h = hSel.value; if(mSel) min = mSel.value;
+        }
+        campo[calendarOpen.field] = isDH ? (iso + "T" + h + ":" + min) : iso;
+        calendarOpen = null;
+        renderConfigModal();
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-cal-hour], [data-cal-minute]"), function(sel){
+      sel.addEventListener("change", function(){
+        if(!calendarOpen) return;
+        var campo = draft.abas[calendarOpen.ai].campos[calendarOpen.ci];
+        var iso = resolveDataVar(campo[calendarOpen.field]) || todayISO();
+        var h = m.querySelector("[data-cal-hour]").value, min = m.querySelector("[data-cal-minute]").value;
+        campo[calendarOpen.field] = iso.slice(0,10) + "T" + h + ":" + min;
+        renderConfigModal();
+      });
+    });
+    // ---- Campo tipo Código — Lógica (Sequencial/GlobalID/Personalizado) ----
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-logica-tipo]"), function(sel){
+      sel.addEventListener("change", function(){
+        var p = sel.getAttribute("data-campo-logica-tipo").split(":");
+        var campo = draft.abas[+p[0]].campos[+p[1]];
+        campo.logica = campo.logica || {};
+        campo.logica.tipo = sel.value;
+        if(campo.logica.inicio == null) campo.logica.inicio = 1;
+        if(sel.value === "personalizado" && !(campo.logica.segmentos && campo.logica.segmentos.length)){
+          campo.logica.segmentos = [{tipo:"sequencial"}];
+        }
+        renderConfigModal();
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-logica-inicio]"), function(inp){
+      inp.addEventListener("input", function(){
+        var p = inp.getAttribute("data-campo-logica-inicio").split(":");
+        var campo = draft.abas[+p[0]].campos[+p[1]];
+        campo.logica = campo.logica || {};
+        var v = parseInt(inp.value, 10);
+        campo.logica.inicio = (isNaN(v) || v < 1) ? 1 : v;
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-logica-padding-on]"), function(cb){
+      cb.addEventListener("change", function(){
+        var p = cb.getAttribute("data-campo-logica-padding-on").split(":");
+        var campo = draft.abas[+p[0]].campos[+p[1]];
+        campo.logica = campo.logica || {};
+        campo.logica.padding = cb.checked ? (campo.logica.padding || 6) : null;
+        renderConfigModal();
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-logica-padding]"), function(inp){
+      inp.addEventListener("input", function(){
+        var p = inp.getAttribute("data-campo-logica-padding").split(":");
+        var campo = draft.abas[+p[0]].campos[+p[1]];
+        campo.logica = campo.logica || {};
+        var v = parseInt(inp.value, 10);
+        campo.logica.padding = (isNaN(v) || v < 1) ? 1 : v;
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-seg-add]"), function(btn){
+      btn.addEventListener("click", function(){
+        var p = btn.getAttribute("data-campo-seg-add").split(":");
+        var campo = draft.abas[+p[0]].campos[+p[1]];
+        campo.logica = campo.logica || {tipo:"personalizado", inicio:1};
+        campo.logica.segmentos = campo.logica.segmentos || [];
+        var tipo = p[2];
+        campo.logica.segmentos.push(tipo === "literal" ? {tipo:"literal", valor:""} : {tipo:tipo});
+        renderConfigModal();
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-seg-remove]"), function(btn){
+      btn.addEventListener("click", function(){
+        var p = btn.getAttribute("data-campo-seg-remove").split(":");
+        draft.abas[+p[0]].campos[+p[1]].logica.segmentos.splice(+p[2], 1);
+        renderConfigModal();
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-seg-up]"), function(btn){
+      btn.addEventListener("click", function(){
+        var p = btn.getAttribute("data-campo-seg-up").split(":");
+        var segs = draft.abas[+p[0]].campos[+p[1]].logica.segmentos;
+        var i = +p[2];
+        if(i > 0){ var t = segs[i-1]; segs[i-1] = segs[i]; segs[i] = t; }
+        renderConfigModal();
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-seg-down]"), function(btn){
+      btn.addEventListener("click", function(){
+        var p = btn.getAttribute("data-campo-seg-down").split(":");
+        var segs = draft.abas[+p[0]].campos[+p[1]].logica.segmentos;
+        var i = +p[2];
+        if(i < segs.length-1){ var t = segs[i+1]; segs[i+1] = segs[i]; segs[i] = t; }
+        renderConfigModal();
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-seg-literal]"), function(inp){
+      inp.addEventListener("input", function(){
+        var p = inp.getAttribute("data-campo-seg-literal").split(":");
+        draft.abas[+p[0]].campos[+p[1]].logica.segmentos[+p[2]].valor = inp.value;
       });
     });
   }
@@ -2235,6 +2838,10 @@
       if(c.tipo === "arquivo"){
         return '<div class="field" data-campo-wrap="'+c.id+'"><label>'+escapeHtml(c.label)+'</label><input type="text" disabled placeholder="Upload não implementado neste protótipo"></div>';
       }
+      if(c.tipo === "codigo" && c.logica && c.logica.tipo){
+        return '<div class="field" data-campo-wrap="'+c.id+'"><label>'+escapeHtml(c.label)+' · gerado automaticamente</label>' +
+          '<input type="text" data-nr-campo="'+c.id+'" disabled placeholder="Preenchido ao salvar"></div>';
+      }
       return '<div class="field" data-campo-wrap="'+c.id+'"><label>'+escapeHtml(c.label)+(c.obrigatorio?' *':'')+(c.calculado?' · calculado':'')+(c.leitura?' · leitura':'')+'</label>' +
         campoControlHtml(c, "data-nr-campo", c.valorPadrao||"") + '</div>';
     }
@@ -2250,6 +2857,7 @@
       '<div class="modal-foot"><span id="nr-msg" class="empty-note"></span><button class="btn primary" id="nr-submit">Criar registro</button></div>';
     document.getElementById("modal-close").addEventListener("click", closeModal);
     tabs.wire(m);
+    wireDatePickers(m);
 
     function getVal(campoId){ return abaCampoValue(campoId); }
     function updateCalculados(){
@@ -2274,11 +2882,17 @@
     document.getElementById("nr-submit").addEventListener("click", async function(){
       var nome = document.getElementById("nr-nome").value.trim();
       var msg = document.getElementById("nr-msg");
+      var existingRows = cache.formulario_personalizado.filter(function(r){ return r.categoria_id === cat.id; });
       var campos = {}; var missing = []; var invalid = [];
       abas.forEach(function(aba){
         if(!isAbaUnlocked(aba, abas, getVal)) return; // campos de aba ainda bloqueada não contam
         (aba.campos||[]).forEach(function(c){
           if(c.visivel === false || !campoVisible(c, getVal)) return;
+          if(c.tipo === "codigo" && c.logica && c.logica.tipo){
+            var existentes = existingRows.filter(function(r){ return r.campos && r.campos[c.id]; }).length;
+            campos[c.id] = gerarCodigoValor(c, existentes);
+            return;
+          }
           var val = getVal(c.id);
           if(c.obrigatorio && !val) missing.push(c.label);
           if(val){
@@ -2319,6 +2933,10 @@
       if(c.tipo === "arquivo"){
         return '<div class="field" data-campo-wrap="'+c.id+'"><label>'+escapeHtml(c.label)+'</label><input type="text" disabled placeholder="Upload não implementado neste protótipo"></div>';
       }
+      if(c.tipo === "codigo" && c.logica && c.logica.tipo){
+        return '<div class="field" data-campo-wrap="'+c.id+'"><label>'+escapeHtml(c.label)+' · gerado automaticamente</label>' +
+          '<input type="text" data-nr-campo="'+c.id+'" disabled placeholder="Preenchido ao salvar"></div>';
+      }
       return '<div class="field" data-campo-wrap="'+c.id+'"><label>'+escapeHtml(c.label)+(c.obrigatorio?' *':'')+(c.calculado?' · calculado':'')+(c.leitura?' · leitura':'')+'</label>' +
         campoControlHtml(c, "data-nr-campo", c.valorPadrao||"") + '</div>';
     }
@@ -2357,6 +2975,7 @@
       '<div class="modal-foot"><span id="nf-msg" class="empty-note"></span><button class="btn primary" id="nf-submit">Criar '+escapeHtml(def.label)+'</button></div>';
     document.getElementById("modal-close").addEventListener("click", closeModal);
     tabs.wire(m);
+    wireDatePickers(m);
 
     var pendingTitulares = [];
     if(def.key === "titularidade"){
@@ -2470,11 +3089,17 @@
         }
       }
 
+      var existingRows = cache[def.key] || [];
       var campos = {}; var missing = []; var invalid = [];
       abas.forEach(function(aba){
         if(!isAbaUnlocked(aba, abas, getVal)) return;
         (aba.campos||[]).forEach(function(c){
           if(c.visivel === false || !campoVisible(c, getVal)) return;
+          if(c.tipo === "codigo" && c.logica && c.logica.tipo){
+            var existentes = existingRows.filter(function(r){ return r.campos && r.campos[c.id]; }).length;
+            campos[c.id] = gerarCodigoValor(c, existentes);
+            return;
+          }
           var val = getVal(c.id);
           if(c.obrigatorio && !val) missing.push(c.label);
           if(val){
@@ -2625,6 +3250,4 @@
   boot();
 })();
 </script>
-
-</body>
-</html>
+</head><body></body></html>
