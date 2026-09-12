@@ -373,6 +373,7 @@
   /* ---------- construtor de Abas & Campos (estilo Survey123: paleta / canvas / propriedades) ---------- */
   .modal.wide{max-width:1180px;}
   .cfg-builder{display:flex; gap:0; height:min(560px, 68vh);}
+  .cfg-builder.has-popup{height:min(720px, 86vh);}
   .cfg-pane{overflow-y:auto; min-width:0;}
   .cfg-palette{flex:0 0 220px; padding-right:16px; border-right:1px solid var(--border-soft);}
   .cfg-canvas{flex:1; padding:0 16px; background:var(--bg);}
@@ -406,11 +407,10 @@
   .modal.dragging-active .add-aba-drop-hint{display:inline;}
   .add-aba-btn.drag-target-hover{background:var(--info-bg);}
   .canvas-page-head .nav-glyph{background:transparent; border:1px solid currentColor; color:inherit;}
-  .canvas-page-head input{
-    flex:1; background:none; border:none; font-family:"IBM Plex Serif",serif; font-weight:600;
-    font-size:13.5px; color:inherit; min-width:0;
+  .canvas-page-head .canvas-page-title{
+    flex:1; font-family:"IBM Plex Serif",serif; font-weight:600;
+    font-size:13.5px; color:inherit; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
   }
-  .canvas-page-head input:focus{outline:1px solid currentColor; border-radius:4px;}
   .canvas-page-cond{font-size:11px; color:var(--ink-faint); padding:6px 11px 0;}
   .canvas-page-body{padding:10px 11px 11px;}
   .canvas-field{
@@ -460,6 +460,49 @@
   .geo-suggestion:last-child{border-bottom:none;}
   .geo-suggestion:hover{background:var(--surface-2); color:var(--accent);}
   .endloc-toggle-list{margin-bottom:6px;}
+
+  /* ---------- campo tipo "Consulta (referência)" ---------- */
+  .consulta-row{display:flex; gap:8px; align-items:center;}
+  .consulta-autocomplete{position:relative; flex:1; min-width:0;}
+  .consulta-autocomplete input{width:100%;}
+
+  /* ---------- campo tipo "Lista" (Sim/Não · Codificado) ---------- */
+  .lista-multi-checks{display:flex; flex-direction:column; gap:6px;}
+  .lista-multi-check{display:flex; align-items:center; gap:7px; font-size:13px;}
+  .lista-opcoes-list{display:flex; flex-direction:column; gap:6px; margin-bottom:8px;}
+  .lista-opcao-row{
+    display:flex; align-items:center; gap:6px; padding:6px 8px;
+    border:1px solid var(--border-soft); border-radius:8px; background:var(--surface);
+  }
+  .lista-opcao-row.dragging{opacity:.4;}
+  .lista-opcao-row input{flex:1; min-width:0; padding:6px 8px; border-radius:6px; border:1px solid var(--border); background:var(--surface); color:var(--ink); font-size:12.5px;}
+  .lista-opcao-row .lista-opcao-chave{flex:0 0 74px;}
+  /* ---------- Cálculo por regras (Lista) ---------- */
+  .regra-block{border:1px solid var(--border-soft); border-radius:8px; padding:10px 12px; margin-bottom:10px; background:var(--surface);}
+  .regra-head{display:flex; align-items:center; justify-content:space-between; font-size:12.5px; margin-bottom:8px;}
+  .regra-quando{display:flex; flex-direction:column; gap:6px; margin-bottom:8px;}
+  .condicao-row{display:flex; align-items:center; gap:6px; flex-wrap:wrap;}
+  .condicao-row select, .condicao-row input{flex:1; min-width:110px; padding:6px 8px; border-radius:6px; border:1px solid var(--border); background:var(--surface); color:var(--ink); font-size:12.5px;}
+
+  /* ---------- propriedades do campo como popup central (em vez de 3ª
+     coluna fixa) — ganha espaço para o canvas de abas/campos ---------- */
+  .cfg-builder{position:relative;}
+  .cfg-props-popup-overlay{
+    /* left:220px — largura fixa da paleta (.cfg-palette) — para o popup
+       cobrir só o canvas, deixando a paleta sempre clicável (dá pra
+       continuar adicionando campos com o popup de outro campo aberto). */
+    position:absolute; top:0; right:0; bottom:0; left:220px; z-index:6;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(15,20,14,.28); border-radius:0 10px 10px 0;
+  }
+  @media (max-width:880px){ .cfg-props-popup-overlay{ left:0; border-radius:10px; } }
+  .cfg-props-popup{
+    position:relative; background:var(--surface); border:1px solid var(--border-soft); border-radius:12px;
+    box-shadow:var(--shadow); width:min(760px, 96%); max-height:100%; overflow-y:auto; padding:20px 24px;
+  }
+  .cfg-props-popup .cfg-props{ border-left:none; padding-left:0; flex:none; }
+  .cfg-props-popup-close{ position:absolute; top:10px; right:10px; }
+  .cfg-props-popup-footer{ display:flex; justify-content:flex-end; margin-top:18px; padding-top:14px; border-top:1px solid var(--border-soft); }
 
   @media (max-width:880px){
     .sidebar{width:220px; flex-basis:220px;}
@@ -676,8 +719,9 @@
   var selectedId = null;
   var searchText = "";
   var modal = { type:null };       // 'config' | 'new-record' | 'new-categoria'
-  var configTab = "ciclo";
+  var configTab = "abas";
   var configSelection = null; // {type:"aba", ai} | {type:"campo", ai, ci} | null — seleção no construtor de Abas & Campos
+  var configSelectionSnapshot = null; // {sel:{type,ai,ci}, data} — cópia do campo/aba tirada ao abrir o popup de propriedades, para poder reverter no ✕
   var calendarOpen = null; // {ai, ci, field, viewYear, viewMonth} | null — calendário próprio (não nativo) aberto na Configuração
 
   function byId(list, id){ for(var i=0;i<list.length;i++){ if(list[i].id === id) return list[i]; } return null; }
@@ -731,13 +775,22 @@
     if(campos.length === 0) return true; // nada a preencher (aba vazia, ou tudo oculto) conta como preenchida
     return campos.every(function(c){ return getVal(c.id) !== ""; });
   }
-  function isAbaUnlocked(aba, abas, getVal){
+  // getValidado(abaId) -> booleano — se informado, lê o estado de validação
+  // (botão "Validar" clicado) de uma aba marcada como validável, mantido
+  // pelo abaTabsBuilder da sessão de criação/edição em andamento. Quando
+  // não informado (contextos sem um registro sendo preenchido, como o
+  // canvas de Configuração), uma condição "abas_validadas" nunca é
+  // satisfeita — trava por padrão, nunca libera à toa.
+  function isAbaUnlocked(aba, abas, getVal, getValidado){
     var cond = aba.condicao || {tipo:"livre"};
     if(cond.tipo === "abas"){
       return (cond.abas||[]).every(function(id){
         var other = abas.filter(function(a){ return a.id === id; })[0];
         return other ? isAbaFilled(other, getVal) : true;
       });
+    }
+    if(cond.tipo === "abas_validadas"){
+      return (cond.abas||[]).every(function(id){ return getValidado ? !!getValidado(id) : false; });
     }
     if(cond.tipo === "campos"){
       return (cond.campos||[]).every(function(id){ return getVal(id) !== ""; });
@@ -749,6 +802,10 @@
     if(cond.tipo === "abas" && (cond.abas||[]).length){
       var nomes = cond.abas.map(function(id){ var a = abas.filter(function(x){return x.id===id;})[0]; return a?a.nome:"?"; });
       return "aparece depois que <strong>" + nomes.map(escapeHtml).join(", ") + "</strong> estiver preenchida";
+    }
+    if(cond.tipo === "abas_validadas" && (cond.abas||[]).length){
+      var nomesV = cond.abas.map(function(id){ var a = abas.filter(function(x){return x.id===id;})[0]; return a?a.nome:"?"; });
+      return "aparece depois que <strong>" + nomesV.map(escapeHtml).join(", ") + "</strong> for(em) validada(s)";
     }
     if(cond.tipo === "campos" && (cond.campos||[]).length){
       var labels = [];
@@ -998,6 +1055,12 @@
     }
     if(c.tipo === "endereco_localidade"){
       return enderecoLocControlHtml(c, attrName, value);
+    }
+    if(c.tipo === "lista" && !c.calculado){
+      return listaControlHtml(c, attrName, value);
+    }
+    if(c.tipo === "consulta"){
+      return consultaControlHtml(c, attrName, value);
     }
     var htmlType = c.calculado ? "text" : (
       c.tipo === "texto" ? (c.aparencia === "email" ? "email" : (c.aparencia === "link" ? "url" : "text")) :
@@ -1339,6 +1402,280 @@
       .catch(function(){ suggestWrap.hidden = true; });
   }
 
+  // =========================================================================
+  // Campo tipo "Lista" — Aparência Sim/Não (booleano) ou Codificado (pares
+  // chave/valor definidos na Configuração). Codificado pode ser única ou
+  // múltipla escolha. O valor gravado é sempre a(s) CHAVE(S) — nunca o
+  // rótulo — para o rótulo de uma opção poder ser renomeado sem quebrar
+  // registros já preenchidos; múltipla escolha grava um array JSON de
+  // chaves no mesmo atributo de sempre (mesma convenção do campo composto
+  // Endereço/Localidade).
+  // =========================================================================
+  var LISTA_MODOS = [
+    {v:"sim_nao", l:"Sim/Não"}, {v:"codificado", l:"Codificado (lista de valores)"}
+  ];
+  var LISTA_ORDENACOES = [
+    {v:"manual", l:"Manual (arrastar para ordenar)"}, {v:"alfabetica", l:"Alfabética"}, {v:"sequencial", l:"Sequencial (pela chave)"}
+  ];
+  var LISTA_OPERADORES = [
+    {v:"igual", l:"é igual a"}, {v:"diferente", l:"é diferente de"},
+    {v:"preenchido", l:"está preenchido"}, {v:"vazio", l:"está vazio"}
+  ];
+  // Opções na ordem de EXIBIÇÃO (formulário/cálculo) conforme a Ordenação
+  // escolhida — a ordem "bruta" de listaOpcoes (a que aparece no editor de
+  // pares chave/valor da Configuração) só muda quando a própria pessoa
+  // arrasta uma linha (Ordenação "Manual").
+  function listaOpcoesOrdenadas(c){
+    // filtra linhas em branco (sem chave nem valor) — a linha extra que o
+    // editor de opções sempre deixa ao final para digitar não deve aparecer
+    // como opção de verdade em nenhum lugar que consome esta função.
+    var opcoes = (c.listaOpcoes || []).filter(function(o){ return (o.chave||o.valor); }).slice();
+    if(c.listaOrdenacao === "alfabetica"){
+      opcoes.sort(function(a,b){ return String(a.valor||"").localeCompare(String(b.valor||""), "pt-BR"); });
+    } else if(c.listaOrdenacao === "sequencial"){
+      opcoes.sort(function(a,b){
+        var na = Number(a.chave), nb = Number(b.chave);
+        if(!isNaN(na) && !isNaN(nb)) return na - nb;
+        return String(a.chave||"").localeCompare(String(b.chave||""), "pt-BR");
+      });
+    }
+    return opcoes;
+  }
+  function listaOptionLabel(c, chave){
+    var found = (c.listaOpcoes || []).filter(function(o){ return o.chave === chave; })[0];
+    return found ? found.valor : chave;
+  }
+  function listaMultiParse(val){
+    if(!val) return [];
+    try{ var arr = JSON.parse(val); return Array.isArray(arr) ? arr : []; }catch(e){ return []; }
+  }
+  // Texto amigável para exibição (drawer, tabela, e o resultado do Cálculo)
+  // — nunca a chave crua.
+  function listaDisplay(c, val){
+    if(!val) return "";
+    if(c.listaModo === "codificado"){
+      if(c.listaMultipla) return listaMultiParse(val).map(function(k){ return listaOptionLabel(c, k); }).join(", ");
+      return listaOptionLabel(c, val);
+    }
+    return val === "sim" ? "Sim" : (val === "nao" ? "Não" : val);
+  }
+
+  // ---- Controle no formulário (não calculado — calculado cai no <input>
+  // disabled genérico do campoControlHtml, igual aos outros tipos) ----
+  function listaControlHtml(c, attrName, value){
+    var dis = c.leitura ? " disabled" : "";
+    var dica = c.ajuda ? '<p class="empty-note">'+escapeHtml(c.ajuda)+'</p>' : "";
+    if(c.listaModo === "codificado"){
+      var opcoes = listaOpcoesOrdenadas(c);
+      if(c.listaMultipla) return listaMultiControlHtml(c, attrName, value, opcoes, dis) + dica;
+      var options = '<option value="">Selecione…</option>' + opcoes.map(function(o){
+        return '<option value="'+escapeHtml(o.chave)+'"'+(value===o.chave?" selected":"")+'>'+escapeHtml(o.valor)+'</option>';
+      }).join("");
+      return '<select '+attrName+'="'+c.id+'"'+dis+'>'+options+'</select>' + dica;
+    }
+    var opts = [{v:"",l:"Selecione…"},{v:"sim",l:"Sim"},{v:"nao",l:"Não"}];
+    return '<select '+attrName+'="'+c.id+'"'+dis+'>' +
+      opts.map(function(o){ return '<option value="'+o.v+'"'+(value===o.v?" selected":"")+'>'+escapeHtml(o.l)+'</option>'; }).join("") +
+    '</select>' + dica;
+  }
+  function listaMultiControlHtml(c, attrName, value, opcoes, dis){
+    var selected = listaMultiParse(value);
+    return '<div class="lista-multi" data-lista-multi="'+c.id+'">' +
+      '<input type="hidden" '+attrName+'="'+c.id+'" value="'+escapeHtml(value||"")+'">' +
+      '<div class="lista-multi-checks">' +
+      (opcoes.length ? opcoes.map(function(o){
+        var checked = selected.indexOf(o.chave) > -1;
+        return '<label class="lista-multi-check"><input type="checkbox" data-lista-check="'+c.id+':'+escapeHtml(o.chave)+'"'+(checked?" checked":"")+dis+'> '+escapeHtml(o.valor)+'</label>';
+      }).join("") : '<span class="empty-note">Nenhuma opção configurada.</span>') +
+      '</div></div>';
+  }
+  // Marca/desmarca uma opção de múltipla escolha — recalcula o array na
+  // MESMA ordem de exibição (listaOpcoesOrdenadas), não na ordem de clique.
+  function wireListaMultiFields(root){
+    Array.prototype.forEach.call(root.querySelectorAll("[data-lista-multi]"), function(wrap){
+      var hidden = wrap.querySelector("input[type=hidden]");
+      if(!hidden) return;
+      Array.prototype.forEach.call(wrap.querySelectorAll("[data-lista-check]"), function(cb){
+        cb.addEventListener("change", function(){
+          var checked = Array.prototype.filter.call(wrap.querySelectorAll("[data-lista-check]"), function(x){ return x.checked; });
+          var chaves = checked.map(function(x){ return x.getAttribute("data-lista-check").split(":").slice(1).join(":"); });
+          hidden.value = chaves.length ? JSON.stringify(chaves) : "";
+          hidden.dispatchEvent(new Event("input", {bubbles:true}));
+        });
+      });
+    });
+  }
+
+  // ---- Campo tipo "Consulta (referência)" nos formulários de novo
+  // registro/edição — guardado como o id do registro escolhido (a fonte é
+  // definida na Configuração: fonteOpcoesDisponiveis/fonteRegistros mais
+  // abaixo, junto do resto da Configuração desse tipo). Um <input hidden>
+  // com esse id é o "valor de verdade" do campo (mesma convenção de
+  // Endereço/Localidade e Lista múltipla escolha); ao lado, um campo de
+  // texto com sugestões ao digitar (filtra pelo Campo exibido, tudo em
+  // memória — os registros das fontes já estão em cache, sem precisar
+  // buscar de novo) e um botão 🔍 que abre uma busca por QUALQUER campo do
+  // registro (não só o exibido), num popup à parte por cima do formulário.
+  function consultaControlHtml(c, attrName, value){
+    var dis = c.leitura ? " disabled" : "";
+    var fonte = c.fonte;
+    if(!fonte) return '<p class="empty-note">Este campo ainda não tem uma Fonte configurada.</p>';
+    var registros = fonteRegistros(fonte);
+    var atual = value ? registros.filter(function(r){ return r.id === value; })[0] : null;
+    var displayVal = atual ? atual.exibido : "";
+    return '<div class="consulta-field" data-consulta="'+c.id+'">' +
+      '<input type="hidden" '+attrName+'="'+c.id+'" value="'+escapeHtml(value||"")+'">' +
+      '<div class="consulta-row">' +
+        '<div class="consulta-autocomplete">' +
+          '<input type="text" data-consulta-busca="'+c.id+'" value="'+escapeHtml(displayVal)+'" placeholder="Digite para buscar…" autocomplete="off"'+dis+'>' +
+          '<div class="geo-suggestions" data-consulta-suggest="'+c.id+'" hidden></div>' +
+        '</div>' +
+        (dis ? '' : '<button type="button" class="btn sm" data-consulta-abrir-busca="'+c.id+'" title="Buscar por qualquer campo do registro">🔍</button>') +
+      '</div>' +
+    '</div>';
+  }
+  // Liga o autocomplete (filtra em memória pelo Campo exibido) e o botão de
+  // busca ampliada — mesmo momento de wireEnderecoLocFields/wireDatePickers.
+  function wireConsultaFields(root, abas){
+    Array.prototype.forEach.call(root.querySelectorAll("[data-consulta]"), function(wrap){
+      var campoId = wrap.getAttribute("data-consulta");
+      var hidden = wrap.querySelector("input[type=hidden]");
+      var buscaEl = wrap.querySelector('[data-consulta-busca="'+campoId+'"]');
+      var suggestWrap = wrap.querySelector('[data-consulta-suggest="'+campoId+'"]');
+      var abrirBuscaBtn = wrap.querySelector('[data-consulta-abrir-busca="'+campoId+'"]');
+      if(!hidden || !buscaEl) return;
+      var campo = campoById(abas, campoId);
+      var fonte = campo && campo.fonte;
+      if(!fonte) return;
+      function escolher(reg){
+        hidden.value = reg.id;
+        buscaEl.value = reg.exibido;
+        if(suggestWrap) suggestWrap.hidden = true;
+        hidden.dispatchEvent(new Event("input", {bubbles:true}));
+      }
+      buscaEl.addEventListener("input", function(){
+        // Digitar sem escolher uma sugestão invalida a referência anterior —
+        // o valor salvo é sempre o id de um registro de verdade, nunca texto
+        // livre (evita salvar uma referência que não bate com o texto exibido).
+        if(hidden.value) { hidden.value = ""; hidden.dispatchEvent(new Event("input", {bubbles:true})); }
+        if(!suggestWrap) return;
+        var q = buscaEl.value.trim().toLowerCase();
+        if(!q){ suggestWrap.hidden = true; return; }
+        var registros = fonteRegistros(fonte).filter(function(r){ return r.busca.indexOf(q) > -1; }).slice(0, 20);
+        if(!registros.length){ suggestWrap.hidden = true; return; }
+        suggestWrap.innerHTML = registros.map(function(r, i){ return '<button type="button" class="geo-suggestion" data-consulta-idx="'+i+'">'+escapeHtml(r.exibido)+'</button>'; }).join("");
+        suggestWrap.hidden = false;
+        Array.prototype.forEach.call(suggestWrap.querySelectorAll("[data-consulta-idx]"), function(btn, i){
+          btn.addEventListener("click", function(){ escolher(registros[i]); buscaEl.focus(); });
+        });
+      });
+      // Fecha a lista ao clicar fora dela (não pelo blur do campo) — mesmo
+      // ajuste feito no Logradouro do Endereço/Localidade no v24 (um clique
+      // na sugestão dispara blur antes do click valer, em alguns navegadores).
+      if(suggestWrap){
+        document.addEventListener("mousedown", function(e){
+          if(suggestWrap.hidden) return;
+          if(e.target === buscaEl || suggestWrap.contains(e.target)) return;
+          suggestWrap.hidden = true;
+        });
+      }
+      if(abrirBuscaBtn){
+        abrirBuscaBtn.addEventListener("click", function(){
+          abrirConsultaBuscaPopup(fonte, function(reg){ escolher(reg); });
+        });
+      }
+    });
+  }
+  // Popup de busca por QUALQUER campo do registro (não só o Campo exibido) —
+  // à parte do modal de novo registro/edição (que continua aberto por trás,
+  // com os outros campos já preenchidos intactos), por isso não reaproveita
+  // o único #modal do app (usado por Configuração/Novo registro/Associar) e
+  // sim um overlay próprio, por cima de tudo.
+  function abrirConsultaBuscaPopup(fonte, onPick){
+    var registros = fonteRegistros(fonte);
+    var overlay = document.createElement("div");
+    overlay.className = "modal-overlay show";
+    overlay.id = "consulta-busca-overlay";
+    function resultsHtml(list){
+      if(!list.length) return '<p class="empty-note">Nenhum resultado.</p>';
+      var shown = list.slice(0, 50);
+      var out = '<div class="assoc-results">' + shown.map(function(r){
+        return '<button type="button" class="assoc-result" data-consulta-busca-pick="'+r.id+'"><strong>'+escapeHtml(r.exibido||"(sem valor)")+'</strong>'+(r.codigo?'<span>'+escapeHtml(r.codigo)+'</span>':'')+'</button>';
+      }).join("") + '</div>';
+      if(list.length > 50) out += '<p class="empty-note">Mostrando 50 de '+list.length+' resultados — refine a busca.</p>';
+      return out;
+    }
+    overlay.innerHTML = '<div class="modal" style="max-width:520px;">' +
+      '<div class="modal-head"><div><h3>Buscar — '+escapeHtml(fonteLabel(fonte))+'</h3><p>Busca em qualquer campo do registro, não só no Campo exibido.</p></div>' +
+      '<button type="button" class="icon-btn" id="consulta-busca-close">✕</button></div>' +
+      '<div class="modal-body"><div class="field"><input type="text" id="consulta-busca-input" placeholder="Digite para buscar…"></div>' +
+      '<div id="consulta-busca-results">'+resultsHtml(registros)+'</div></div>' +
+    '</div>';
+    document.body.appendChild(overlay);
+    function fechar(){ overlay.remove(); }
+    overlay.addEventListener("mousedown", function(e){ if(e.target === overlay) fechar(); });
+    document.getElementById("consulta-busca-close").addEventListener("click", fechar);
+    function wirePicks(){
+      Array.prototype.forEach.call(overlay.querySelectorAll("[data-consulta-busca-pick]"), function(btn){
+        btn.addEventListener("click", function(){
+          var reg = registros.filter(function(r){ return r.id === btn.getAttribute("data-consulta-busca-pick"); })[0];
+          if(reg) onPick(reg);
+          fechar();
+        });
+      });
+    }
+    wirePicks();
+    var input = document.getElementById("consulta-busca-input");
+    input.addEventListener("input", function(){
+      var q = input.value.trim().toLowerCase();
+      var filtered = !q ? registros : registros.filter(function(r){ return r.busca.indexOf(q) > -1; });
+      document.getElementById("consulta-busca-results").innerHTML = resultsHtml(filtered);
+      wirePicks();
+    });
+    input.focus();
+  }
+  // Texto amigável do valor guardado (o id de um registro) — usado no
+  // formulário só para o autocomplete já vir preenchido; drawer e tabela
+  // usam a mesma função para nunca mostrar o id cru.
+  function consultaDisplay(c, val){
+    if(!val || !c.fonte) return "";
+    var reg = fonteRegistros(c.fonte).filter(function(r){ return r.id === val; })[0];
+    return reg ? reg.exibido : "(registro não encontrado)";
+  }
+
+  // ---- "Cálculo" do tipo Lista — diferente da fórmula em texto livre
+  // ({campo} + {campo}) usada por Texto/Número: aqui é um construtor 100%
+  // visual (selects e botões, sem digitar sintaxe nenhuma) — uma ou mais
+  // regras, a primeira cujas condições baterem (todas juntas, "E") "ganha"
+  // e define o resultado (uma das próprias opções deste campo). Ainda é uma
+  // primeira versão simples — dá para aprofundar bastante mais tarde (regras
+  // com "OU", grupos aninhados, preencher mais de um campo por regra…).
+  function condicaoMatches(cond, getVal){
+    var v = getVal(cond.campoId || "");
+    if(cond.operador === "preenchido") return v !== "";
+    if(cond.operador === "vazio") return v === "";
+    if(cond.operador === "diferente") return v !== (cond.valor||"");
+    return v === (cond.valor||""); // "igual" (padrão)
+  }
+  function evalListaRegras(c, getVal){
+    var regras = c.regras || [];
+    for(var i=0;i<regras.length;i++){
+      var condicoes = regras[i].condicoes || [];
+      if(condicoes.length === 0) continue;
+      var todasBatem = condicoes.every(function(cond){ return cond.campoId && condicaoMatches(cond, getVal); });
+      if(todasBatem) return listaDisplay(c, regras[i].entao);
+    }
+    return "";
+  }
+  // Ponto único usado pelas 3 telas (novo registro de Formulário, novo
+  // registro de Entidade fixa, edição) para resolver o valor de um campo
+  // calculado — despacha para a fórmula (todos os outros tipos) ou para as
+  // regras visuais (Lista).
+  function resolveCalculado(c, getVal){
+    if(c.tipo === "lista") return evalListaRegras(c, getVal);
+    return evalFormula(c.formula, getVal);
+  }
+
   var CODIGO_PREFIX = { terreno:"TER", titularidade:"TIT", empreendimento:"EMP", edificacao:"EDF", pessoa:"PES" };
   function genCodigo(key){ return (CODIGO_PREFIX[key]||"REG") + "-" + Date.now().toString(36).toUpperCase(); }
 
@@ -1386,23 +1723,25 @@
 
   // Seção de abas reutilizada tanto pela Categoria (Formulário) quanto por
   // uma Entidade fixa com abas configuradas — mesma lógica de desbloqueio.
-  function abasSectionHtml(abas, getVal){
+  function abasSectionHtml(abas, getVal, getValidado){
     var html = "";
     abas.forEach(function(aba){
-      var unlocked = isAbaUnlocked(aba, abas, getVal);
+      var unlocked = isAbaUnlocked(aba, abas, getVal, getValidado);
       if(!unlocked){
         html += '<div class="drawer-section"><h4>'+escapeHtml(aba.nome)+'</h4>' +
           '<div class="aba-locked">🔒 <span>Ainda não preenchida — '+condicaoLabel(aba, abas)+'.</span></div></div>';
         return;
       }
       var visibleCampos = (aba.campos||[]).filter(function(c){ return c.visivel !== false && campoVisible(c, getVal); });
-      if(visibleCampos.length === 0) return;
-      html += '<div class="drawer-section"><h4>'+escapeHtml(aba.nome)+'</h4>' +
+      if(visibleCampos.length === 0 && !aba.validavel) return;
+      html += '<div class="drawer-section"><h4>'+escapeHtml(aba.nome)+(aba.validavel ? (getValidado && getValidado(aba.id) ? ' <span class="badge ok">✓ Validada</span>' : ' <span class="badge neutral">Não validada</span>') : '')+'</h4>' +
         visibleCampos.map(function(c){
           var v = getVal(c.id);
           if(v && c.tipo === "data") v = formatBR(v, c.aparencia === "data_hora");
           if(v && c.tipo === "cpf_cnpj") v = formatCpfCnpjDisplay(v);
           if(v && c.tipo === "endereco_localidade") v = enderecoLocDisplay(v);
+          if(v && c.tipo === "lista" && !c.calculado) v = listaDisplay(c, v);
+          if(v && c.tipo === "consulta") v = consultaDisplay(c, v);
           return '<div class="field-row"><span class="k">'+escapeHtml(c.label)+'</span><span class="v">'+(v?escapeHtml(v):'<span class="empty-note">—</span>')+'</span></div>';
         }).join("") + '</div>';
     });
@@ -1524,7 +1863,7 @@
     var cols = [{k:"codigo", l:"Código", mono:true}, {k:"nome", l:"Nome"}];
     var campos = [];
     (cat.abas || []).forEach(function(aba){ (aba.campos || []).forEach(function(c){ if(c.tipo !== "arquivo") campos.push(c); }); });
-    campos.slice(0,2).forEach(function(c){ cols.push({k:"_campo:"+c.id, l:c.label, campoId:c.id, campoTipo:c.tipo, campoAparencia:c.aparencia}); });
+    campos.slice(0,2).forEach(function(c){ cols.push({k:"_campo:"+c.id, l:c.label, campoId:c.id, campoTipo:c.tipo, campoAparencia:c.aparencia, campo:c}); });
     if((cat.ciclo_de_vida_valores||[]).length) cols.push({k:"ciclo_de_vida", l:"Ciclo de vida", badge:true});
     return cols;
   }
@@ -1576,6 +1915,8 @@
           if(val && col.campoTipo === "data") val = formatBR(val, col.campoAparencia === "data_hora");
           if(val && col.campoTipo === "cpf_cnpj") val = formatCpfCnpjDisplay(val);
           if(val && col.campoTipo === "endereco_localidade") val = enderecoLocDisplay(val);
+          if(val && col.campoTipo === "lista" && !(col.campo && col.campo.calculado)) val = listaDisplay(col.campo, val);
+          if(val && col.campoTipo === "consulta") val = consultaDisplay(col.campo, val);
         }
         else if(ctx.type === "fixed"){ val = fixedCellValue(row, col); }
         else { val = row[col.k]; }
@@ -1789,7 +2130,8 @@
       }).join("") + '</div>';
       var abas = ctx.categoria.abas || [];
       var getVal = function(campoId){ return abaCampoValueFromRecord(row, campoId); };
-      html += abasSectionHtml(abas, getVal);
+      var getValidado = function(abaId){ return !!(row.abasValidadas && row.abasValidadas[abaId]); };
+      html += abasSectionHtml(abas, getVal, getValidado);
     } else {
       html += '<div class="drawer-section">' + fieldRows(row).map(function(f){
         return '<div class="field-row"><span class="k">'+escapeHtml(f.k)+'</span><span class="v">'+escapeHtml(String(f.v))+'</span></div>';
@@ -1797,8 +2139,9 @@
       var cfgFixed = byId(cache.config_entidade, entityKey);
       var fixedAbas = (cfgFixed && cfgFixed.abas) || [];
       var getValF = function(campoId){ return abaCampoValueFromRecord(row, campoId); };
+      var getValidadoF = function(abaId){ return !!(row.abasValidadas && row.abasValidadas[abaId]); };
       if(fixedAbas.length){
-        html += abasSectionHtml(fixedAbas, getValF);
+        html += abasSectionHtml(fixedAbas, getValF, getValidadoF);
       } else if(row.campos && Object.keys(row.campos).length){
         var entries = Object.keys(row.campos).filter(function(k){ return row.campos[k] !== null && row.campos[k] !== "" && row.campos[k] !== undefined; });
         if(entries.length){
@@ -1893,7 +2236,8 @@
     }
 
     var basicosHtml = nativeHtml + '<div id="ed-ciclo-wrap"></div>';
-    var tabs = abaTabsBuilder(abas, editFieldHtml, {nome:"Dados Básicos", html: basicosHtml});
+    var validState = clone(row.abasValidadas || {});
+    var tabs = abaTabsBuilder(abas, editFieldHtml, {nome:"Dados Básicos", html: basicosHtml}, validState);
     var bodyHtml = tabs.html();
 
     m.innerHTML =
@@ -1907,6 +2251,8 @@
     tabs.wire(m); // só organiza em abas (sem update() — nada aqui trava por dependência)
     wireDatePickers(bodyEl);
     wireEnderecoLocFields(bodyEl);
+    wireListaMultiFields(bodyEl);
+    wireConsultaFields(bodyEl, abas);
 
     function backToView(){ closeModal(); openDrawer(entityKey, id); }
     document.getElementById("modal-close").addEventListener("click", backToView);
@@ -1946,9 +2292,9 @@
     }
     function updateCalculados(){
       allCampos.forEach(function(c){
-        if(c.calculado && c.formula){
+        if(c.calculado){
           var el = bodyEl.querySelector('[data-edit-campo="'+c.id+'"]');
-          if(el) el.value = evalFormula(c.formula, getValEdit);
+          if(el) el.value = resolveCalculado(c, getValEdit);
         }
       });
     }
@@ -2003,6 +2349,7 @@
         if(val) campos[c.id] = val; else delete campos[c.id];
       });
       patch.campos = campos;
+      patch.abasValidadas = tabs.validState;
 
       if(!db) return;
       await db.doc(col + "/" + row.id).update(patch);
@@ -2058,7 +2405,7 @@
   // Ajuda — explica os conceitos do sistema; atualizar HELP_SECTIONS e
   // HELP_CHANGELOG a cada nova versão publicada.
   // =========================================================================
-  var APP_VERSION = "v24";
+  var APP_VERSION = "v30";
   var HELP_SECTIONS = [
     { titulo:"O que é o Registro ABA",
       corpo:"<p>Protótipo funcional de um sistema de gestão fundiária — pensado para substituir o modelo rígido de \"processo/formulário\" por Entidades e Formulários totalmente configuráveis. Os dados aqui são de exemplo.</p>" },
@@ -2131,9 +2478,31 @@
         "<li><strong>Município é uma propriedade de UF</strong> — só pode ser ligado com UF também ligada, e os dois aparecem lado a lado no formulário: UF pequena (só a sigla) e Município mais largo, sempre filtrado pela UF escolhida, usando a base oficial do IBGE (5.571 municípios).</li>" +
         "<li><strong>Busca automática</strong> — ao digitar o Logradouro, aparece uma lista de sugestões para escolher (estilo Google Maps, via OpenStreetMap/Nominatim); ao completar o CEP, o sistema preenche Logradouro/UF/Município sozinho, consultando o ViaCEP (base dos Correios — mais precisa para CEP brasileiro que o OpenStreetMap). As duas só funcionam na versão instalada localmente, fora do claude.ai — o Artifact publicado bloqueia esse tipo de chamada de rede por segurança. Se nada for encontrado (ou fora da versão local), o campo continua editável normalmente, à mão.</li>" +
         "<li>Não tem opção de <strong>Cálculo</strong> — não faz sentido calcular um endereço por fórmula.</li>" +
+        "</ul>" },
+    { titulo:"Propriedades de um campo tipo Lista",
+      corpo:"<p>Um campo tipo Lista tem duas Aparências: <strong>Sim/Não</strong> (booleano — só as opções Sim e Não) ou <strong>Codificado</strong> (uma lista de pares chave/valor que você mesmo define na Configuração — a chave é o que fica gravado no registro, o valor é o que aparece para quem preenche, então dá para renomear um valor depois sem bagunçar registros já salvos).</p>" +
+        "<ul>" +
+        "<li><strong>Codificado</strong> ganha um editor de pares chave/valor — sempre com uma linha em branco pronta para a próxima opção, sem precisar clicar em nenhum botão — reordenável arrastando pela alcinha ⠿ — só funciona quando a Ordenação é Manual; nas Ordenações Alfabética ou Sequencial (pela chave), a ordem de exibição no formulário é sempre recalculada automaticamente.</li>" +
+        "<li><strong>Múltipla escolha</strong> (só no Codificado) troca a lista suspensa de escolha única por uma lista de caixinhas de marcar — o registro guarda todas as chaves marcadas.</li>" +
+        "<li><strong>Valor padrão</strong> é um seletor com as próprias opções do campo, não texto livre.</li>" +
+        "<li><strong>Cálculo</strong> aqui é diferente do usado em Texto/Número: em vez de uma fórmula em texto ({campo} + {campo}), é um construtor visual — uma ou mais regras (a primeira que bater \"ganha\"), cada uma com uma ou mais condições (E) sobre outros campos do formulário e um resultado (uma das opções deste campo). Ainda é uma primeira versão simples, para aprofundar mais adiante.</li>" +
+        "</ul>" },
+    { titulo:"Propriedades de um campo tipo Consulta (referência)",
+      corpo:"<p>Um campo tipo Consulta guarda uma referência de verdade a um registro de outro lugar do sistema — nunca texto livre. Só tem duas propriedades próprias, além de Dica, Obrigatório e Campo requisito (não tem Valor padrão, Aparência, Visível, Somente leitura nem Cálculo — não fazem sentido para uma referência):</p>" +
+        "<ul>" +
+        "<li><strong>Fonte</strong> — de onde vêm os valores possíveis: qualquer Entidade fixa (Terreno, Titularidade, Empreendimento, Edificação, Pessoa, Cartório), qualquer Formulário já criado, ou os Usuários do sistema (cadastrados em ⚙ Configuração geral).</li>" +
+        "<li><strong>Campo exibido</strong> — qual valor da fonte aparece para quem preenche (Código e Nome sempre disponíveis, mais qualquer campo já configurado nela).</li>" +
+        "<li>No formulário de novo registro/edição, o campo vira uma busca com sugestões ao digitar (filtra pelo Campo exibido) e um botão 🔍 ao lado, que abre uma busca por <strong>qualquer</strong> campo do registro da fonte, não só o exibido — para quando o Campo exibido não é suficiente para achar o registro certo. Escolher uma sugestão é obrigatório: digitar um texto que não bate com nada não salva nenhuma referência.</li>" +
+        "<li>Ainda é uma primeira versão simples desse fluxo de busca — deve ganhar mais detalhes conforme for testado com registros de verdade.</li>" +
         "</ul>" }
   ];
   var HELP_CHANGELOG = [
+    { versao:"v30", texto:"Nome da aba saiu de cima do cartão no canvas e entrou na Configuração dela, como um campo Nome no topo do popup (igual à Configuração de campo) — o cartão agora só mostra o nome, sem edição direta. Dentro da Configuração de uma aba, nova propriedade Validável: uma aba validável ganha um botão \"Validar esta aba\" ao preencher um registro, e depois de clicado ela fica marcada como validada — o que agora pode ser usado como condição para liberar outra aba (\"Depois que outra(s) aba(s) forem validadas\"), ao lado da condição já existente por preenchimento. As abas de Configuração foram reordenadas: Abas & Campos primeiro, Ciclo de vida depois. O editor de Ciclo de vida deixou de ser em \"chips\": agora é uma lista de linhas (uma por valor, sem código/chave — só o nome do estágio), reordenável arrastando, sempre com uma linha em branco pronta para o próximo valor, no mesmo estilo do editor de Opções do campo Lista Codificado. Duas abas de Configuração novas, depois de Ciclo de vida: Permissões, onde por papel (admin/editor/leitor) dá para marcar visualizar/criar/editar/excluir/exportar em cada aba inteira ou em campos específicos dela — sem marcação, a ação fica permitida; e Pesquisa e Exportação, onde dá para escolher quais campos aparecem na busca e quais aparecem na exportação (sempre em .xlsx, UTF-8 padrão Brasil), com um parâmetro padrão de Sem relacionados/Com relacionados. Por ora essas duas telas só gravam a configuração — a aplicação de fato dessas regras na tela de visualização/criação/edição/exportação fica para quando formos testar esse fluxo de verdade." },
+    { versao:"v29", texto:"Removido também o Valor padrão da Configuração do campo tipo Arquivo (não fazia sentido — um Valor padrão em texto livre não representa um arquivo pré-anexado)." },
+    { versao:"v28", texto:"Popup de propriedades do campo/aba: clicar fora dele deixou de fazer qualquer coisa (não salva, não cancela) — o popup só fecha pelo ✕ (cancela/reverte) ou pelo OK (salva). Campo tipo Arquivo ganhou sua própria Configuração: Aparência, Cálculo, Visível e Somente leitura saíram (não fazem sentido para upload), mantido Obrigatório; em troca, três propriedades novas — Limite de tamanho (MB), Limite de quantidade de arquivos e Formatos permitidos (ex.: pdf, jpg, png — em branco aceita qualquer um). O próprio upload de arquivos no formulário de registro ainda não foi implementado neste protótipo; por ora isso só grava a configuração para quando for construído." },
+    { versao:"v27", texto:"Clicar fora do popup de propriedades do campo/aba agora cancela — mesmo comportamento do ✕ — em vez de salvar como no v26; só o botão OK salva mesmo. Campo tipo Consulta (referência) deixou de ter Valor padrão, Aparência, Visível, Somente leitura e Cálculo (não faziam sentido para ele) e ganhou duas propriedades novas: Fonte (de onde vêm os valores — qualquer Entidade fixa, um Formulário já criado, ou os Usuários do sistema) e Campo exibido (qual valor da fonte aparece para quem preenche). No formulário de novo registro/edição, o campo Consulta virou uma busca com sugestões ao digitar (filtra pelo Campo exibido, tudo já em memória) e um botão 🔍 que abre uma busca por qualquer campo do registro da fonte, não só o exibido — na gaveta de detalhe e nas tabelas, sempre mostra o valor resolvido (nunca o id cru). Ainda uma primeira versão simples; vamos detalhar mais esse fluxo de busca conforme for testando a criação de registros de verdade." },
+    { versao:"v26", texto:"Ajustes no popup de propriedades do campo/aba (introduzido no v25), a partir do primeiro uso: agora tem um botão OK, que salva e fecha (clicar fora do popup faz o mesmo); o ✕ passou a cancelar de verdade — reverte tudo o que foi alterado desde que o popup foi aberto. O popup também ficou bem maior. Ao remover um campo, o popup fecha (antes abria, sem querer, a Configuração da aba). Criar um campo — pela paleta ou arrastando, tanto para dentro de uma aba quanto para \"+ Aba\" — deixa de abrir a Configuração dele sozinho; o campo só fica selecionado se você clicar nele (mover um campo já existente continua mostrando ele selecionado no novo lugar, isso não mudou). Por fim, na Configuração de um campo Lista Codificado: a lista de Opções (chave/valor) passou a vir antes de Múltipla escolha e Ordenação; e o editor de opções não usa mais o botão \"+ Opção\" — sempre tem uma linha em branco pronta para a próxima opção, e assim que você começa a digitar nela, uma nova linha em branco aparece sozinha logo abaixo." },
+    { versao:"v25", texto:"Novo tipo de campo Lista, com duas Aparências: Sim/Não (booleano) ou Codificado (pares chave/valor definidos por você, reordenáveis arrastando ou por Ordenação Alfabética/Sequencial pela chave); Codificado ganhou também Múltipla escolha (caixinhas de marcar em vez de lista suspensa) e Valor padrão por seletor. O Cálculo de um campo Lista passou a ser um construtor visual de regras (condições sobre outros campos → preenche este campo sozinho), em vez da fórmula em texto usada por Texto/Número. Corrigido de passagem um bug antigo: o \"Valor padrão\" em texto livre (Texto, Número, Consulta, Arquivo) nunca tinha sido ligado — digitar ali não salvava nada. Removido um texto explicativo que tinha sido acrescentado por conta própria nas propriedades do Endereço/Localidade. E, para dar mais espaço ao canvas de Abas & Campos, as propriedades do campo/aba selecionado passaram a abrir como um popup central (fecha no ✕ ou clicando fora) em vez de ocupar uma 3ª coluna fixa — em teste, me diga se prefere do jeito antigo." },
     { versao:"v24", texto:"Ajustes no campo Endereço/Localidade a partir do teste real do v23: removidos Dica e Valor padrão (não fazem mais parte da Configuração desse tipo — Valor padrão de UF/Município, introduzido no v23, saiu de novo); o rótulo do toggle de Município não mostra mais o \"(depende de UF)\" (o comportamento continua o mesmo, só o texto saiu); o seletor de UF no formulário agora mostra \"Selecione UF\" em vez de só \"UF\"; corrigido um problema em que clicar numa sugestão de endereço (ao digitar o Logradouro) não fazia nada — a lista fechava antes do clique valer (era o blur do campo competindo com o clique); e o preenchimento automático pelo CEP passou a usar o ViaCEP (base dos Correios) em vez do OpenStreetMap/Nominatim, porque a cobertura de CEP do OpenStreetMap no Brasil é irregular e às vezes não trazia o nome da rua mesmo quando ela existia na base — a busca de endereço ao digitar o Logradouro continua no Nominatim (é o que ele faz bem)." },
     { versao:"v23", texto:"Agora dá para arrastar um tipo de campo direto da paleta (à esquerda, em Abas & Campos) para dentro de uma aba, criando o campo já no lugar solto — sem precisar clicar e depois reordenar. Os tipos Endereço, CEP, UF e Município foram fundidos num único tipo \"Endereço/Localidade\": cada parte (Logradouro, CEP, Número, Quadra, Lote, UF, Município) pode ser ligada/desligada na Configuração — Município só existe com UF ligada (é uma propriedade dela) e aparece ao lado dela, com a UF ocupando pouco espaço (só a sigla) e o Município mais largo; a lista de municípios usa a base oficial do IBGE (5.571 municípios), sempre filtrada pela UF escolhida. UF e Município ganharam Valor padrão próprio (um seletor, não texto livre) — o de Município é filtrado pela UF padrão escolhida. O campo não tem mais opção de Cálculo (não fazia sentido para um endereço). Ao digitar o Logradouro ou o CEP, o sistema busca o endereço automaticamente (estilo Google Maps, via OpenStreetMap/Nominatim) e deixa escolher da lista — ou continuar digitando normalmente se nada for encontrado; essa busca só funciona na versão instalada localmente (fora do claude.ai), por causa da restrição de rede do Artifact publicado." },
     { versao:"v22", texto:"Em Abas & Campos, agora dá para arrastar um campo (pela alcinha ⠿) para reordenar dentro da mesma aba, mover para outra aba, ou soltar em \"+ Aba (página)\" para criar uma aba nova já com ele — sem precisar remover e recriar o campo. Campo tipo UF deixou de ser texto livre: vira uma lista fixa dos 26 estados + Distrito Federal. Tipo \"Localidade\" foi removido (redundante com Endereço/Município/UF)." },
@@ -2304,15 +2673,17 @@
   }
   function buildDraft(key, seed){
     var base = seed || rawConfigFor(key);
+    var permissoes = clone(base.permissoes || {});
+    var pesquisaExportacao = clone(base.pesquisaExportacao || {pesquisaCampos:[], exportacaoCampos:[], parametroPadrao:"sem_relacionados"});
     if(key === "pessoa"){
       var v = base.ciclo_de_vida_variantes || {};
-      return { pessoa:true, fisica:(v.fisica||[]).slice(), juridica:(v.juridica||[]).slice(), abas: clone(base.abas||[]) };
+      return { pessoa:true, fisica:(v.fisica||[]).slice(), juridica:(v.juridica||[]).slice(), abas: clone(base.abas||[]), permissoes: permissoes, pesquisaExportacao: pesquisaExportacao };
     }
-    return { pessoa:false, ciclo_de_vida_valores:(base.ciclo_de_vida_valores||[]).slice(), abas: clone(base.abas||[]) };
+    return { pessoa:false, ciclo_de_vida_valores:(base.ciclo_de_vida_valores||[]).slice(), abas: clone(base.abas||[]), permissoes: permissoes, pesquisaExportacao: pesquisaExportacao };
   }
 
   function openConfigModal(key, seed){
-    configTab = "ciclo";
+    configTab = "abas";
     configSelection = null;
     calendarOpen = null;
     modal = { type:"config", key:key, draft: buildDraft(key, seed) };
@@ -2339,7 +2710,7 @@
     var key = modal.key, ctx = contextFor(key), draft = modal.draft;
     var title = ctx.type === "fixed" ? ctx.def.label : (ctx.categoria ? ctx.categoria.nome : "—");
     var m = document.getElementById("modal");
-    m.classList.toggle("wide", configTab === "abas");
+    m.classList.toggle("wide", configTab === "abas" || configTab === "permissoes");
 
     // Selecionar uma aba/campo, ou remover um deles, reconstrói o modal
     // inteiro — sem isso a rolagem do canvas (que pode ter muitas abas e
@@ -2351,7 +2722,7 @@
       '<div class="modal-head"><div><h3>Configurar — '+escapeHtml(title)+'</h3>'+
       '<p>Ciclo de vida, abas, campos, tipos e propriedades — configurável por Entidade ou Formulário.</p></div>'+
       '<button class="icon-btn" id="modal-close">✕</button></div>'+
-      '<div class="modal-tabs">'+tabBtn("ciclo","Ciclo de vida")+tabBtn("abas","Abas & Campos")+'</div>'+
+      '<div class="modal-tabs">'+tabBtn("abas","Abas & Campos")+tabBtn("ciclo","Ciclo de vida")+tabBtn("permissoes","Permissões")+tabBtn("pesquisa","Pesquisa e Exportação")+'</div>'+
       '<div class="modal-body" id="modal-body"></div>'+
       '<div class="modal-foot"><button class="btn" id="cfg-cancel">Cancelar</button>'+
       '<button class="btn primary" id="cfg-save-close">Salvar e fechar</button></div>';
@@ -2361,8 +2732,8 @@
     document.getElementById("cfg-save-close").addEventListener("click", async function(){
       var btn = this; btn.textContent = "Salvando…"; btn.disabled = true;
       var patch = draft.pessoa
-        ? {ciclo_de_vida_variantes:{fisica:draft.fisica, juridica:draft.juridica}, abas: draft.abas}
-        : {ciclo_de_vida_valores: draft.ciclo_de_vida_valores, abas: draft.abas};
+        ? {ciclo_de_vida_variantes:{fisica:draft.fisica, juridica:draft.juridica}, abas: draft.abas, permissoes: draft.permissoes, pesquisaExportacao: draft.pesquisaExportacao}
+        : {ciclo_de_vida_valores: draft.ciclo_de_vida_valores, abas: draft.abas, permissoes: draft.permissoes, pesquisaExportacao: draft.pesquisaExportacao};
       var ok = await saveConfigDoc(key, patch);
       if(ok){ closeModal(); }
       else { btn.textContent = "Erro ao salvar"; btn.disabled = false; setTimeout(function(){ btn.textContent = "Salvar e fechar"; }, 1600); }
@@ -2372,7 +2743,10 @@
     });
 
     var body = document.getElementById("modal-body");
-    body.innerHTML = configTab === "ciclo" ? cicloTabHtml(draft) : abasTabHtml(draft);
+    body.innerHTML = configTab === "ciclo" ? cicloTabHtml(draft)
+      : configTab === "permissoes" ? permissoesTabHtml(draft)
+      : configTab === "pesquisa" ? pesquisaExportacaoTabHtml(draft)
+      : abasTabHtml(draft);
     wireConfigTabEvents(key);
 
     var newCanvas = m.querySelector(".cfg-canvas");
@@ -2383,24 +2757,103 @@
 
   function cicloTabHtml(draft){
     if(draft.pessoa){
-      return '<div class="field"><label>Pessoa física (CPF)</label>'+chipEditorHtml("fisica", draft.fisica)+'</div>'+
-             '<div class="field"><label>Pessoa jurídica (CNPJ)</label>'+chipEditorHtml("juridica", draft.juridica)+'</div>'+
+      return '<div class="field"><label>Pessoa física (CPF)</label>'+cicloValorEditorHtml("fisica", draft.fisica)+'</div>'+
+             '<div class="field"><label>Pessoa jurídica (CNPJ)</label>'+cicloValorEditorHtml("juridica", draft.juridica)+'</div>'+
              '<p class="empty-note">Pessoa é a única Entidade cujo vocabulário de ciclo de vida depende de um sub-tipo. Também pode ficar sem nenhum valor.</p>';
     }
-    return '<div class="field"><label>Valores do ciclo de vida (em ordem) — opcional, pode remover todos</label>'+chipEditorHtml("_", draft.ciclo_de_vida_valores)+'</div>';
+    return '<div class="field"><label>Valores do ciclo de vida (em ordem) — opcional, pode remover todos</label>'+cicloValorEditorHtml("_", draft.ciclo_de_vida_valores)+'</div>';
   }
 
-  function chipEditorHtml(group, valores){
-    return '<div class="chip-editor" data-ciclo-group="'+group+'">' +
-      (valores.length ? valores.map(function(v, i){
-        return '<span class="chip-editable">'+escapeHtml(v)+'<button data-remove-ciclo="'+group+'" data-idx="'+i+'">✕</button></span>';
-      }).join("") : '<span class="empty-note">Nenhum valor — ciclo de vida desativado para este caso.</span>') + '</div>' +
-      '<div class="chip-add-row"><input type="text" placeholder="Novo valor…" data-ciclo-input="'+group+'">' +
-      '<button class="btn sm" data-add-ciclo="'+group+'">+ Adicionar</button></div>' +
+  // Uma linha do editor de Ciclo de vida — mesmo mecanismo do editor de
+  // Opções do tipo Lista Codificado (auto-cresce, sem botão "+ Adicionar",
+  // arrastável para reordenar), só que com uma única coluna de valor (sem
+  // chave/código — ciclo de vida não precisa de um identificador separado).
+  function cicloValorRowHtml(group, vi, v, draggable){
+    var blank = !v;
+    return '<div class="lista-opcao-row" data-ciclo-valor-row="'+group+':'+vi+'"'+(draggable?' draggable="true"':'')+'>' +
+      '<span class="cf-drag-handle" style="'+(draggable?'':'opacity:.3;')+'" title="Arraste para reordenar">⠿</span>' +
+      '<input type="text" value="'+escapeHtml(v||"")+'" data-ciclo-valor="'+group+':'+vi+'" placeholder="Ex.: Ativo">' +
+      (blank ? '<span class="cf-remove" style="visibility:hidden;">✕</span>' : '<button type="button" class="cf-remove" data-ciclo-valor-remove="'+group+':'+vi+'" title="Remover">✕</button>') +
+    '</div>';
+  }
+  function cicloValorEditorHtml(group, valores){
+    var valoresRender = (valores||[]).slice();
+    if(valoresRender.length === 0 || valoresRender[valoresRender.length-1]) valoresRender.push("");
+    return '<div class="lista-opcoes-list" data-ciclo-valores="'+group+'">' +
+        valoresRender.map(function(v, vi){ return cicloValorRowHtml(group, vi, v, !!v); }).join("") +
+      '</div>' +
       '<div class="small-btn-row"><button class="btn primary sm" data-save-ciclo="'+group+'">Salvar ciclo de vida</button></div>';
   }
 
-  var CONDICAO_LABELS = {livre:"Sempre visível (livre)", abas:"Depois que outra(s) aba(s) forem preenchidas", campos:"Depois que certos campos forem preenchidos"};
+  // =========================================================================
+  // Permissões — quem (por papel) pode visualizar/criar/editar/excluir/
+  // exportar valores de uma aba inteira ou de um campo específico. Config
+  // apenas por ora (como Fonte/Consulta antes de ganhar o formulário de
+  // registro) — ainda não aplicado como regra de acesso de fato em nenhuma
+  // tela; a base fica pronta para quando isso for ligado de verdade.
+  // =========================================================================
+  var PAPEIS_PERMISSAO = ["admin","editor","leitor"];
+  var PERM_ACOES = [
+    {k:"visualizar", l:"Visualizar"}, {k:"criar", l:"Criar"}, {k:"editar", l:"Editar"},
+    {k:"excluir", l:"Excluir"}, {k:"exportar", l:"Exportar"}
+  ];
+  // Sem marcação configurada ainda = permitido (não trava nada por padrão).
+  function permissaoValor(draft, papel, tipo, alvoId, acao){
+    var grupo = draft.permissoes && draft.permissoes[papel] && draft.permissoes[papel][tipo];
+    var v = grupo && grupo[alvoId] && grupo[alvoId][acao];
+    return v === undefined ? true : v;
+  }
+  function permissoesTabHtml(draft){
+    var abas = draft.abas || [];
+    if(abas.length === 0) return '<p class="empty-note">Crie ao menos uma aba em Abas &amp; Campos primeiro — permissões são definidas por aba (e, se quiser, por campo dentro dela).</p>';
+    var html = '<p class="empty-note">Por papel: o que pode ser feito com os valores de cada aba inteira, ou (logo abaixo, recuado) de um campo específico dela — sem marcação, a ação fica permitida.</p>';
+    PAPEIS_PERMISSAO.forEach(function(papel){
+      html += '<div class="aba-card"><div class="aba-card-head"><strong>'+PAPEL_LABEL[papel]+'</strong></div>';
+      abas.forEach(function(aba){
+        html += '<div class="condicao-block">' +
+          '<label class="cb-label">'+escapeHtml(aba.nome)+' <span class="empty-note">(aba inteira)</span></label>' +
+          '<div class="campo-props">' + PERM_ACOES.map(function(a){
+            return '<label><input type="checkbox" data-perm="'+papel+':abas:'+aba.id+':'+a.k+'" '+(permissaoValor(draft,papel,"abas",aba.id,a.k)?"checked":"")+'> '+a.l+'</label>';
+          }).join("") + '</div>' +
+          (aba.campos||[]).map(function(c){
+            return '<div class="campo-props" style="margin:6px 0 0 18px;"><span class="empty-note" style="flex:0 0 auto; min-width:110px;">'+escapeHtml(c.label)+'</span>' +
+              PERM_ACOES.map(function(a){
+                return '<label><input type="checkbox" data-perm="'+papel+':campos:'+c.id+':'+a.k+'" '+(permissaoValor(draft,papel,"campos",c.id,a.k)?"checked":"")+'> '+a.l+'</label>';
+              }).join("") + '</div>';
+          }).join("") +
+        '</div>';
+      });
+      html += '</div>';
+    });
+    return html;
+  }
+
+  // =========================================================================
+  // Pesquisa e Exportação — quais campos entram na busca e na exportação, e
+  // o parâmetro padrão de exportação (sempre .xlsx, UTF-8 Brasil).
+  // =========================================================================
+  function pesquisaExportacaoTabHtml(draft){
+    var abas = draft.abas || [];
+    var campos = [];
+    abas.forEach(function(a){ (a.campos||[]).forEach(function(c){ campos.push({abaNome:a.nome, id:c.id, label:c.label}); }); });
+    if(campos.length === 0) return '<p class="empty-note">Crie campos em Abas &amp; Campos primeiro.</p>';
+    var pe = draft.pesquisaExportacao || {pesquisaCampos:[], exportacaoCampos:[], parametroPadrao:"sem_relacionados"};
+    var pesq = pe.pesquisaCampos || [], exp = pe.exportacaoCampos || [];
+    function checklist(prefix, selecionados){
+      return '<div class="checklist">' + campos.map(function(c){
+        return '<label><input type="checkbox" data-'+prefix+'-campo="'+c.id+'" '+(selecionados.indexOf(c.id)>-1?"checked":"")+'> '+escapeHtml(c.label)+' <span class="empty-note">('+escapeHtml(c.abaNome)+')</span></label>';
+      }).join("") + '</div>';
+    }
+    return '<div class="field"><label>Campos que aparecem na pesquisa</label>' + checklist("pesq", pesq) + '</div>' +
+      '<div class="field"><label>Campos que aparecem na exportação</label>' + checklist("exp", exp) + '</div>' +
+      '<div class="field"><label>Parâmetro de exportação padrão</label><select data-exp-parametro>' +
+        '<option value="sem_relacionados"'+((pe.parametroPadrao||"sem_relacionados")==="sem_relacionados"?" selected":"")+'>Sem relacionados</option>' +
+        '<option value="com_relacionados"'+(pe.parametroPadrao==="com_relacionados"?" selected":"")+'>Com relacionados</option>' +
+      '</select></div>' +
+      '<p class="empty-note">A exportação sempre gera um arquivo .xlsx, codificação UTF-8 (padrão Brasil).</p>';
+  }
+
+  var CONDICAO_LABELS = {livre:"Sempre visível (livre)", abas:"Depois que outra(s) aba(s) forem preenchidas", abas_validadas:"Depois que outra(s) aba(s) forem validadas", campos:"Depois que certos campos forem preenchidos"};
 
   // Nomes de aba não podem se repetir dentro do mesmo Formulário/Entidade —
   // gera "Nova aba 2", "Nova aba 3"... quando o nome pedido já existe.
@@ -2437,6 +2890,7 @@
     if(tipo === "data") novoCampo.aparencia = "data";
     if(tipo === "codigo"){ novoCampo.logica = {tipo:"sequencial", inicio:1}; novoCampo.obrigatorio = true; novoCampo.leitura = true; }
     if(tipo === "endereco_localidade") novoCampo.locCampos = clone(DEFAULT_LOC_CAMPOS);
+    if(tipo === "lista"){ novoCampo.listaModo = "sim_nao"; novoCampo.listaOrdenacao = "manual"; novoCampo.listaMultipla = false; novoCampo.listaOpcoes = []; }
     return novoCampo;
   }
   function abasTabHtml(draft){
@@ -2450,7 +2904,32 @@
     if(calendarOpen && (!configSelection || configSelection.type !== "campo" || configSelection.ai !== calendarOpen.ai || configSelection.ci !== calendarOpen.ci)){
       calendarOpen = null; // trocou de seleção — fecha o calendário aberto do campo anterior
     }
-    var html = '<div class="cfg-builder">' + paletteHtml() + canvasHtml(abas) + propsHtml(draft) + '</div>';
+    // Ao abrir o popup de propriedades (ou trocar de campo/aba selecionado),
+    // tira uma "foto" do estado atual — é para onde o ✕ reverte. OK e o
+    // clique fora do popup mantêm as alterações (não mexem no snapshot).
+    if(configSelection){
+      var mesmaSelecaoDoSnapshot = configSelectionSnapshot &&
+        configSelectionSnapshot.sel.type === configSelection.type &&
+        configSelectionSnapshot.sel.ai === configSelection.ai &&
+        configSelectionSnapshot.sel.ci === configSelection.ci;
+      if(!mesmaSelecaoDoSnapshot){
+        var alvoSnapshot = configSelection.type === "aba" ? abas[configSelection.ai] : abas[configSelection.ai].campos[configSelection.ci];
+        configSelectionSnapshot = { sel:{type:configSelection.type, ai:configSelection.ai, ci:configSelection.ci}, data: clone(alvoSnapshot) };
+      }
+    } else {
+      configSelectionSnapshot = null;
+    }
+    // Propriedades do campo/aba selecionado aparecem como um popup central
+    // (por cima da paleta+canvas) em vez de uma 3ª coluna fixa — ganha
+    // espaço de trabalho; só existe quando algo está selecionado.
+    var html = '<div class="cfg-builder' + (configSelection ? ' has-popup' : '') + '">' + paletteHtml() + canvasHtml(abas) + '</div>';
+    if(configSelection){
+      html += '<div class="cfg-props-popup-overlay" id="cfg-props-popup-overlay"><div class="cfg-props-popup">' +
+        '<button type="button" class="icon-btn cfg-props-popup-close" id="cfg-props-popup-close" title="Cancelar (não salva as alterações)">✕</button>' +
+        propsHtml(draft) +
+        '<div class="cfg-props-popup-footer"><button type="button" class="btn primary" id="cfg-props-popup-ok">OK</button></div>' +
+      '</div></div>';
+    }
     html += flowSummaryHtml(abas);
     return html;
   }
@@ -2476,7 +2955,7 @@
       html += '<div class="canvas-page'+(abaSelected?" selected":"")+'" data-select-aba="'+ai+'">' +
         '<div class="canvas-page-head">' +
           '<span class="nav-glyph">'+(ai+1)+'</span>' +
-          '<input type="text" value="'+escapeHtml(aba.nome||"")+'" data-aba-nome="'+ai+'" placeholder="Nome da aba">' +
+          '<span class="canvas-page-title" data-aba-title="'+ai+'">'+escapeHtml(aba.nome||"(sem nome)")+(aba.validavel?' <span title="Validável">✓</span>':'')+'</span>' +
           '<button type="button" class="cf-remove" data-remove-aba="'+ai+'" title="Remover aba">✕</button>' +
         '</div>' +
         '<div class="canvas-page-cond">'+condicaoLabel(aba, abas)+'</div>' +
@@ -2511,22 +2990,28 @@
       var ai = configSelection.ai, aba = abas[ai];
       var cond = aba.condicao || {tipo:"livre"};
       var otherAbas = abas.filter(function(a,i){ return i !== ai; });
+      var otherAbasValidaveis = otherAbas.filter(function(a){ return a.validavel; });
       var allCamposOutras = [];
       abas.forEach(function(a,i){ if(i===ai) return; (a.campos||[]).forEach(function(c){ allCamposOutras.push({abaNome:a.nome, id:c.id, label:c.label}); }); });
       html += '<div class="props-title">Propriedades da aba</div>' +
-        '<div class="props-heading">'+escapeHtml(aba.nome||"(sem nome)")+'</div>' +
+        '<div class="field"><label>Nome</label><input type="text" value="'+escapeHtml(aba.nome||"")+'" data-aba-nome-popup="'+ai+'" placeholder="Nome da aba"></div>' +
         '<div class="condicao-block">' +
           '<label class="cb-label">Condição para esta aba aparecer</label>' +
           '<select data-cond-tipo="'+ai+'">' +
-            ["livre","abas","campos"].map(function(t){ return '<option value="'+t+'"'+(cond.tipo===t?" selected":"")+'>'+CONDICAO_LABELS[t]+'</option>'; }).join("") +
+            ["livre","abas","abas_validadas","campos"].map(function(t){ return '<option value="'+t+'"'+(cond.tipo===t?" selected":"")+'>'+CONDICAO_LABELS[t]+'</option>'; }).join("") +
           '</select>' +
           (cond.tipo === "abas" ? '<div class="checklist">' + (otherAbas.length ? otherAbas.map(function(a){
               return '<label><input type="checkbox" data-cond-aba="'+ai+':'+a.id+'" '+((cond.abas||[]).indexOf(a.id)>-1?"checked":"")+'> '+escapeHtml(a.nome)+'</label>';
             }).join("") : '<span class="empty-note">Crie outra aba primeiro.</span>') + '</div>' : '') +
+          (cond.tipo === "abas_validadas" ? '<div class="checklist">' + (otherAbasValidaveis.length ? otherAbasValidaveis.map(function(a){
+              return '<label><input type="checkbox" data-cond-aba="'+ai+':'+a.id+'" '+((cond.abas||[]).indexOf(a.id)>-1?"checked":"")+'> '+escapeHtml(a.nome)+'</label>';
+            }).join("") : '<span class="empty-note">Marque outra aba como "Validável" primeiro (abaixo).</span>') + '</div>' : '') +
           (cond.tipo === "campos" ? '<div class="checklist">' + (allCamposOutras.length ? allCamposOutras.map(function(c){
               return '<label><input type="checkbox" data-cond-campo="'+ai+':'+c.id+'" '+((cond.campos||[]).indexOf(c.id)>-1?"checked":"")+'> '+escapeHtml(c.label)+' <span class="empty-note">('+escapeHtml(c.abaNome)+')</span></label>';
             }).join("") : '<span class="empty-note">Crie campos em outras abas primeiro.</span>') + '</div>' : '') +
         '</div>' +
+        '<div class="campo-props"><label><input type="checkbox" data-aba-validavel="'+ai+'" '+(aba.validavel?"checked":"")+'> Validável</label></div>' +
+        '<p class="empty-note">Uma aba validável ganha um botão "Validar" ao preencher um registro; depois de clicado, ela fica marcada como validada — e isso pode virar condição para liberar outra aba ("Depois que outra(s) aba(s) forem validadas").</p>' +
         '<div class="small-btn-row"><button type="button" class="btn sm danger" data-remove-aba="'+ai+'">Remover esta aba</button></div>';
     } else {
       var ai2 = configSelection.ai, ci2 = configSelection.ci;
@@ -2539,13 +3024,17 @@
       var isCodigo = c.tipo === "codigo";
       var isCpfCnpj = c.tipo === "cpf_cnpj";
       var isEnderecoLoc = c.tipo === "endereco_localidade";
+      var isLista = c.tipo === "lista";
+      var isConsulta = c.tipo === "consulta";
+      var isArquivo = c.tipo === "arquivo";
       html += '<div class="props-title">Propriedades do campo</div>' +
         '<div class="field"><label>Rótulo</label><input type="text" value="'+escapeHtml(c.label||"")+'" data-campo-label="'+ai2+':'+ci2+'"></div>' +
         '<div class="field"><label>Tipo</label><select data-campo-tipo="'+ai2+':'+ci2+'">'+options+'</select></div>' +
         ((isCodigo || isEnderecoLoc) ? "" :
           '<div class="field"><label>Dica</label><input type="text" value="'+escapeHtml(c.ajuda||"")+'" data-campo-ajuda="'+ai2+':'+ci2+'" placeholder="Instrução exibida junto ao campo"></div>' +
-          ((c.tipo === "data" || isCpfCnpj) ? "" :
-            '<div class="field"><label>Valor padrão</label><input type="text" value="'+escapeHtml(c.valorPadrao||"")+'" data-campo-padrao="'+ai2+':'+ci2+'" placeholder="Valor padrão fixo"></div>')) +
+          ((c.tipo === "data" || isCpfCnpj || isConsulta || isArquivo) ? "" :
+            (isLista ? listaPadraoHtml(c, ai2, ci2) :
+              '<div class="field"><label>Valor padrão</label><input type="text" value="'+escapeHtml(c.valorPadrao||"")+'" data-campo-padrao="'+ai2+':'+ci2+'" placeholder="Valor padrão fixo"></div>'))) +
         (c.tipo === "texto" ?
           '<div class="field"><label>Aparência</label><select data-campo-aparencia-texto="'+ai2+':'+ci2+'">' +
             APARENCIA_TEXTO.map(function(o){ return '<option value="'+o.v+'"'+((c.aparencia||"unica_linha")===o.v?" selected":"")+'>'+o.l+'</option>'; }).join("") +
@@ -2568,22 +3057,27 @@
         : isCodigo ? campoLogicaHtml(c, ai2, ci2)
         : isCpfCnpj ? '<p class="empty-note">CPF (11 dígitos) ou CNPJ (14 caracteres, aceita letras A-Z desde a reforma do CNPJ alfanumérico) — os dígitos verificadores são conferidos automaticamente ao salvar.</p>'
         : isEnderecoLoc ? enderecoLocPropsHtml(c, ai2, ci2)
+        : isLista ? listaPropsHtml(c, ai2, ci2)
+        : isConsulta ? consultaPropsHtml(c, ai2, ci2)
+        : isArquivo ? arquivoPropsHtml(c, ai2, ci2)
         : '<div class="field"><label>Aparência</label><input type="text" value="'+escapeHtml(c.aparencia||"")+'" data-campo-aparencia="'+ai2+':'+ci2+'" placeholder="ex.: multiline, minimal"></div>') +
         '<div class="campo-props">' +
           (isCodigo ?
             '<label class="disabled-note"><input type="checkbox" checked disabled> Obrigatório (sempre, com Lógica configurada)</label>' +
             propCheck(ai2,ci2,"visivel","Visível",c.visivel !== false) +
             '<label class="disabled-note"><input type="checkbox" checked disabled> Somente leitura (sempre)</label>'
+          : (isConsulta || isArquivo) ?
+            propCheck(ai2,ci2,"obrigatorio","Obrigatório",c.obrigatorio)
           :
             propCheck(ai2,ci2,"obrigatorio","Obrigatório",c.obrigatorio) +
             propCheck(ai2,ci2,"visivel","Visível",c.visivel !== false) +
             propCheck(ai2,ci2,"leitura","Somente leitura",c.leitura)) +
         '</div>' +
-        ((isCodigo || isCpfCnpj || isEnderecoLoc) ? "" :
+        ((isCodigo || isCpfCnpj || isEnderecoLoc || isConsulta || isArquivo) ? "" :
           '<div class="calc-block'+(c.calculado?' is-on':'')+'">' +
             '<label class="calc-toggle"><input type="checkbox" data-campo-prop="'+ai2+':'+ci2+':calculado" '+(c.calculado?"checked":"")+'> Cálculo</label>' +
-            (c.calculado ? '<div class="field"><label>Fórmula</label>' +
-              '<input type="text" data-campo-formula="'+ai2+':'+ci2+'" value="'+escapeHtml(c.formula||"")+'" placeholder="Ex.: {area_a} + {area_b}"></div>' : '') +
+            (c.calculado ? (isLista ? listaRegrasHtml(c, ai2, ci2, abas) : ('<div class="field"><label>Fórmula</label>' +
+              '<input type="text" data-campo-formula="'+ai2+':'+ci2+'" value="'+escapeHtml(c.formula||"")+'" placeholder="Ex.: {area_a} + {area_b}"></div>')) : '') +
           '</div>') +
         ((isCodigo || isCpfCnpj) ? "" :
           '<div class="field"><label>Campo requisito</label>' +
@@ -2623,7 +3117,235 @@
         locToggle("uf","UF",loc.uf) +
         locToggle("municipio","Município",loc.municipio, !loc.uf) +
       '</div>';
-    html += '<p class="empty-note">Busca de endereço ao digitar o Logradouro (estilo Google Maps, via Nominatim/OpenStreetMap) e preenchimento automático pelo CEP (via ViaCEP) só funcionam na versão instalada localmente (fora do claude.ai) — dentro do Artifact, essas partes continuam editáveis normalmente, só sem a busca automática.</p>';
+    return html;
+  }
+
+  // Acha um campo em qualquer aba pelo id — usado pela Configuração do tipo
+  // Lista para saber o tipo do campo referenciado numa condição de Cálculo
+  // (se ele também for Lista, o "Valor" da condição vira um seletor com as
+  // opções dele, em vez de texto livre).
+  function campoById(abas, id){
+    var found = null;
+    (abas||[]).forEach(function(a){ (a.campos||[]).forEach(function(c){ if(c.id === id) found = c; }); });
+    return found;
+  }
+
+  // ---------- Campo tipo "Consulta (referência)" ----------
+  // Uma Consulta aponta para uma "fonte": uma das Entidades fixas, uma
+  // Categoria de Formulário Personalizado já criada, ou os Usuários do
+  // sistema (cadastro simples de nome/e-mail/papel em ⚙ Configuração geral
+  // — ainda não é uma Entidade completa, mas já existe e serve como fonte).
+  // O "campo exibido" é qual valor da fonte aparece para quem preenche (e
+  // no que fica salvo/exibido depois) — Código e Nome sempre existem em
+  // qualquer Entidade/Categoria, o resto vem dos campos configurados dela.
+  function fonteOpcoesDisponiveis(){
+    var opcoes = [];
+    FIXED_ENTITIES.forEach(function(e){ opcoes.push({tipo:"entidade", key:e.key, label:e.label}); });
+    (cache.categoria||[]).slice().sort(function(a,b){ return String(a.nome||"").localeCompare(String(b.nome||""), "pt-BR"); })
+      .forEach(function(cat){ opcoes.push({tipo:"categoria", key:cat.id, label:(cat.nome||cat.codigo||"(sem nome)") + " (Formulário)"}); });
+    opcoes.push({tipo:"usuarios", key:"", label:"Usuários do sistema"});
+    return opcoes;
+  }
+  function fonteValor(f){ return f ? f.tipo+":"+(f.key||"") : ""; }
+  function fonteLabel(f){
+    if(!f) return "";
+    var found = fonteOpcoesDisponiveis().filter(function(o){ return o.tipo===f.tipo && (o.key||"")===(f.key||""); })[0];
+    return found ? found.label : "(fonte removida)";
+  }
+  function fonteAbas(f){
+    if(!f) return [];
+    if(f.tipo === "entidade") return ((byId(cache.config_entidade, f.key)||{}).abas) || [];
+    if(f.tipo === "categoria") return ((byId(cache.categoria, f.key)||{}).abas) || [];
+    return [];
+  }
+  function fonteCamposDisponiveis(f){
+    if(!f) return [];
+    if(f.tipo === "usuarios") return [{v:"nome",l:"Nome"},{v:"email",l:"E-mail"},{v:"papel",l:"Papel"}];
+    var campos = [{v:"codigo", l:"Código"}, {v:"nome", l:"Nome"}];
+    fonteAbas(f).forEach(function(a){ (a.campos||[]).forEach(function(c){ campos.push({v:c.id, l:c.label}); }); });
+    return campos;
+  }
+  // Os registros de verdade de uma fonte, prontos para consulta/autocomplete
+  // — sempre já em cache (ver COLLECTIONS/cache), nunca precisa de busca à
+  // parte. Cada item volta como {id, codigo, nome, exibido, busca} —
+  // "exibido" já resolvido conforme o Campo exibido configurado, "busca" é
+  // um texto com TODOS os campos do registro (minúsculo), usado pelo popup
+  // "Buscar por qualquer campo" — não só pelo Campo exibido.
+  function fonteRegistros(f){
+    if(!f) return [];
+    if(f.tipo === "usuarios"){
+      var geral = byId(cache.config_sistema, "geral") || {};
+      return (geral.usuarios||[]).map(function(u){
+        var campo = f.campoExibido || "nome";
+        var exibido = String(u[campo] != null ? u[campo] : (u.nome||""));
+        var busca = [u.nome, u.email, PAPEL_LABEL[u.papel]||u.papel].filter(Boolean).join(" ").toLowerCase();
+        return { id:u.id, codigo:"", nome:u.nome, exibido: exibido, busca: busca };
+      });
+    }
+    var col = f.tipo === "entidade" ? f.key : "formulario_personalizado";
+    var lista = (cache[col]||[]).filter(function(r){ return f.tipo !== "categoria" || r.categoria_id === f.key; });
+    return lista.map(function(r){
+      var exibido;
+      if(f.campoExibido === "codigo") exibido = r.codigo || "";
+      else if(!f.campoExibido || f.campoExibido === "nome") exibido = r.nome || r.codigo || "";
+      else exibido = (r.campos && r.campos[f.campoExibido] != null) ? String(r.campos[f.campoExibido]) : "";
+      var camposTxt = r.campos ? Object.keys(r.campos).map(function(k){ return r.campos[k]; }).filter(function(v){ return v != null && typeof v !== "object"; }).join(" ") : "";
+      var busca = [r.codigo, r.nome, camposTxt].filter(Boolean).join(" ").toLowerCase();
+      return { id:r.id, codigo:r.codigo||"", nome:r.nome||"", exibido: exibido || (r.nome||r.codigo||"(sem valor)"), busca: busca };
+    });
+  }
+  function consultaPropsHtml(c, ai2, ci2){
+    var fonte = c.fonte || null;
+    var opcoesFonte = fonteOpcoesDisponiveis();
+    var html = '<div class="field"><label>Fonte</label><select data-campo-consulta-fonte="'+ai2+':'+ci2+'"><option value="">Selecione…</option>' +
+      opcoesFonte.map(function(o){
+        var val = o.tipo+":"+(o.key||"");
+        var sel = fonte && fonte.tipo===o.tipo && (fonte.key||"")===(o.key||"");
+        return '<option value="'+val+'"'+(sel?" selected":"")+'>'+escapeHtml(o.label)+'</option>';
+      }).join("") +
+    '</select></div>';
+    if(fonte){
+      var camposFonte = fonteCamposDisponiveis(fonte);
+      html += '<div class="field"><label>Campo exibido</label><select data-campo-consulta-exibido="'+ai2+':'+ci2+'">' +
+        (camposFonte.length ? camposFonte.map(function(o){ return '<option value="'+o.v+'"'+((fonte.campoExibido||"nome")===o.v?" selected":"")+'>'+escapeHtml(o.l)+'</option>'; }).join("") : '<option value="">Nenhum campo disponível</option>') +
+      '</select></div>';
+    } else {
+      html += '<p class="empty-note">Escolha de onde este campo busca seus valores — outra Entidade, um Formulário já criado, ou os Usuários do sistema.</p>';
+    }
+    return html;
+  }
+
+  // Propriedades de um campo tipo "Arquivo" — permite um ou mais uploads;
+  // Aparência/Cálculo/Visível/Somente leitura não fazem sentido para esse
+  // tipo (removidos em propsHtml). Aqui ficam as três regras do upload em
+  // si: tamanho máximo por arquivo, quantidade máxima de arquivos, e quais
+  // formatos são aceitos — todas opcionais (em branco = sem limite/qualquer
+  // formato); a real validação de upload ainda não existe neste protótipo
+  // (ver campoControlHtml/openNewRecordModal), então por ora isso só grava a
+  // configuração para quando o upload for implementado.
+  function arquivoPropsHtml(c, ai2, ci2){
+    return '<div class="field"><label>Limite de tamanho (MB)</label>' +
+        '<input type="number" min="1" value="'+(c.arquivoTamanhoMB!=null&&c.arquivoTamanhoMB!==""?escapeHtml(String(c.arquivoTamanhoMB)):"")+'" data-campo-arquivo-tamanho="'+ai2+':'+ci2+'" placeholder="Sem limite"></div>' +
+      '<div class="field"><label>Limite de quantidade de arquivos</label>' +
+        '<input type="number" min="1" value="'+(c.arquivoQtdMax!=null&&c.arquivoQtdMax!==""?escapeHtml(String(c.arquivoQtdMax)):"")+'" data-campo-arquivo-qtd="'+ai2+':'+ci2+'" placeholder="Sem limite (múltiplos arquivos)"></div>' +
+      '<div class="field"><label>Formatos permitidos</label>' +
+        '<input type="text" value="'+escapeHtml(c.arquivoFormatos||"")+'" data-campo-arquivo-formatos="'+ai2+':'+ci2+'" placeholder="Ex.: pdf, jpg, png — em branco aceita qualquer formato"></div>';
+  }
+
+  // "Valor padrão" de um campo Lista — em vez de texto livre, um seletor com
+  // as próprias opções do campo (Sim/Não, ou as opções Codificadas).
+  function listaPadraoHtml(c, ai2, ci2){
+    var opcoesResultado = c.listaModo === "codificado"
+      ? listaOpcoesOrdenadas(c).map(function(o){ return {v:o.chave, l:o.valor}; })
+      : [{v:"sim",l:"Sim"},{v:"nao",l:"Não"}];
+    return '<div class="field"><label>Valor padrão</label><select data-campo-lista-padrao="'+ai2+':'+ci2+'"><option value="">Nenhum</option>' +
+      opcoesResultado.map(function(o){ return '<option value="'+escapeHtml(o.v)+'"'+(c.valorPadrao===o.v?" selected":"")+'>'+escapeHtml(o.l)+'</option>'; }).join("") +
+    '</select></div>';
+  }
+
+  // Uma linha do editor de pares chave/valor do tipo Lista. Usada tanto na
+  // renderização normal (listaPropsHtml) quanto ao inserir, via DOM, uma
+  // nova linha em branco depois que a pessoa começa a digitar na última
+  // (ver promoverLinhaOpcaoEmBranco) — assim dá pra fazer isso sem
+  // re-renderizar tudo, o que perderia o foco de quem está digitando.
+  // Linha em branco (sem chave nem valor) não tem botão de remover nem é
+  // arrastável — ainda não é uma opção "de verdade".
+  function listaOpcaoRowHtml(ai2, ci2, oi, o, draggable){
+    var blank = !(o.chave || o.valor);
+    return '<div class="lista-opcao-row" data-campo-lista-opcao-row="'+ai2+':'+ci2+':'+oi+'"'+(draggable?' draggable="true"':'')+'>' +
+      '<span class="cf-drag-handle" style="'+(draggable?'':'opacity:.3;')+'" title="'+(draggable?"Arraste para reordenar":"Só é possível arrastar com Ordenação Manual")+'">⠿</span>' +
+      '<input type="text" class="lista-opcao-chave" value="'+escapeHtml(o.chave||"")+'" data-campo-lista-opcao-chave="'+ai2+':'+ci2+':'+oi+'" placeholder="Chave (ex.: 1)">' +
+      '<input type="text" class="lista-opcao-valor" value="'+escapeHtml(o.valor||"")+'" data-campo-lista-opcao-valor="'+ai2+':'+ci2+':'+oi+'" placeholder="Valor (ex.: Ativo)">' +
+      (blank ? '<span class="cf-remove" style="visibility:hidden;">✕</span>' : '<button type="button" class="cf-remove" data-campo-lista-opcao-remove="'+ai2+':'+ci2+':'+oi+'" title="Remover opção">✕</button>') +
+    '</div>';
+  }
+
+  // Propriedades de um campo tipo "Lista" — Aparência (Sim/Não ou
+  // Codificado); no Codificado, o editor de pares chave/valor (sempre com
+  // uma linha em branco ao final, pronta para digitar — cresce sozinho, sem
+  // precisar de um botão "+ Opção"; arrastável quando a Ordenação é Manual),
+  // depois Múltipla escolha e Ordenação.
+  function listaPropsHtml(c, ai2, ci2){
+    var isCodificado = c.listaModo === "codificado";
+    var html = '<div class="field"><label>Aparência</label><select data-campo-lista-modo="'+ai2+':'+ci2+'">' +
+      LISTA_MODOS.map(function(o){ return '<option value="'+o.v+'"'+((c.listaModo||"sim_nao")===o.v?" selected":"")+'>'+o.l+'</option>'; }).join("") +
+    '</select></div>';
+    if(!isCodificado) return html;
+    var opcoes = c.listaOpcoes || [];
+    var ordenacaoManual = (c.listaOrdenacao||"manual") === "manual";
+    var opcoesRender = opcoes.slice();
+    var ultima = opcoesRender[opcoesRender.length-1];
+    if(!ultima || ultima.chave || ultima.valor) opcoesRender.push({chave:"", valor:""});
+    html += '<div class="field"><label>Opções (chave/valor)</label>' +
+        '<div class="lista-opcoes-list" data-campo-lista-opcoes="'+ai2+':'+ci2+'">' +
+        opcoesRender.map(function(o, oi){
+          var blank = !(o.chave || o.valor);
+          return listaOpcaoRowHtml(ai2, ci2, oi, o, ordenacaoManual && !blank);
+        }).join("") +
+        '</div>' +
+      '</div>' +
+      '<label class="calc-toggle"><input type="checkbox" data-campo-lista-multipla="'+ai2+':'+ci2+'" '+(c.listaMultipla?"checked":"")+'> Múltipla escolha</label>' +
+      '<div class="field"><label>Ordenação das opções</label><select data-campo-lista-ordenacao="'+ai2+':'+ci2+'">' +
+        LISTA_ORDENACOES.map(function(o){ return '<option value="'+o.v+'"'+((c.listaOrdenacao||"manual")===o.v?" selected":"")+'>'+o.l+'</option>'; }).join("") +
+      '</select></div>';
+    return html;
+  }
+
+  // "Cálculo" do tipo Lista — construtor visual de regras (ver
+  // evalListaRegras). Cada regra: uma ou mais condições (E) sobre outros
+  // campos + o resultado (uma das opções deste próprio campo). Quando o
+  // campo referenciado por uma condição também é do tipo Lista, o valor da
+  // condição vira um seletor com as opções dele — só cai em texto livre
+  // para os demais tipos (Texto, Número…), onde não dá para prever todos os
+  // valores possíveis de antemão.
+  function listaRegrasHtml(c, ai2, ci2, abas){
+    var regras = c.regras || [];
+    var deps = [];
+    (abas||[]).forEach(function(a){ (a.campos||[]).forEach(function(cc){ if(cc.id !== c.id) deps.push({abaNome:a.nome, id:cc.id, label:cc.label}); }); });
+    var opcoesResultado = c.listaModo === "codificado"
+      ? listaOpcoesOrdenadas(c).map(function(o){ return {v:o.chave, l:o.valor}; })
+      : [{v:"sim",l:"Sim"},{v:"nao",l:"Não"}];
+    var html = '<p class="empty-note">Preenche este campo sozinho quando as condições de uma regra baterem — a primeira regra que bater ganha.</p>';
+    html += regras.map(function(regra, ri){
+      var condicoes = (regra.condicoes && regra.condicoes.length) ? regra.condicoes : [{}];
+      return '<div class="regra-block">' +
+        '<div class="regra-head"><strong>Regra '+(ri+1)+'</strong><button type="button" class="cf-remove" data-campo-regra-remove="'+ai2+':'+ci2+':'+ri+'" title="Remover regra">✕</button></div>' +
+        '<div class="regra-quando"><span class="empty-note">Quando</span>' +
+          condicoes.map(function(cond, condi){
+            var targetCampo = cond.campoId ? campoById(abas, cond.campoId) : null;
+            var precisaValor = cond.operador !== "preenchido" && cond.operador !== "vazio";
+            var valorControl = "";
+            if(precisaValor){
+              if(targetCampo && targetCampo.tipo === "lista"){
+                var targetOpts = targetCampo.listaModo === "codificado"
+                  ? listaOpcoesOrdenadas(targetCampo).map(function(o){ return {v:o.chave, l:o.valor}; })
+                  : [{v:"sim",l:"Sim"},{v:"nao",l:"Não"}];
+                valorControl = '<select data-campo-regra-cond-valor="'+ai2+':'+ci2+':'+ri+':'+condi+'"><option value="">Selecione…</option>' +
+                  targetOpts.map(function(o){ return '<option value="'+escapeHtml(o.v)+'"'+(cond.valor===o.v?" selected":"")+'>'+escapeHtml(o.l)+'</option>'; }).join("") +
+                '</select>';
+              } else {
+                valorControl = '<input type="text" data-campo-regra-cond-valor="'+ai2+':'+ci2+':'+ri+':'+condi+'" value="'+escapeHtml(cond.valor||"")+'" placeholder="Valor">';
+              }
+            }
+            return '<div class="condicao-row">' +
+              '<select data-campo-regra-cond-campo="'+ai2+':'+ci2+':'+ri+':'+condi+'"><option value="">Selecione o campo…</option>' +
+                deps.map(function(o){ return '<option value="'+o.id+'"'+(cond.campoId===o.id?" selected":"")+'>'+escapeHtml(o.label)+' ('+escapeHtml(o.abaNome)+')</option>'; }).join("") +
+              '</select>' +
+              '<select data-campo-regra-cond-operador="'+ai2+':'+ci2+':'+ri+':'+condi+'">' +
+                LISTA_OPERADORES.map(function(o){ return '<option value="'+o.v+'"'+((cond.operador||"igual")===o.v?" selected":"")+'>'+o.l+'</option>'; }).join("") +
+              '</select>' +
+              valorControl +
+              (condicoes.length > 1 ? '<button type="button" class="cf-remove" data-campo-regra-cond-remove="'+ai2+':'+ci2+':'+ri+':'+condi+'" title="Remover condição">✕</button>' : '') +
+            '</div>';
+          }).join("") +
+          '<button type="button" class="btn sm" data-campo-regra-cond-add="'+ai2+':'+ci2+':'+ri+'">+ condição (E)</button>' +
+        '</div>' +
+        '<div class="field"><label>Então preencher com</label><select data-campo-regra-entao="'+ai2+':'+ci2+':'+ri+'"><option value="">Selecione…</option>' +
+          opcoesResultado.map(function(o){ return '<option value="'+escapeHtml(o.v)+'"'+(regra.entao===o.v?" selected":"")+'>'+escapeHtml(o.l)+'</option>'; }).join("") +
+        '</select></div>' +
+      '</div>';
+    }).join("");
+    html += '<div class="small-btn-row"><button type="button" class="btn sm" data-campo-regra-add="'+ai2+':'+ci2+'">+ Regra</button></div>';
     return html;
   }
 
@@ -2724,20 +3446,95 @@
     var m = document.getElementById("modal");
     var draft = modal.draft;
 
-    // ---- Ciclo de vida ----
-    Array.prototype.forEach.call(m.querySelectorAll("[data-add-ciclo]"), function(btn){
-      btn.addEventListener("click", function(){
-        var group = btn.getAttribute("data-add-ciclo");
-        var input = m.querySelector('[data-ciclo-input="'+group+'"]');
-        var val = input.value.trim(); if(!val) return;
-        (draft.pessoa ? draft[group] : draft.ciclo_de_vida_valores).push(val);
+    // ---- Ciclo de vida — editor de valores no mesmo estilo do editor de
+    // Opções do tipo Lista Codificado: sempre uma linha em branco pronta ao
+    // final (sem botão "+ Adicionar"), que cresce sozinha ao digitar, e
+    // arrastável para reordenar. ----
+    function cicloValoresArray(group){ return draft.pessoa ? draft[group] : draft.ciclo_de_vida_valores; }
+    function wireCicloValorRow(rowEl){
+      var inp = rowEl.querySelector("[data-ciclo-valor]");
+      if(inp){
+        inp.addEventListener("input", function(){
+          var p = inp.getAttribute("data-ciclo-valor").split(":");
+          var group = p[0], vi = +p[1];
+          var arr = cicloValoresArray(group);
+          var eraLinhaEmBranco = !arr[vi];
+          arr[vi] = inp.value;
+          if(eraLinhaEmBranco) promoverLinhaCicloEmBranco(rowEl, group, vi, arr);
+        });
+      }
+      var removeBtn = rowEl.querySelector("[data-ciclo-valor-remove]");
+      if(removeBtn) removeBtn.addEventListener("click", function(){
+        var p = removeBtn.getAttribute("data-ciclo-valor-remove").split(":");
+        cicloValoresArray(p[0]).splice(+p[1],1);
         renderConfigModal();
       });
+      if(rowEl.getAttribute("draggable") === "true"){
+        rowEl.addEventListener("dragstart", function(e){
+          e.stopPropagation();
+          e.dataTransfer.effectAllowed = "move";
+          e.dataTransfer.setData("text/plain", "cicloValor:" + rowEl.getAttribute("data-ciclo-valor-row"));
+          rowEl.classList.add("dragging");
+        });
+        rowEl.addEventListener("dragend", function(){ rowEl.classList.remove("dragging"); });
+      }
+    }
+    function promoverLinhaCicloEmBranco(rowEl, group, vi, arr){
+      var removeSpan = rowEl.querySelector(".cf-remove");
+      if(removeSpan && removeSpan.tagName === "SPAN"){
+        var btn = document.createElement("button");
+        btn.type = "button"; btn.className = "cf-remove"; btn.title = "Remover"; btn.textContent = "✕";
+        btn.setAttribute("data-ciclo-valor-remove", group+":"+vi);
+        removeSpan.parentNode.replaceChild(btn, removeSpan);
+        btn.addEventListener("click", function(){
+          var p = btn.getAttribute("data-ciclo-valor-remove").split(":");
+          cicloValoresArray(p[0]).splice(+p[1],1);
+          renderConfigModal();
+        });
+      }
+      if(rowEl.getAttribute("draggable") !== "true"){
+        rowEl.setAttribute("draggable","true");
+        var handle = rowEl.querySelector(".cf-drag-handle");
+        if(handle){ handle.style.opacity = ""; }
+        rowEl.addEventListener("dragstart", function(e){
+          e.stopPropagation();
+          e.dataTransfer.effectAllowed = "move";
+          e.dataTransfer.setData("text/plain", "cicloValor:" + rowEl.getAttribute("data-ciclo-valor-row"));
+          rowEl.classList.add("dragging");
+        });
+        rowEl.addEventListener("dragend", function(){ rowEl.classList.remove("dragging"); });
+      }
+      var proximoIdx = vi + 1;
+      if(arr[proximoIdx] === undefined){
+        var temp = document.createElement("div");
+        temp.innerHTML = cicloValorRowHtml(group, proximoIdx, "", false);
+        var blankRowEl = temp.firstChild;
+        rowEl.parentNode.insertBefore(blankRowEl, rowEl.nextSibling);
+        wireCicloValorRow(blankRowEl);
+      }
+    }
+    Array.prototype.forEach.call(m.querySelectorAll("[data-ciclo-valor-row]"), function(rowEl){
+      wireCicloValorRow(rowEl);
     });
-    Array.prototype.forEach.call(m.querySelectorAll("[data-remove-ciclo]"), function(btn){
-      btn.addEventListener("click", function(){
-        var group = btn.getAttribute("data-remove-ciclo"), idx = parseInt(btn.getAttribute("data-idx"),10);
-        (draft.pessoa ? draft[group] : draft.ciclo_de_vida_valores).splice(idx,1);
+    Array.prototype.forEach.call(m.querySelectorAll("[data-ciclo-valores]"), function(listEl){
+      listEl.addEventListener("dragover", function(e){ e.preventDefault(); e.dataTransfer.dropEffect = "move"; });
+      listEl.addEventListener("drop", function(e){
+        e.preventDefault();
+        var raw = e.dataTransfer.getData("text/plain");
+        if(!raw || raw.indexOf("cicloValor:") !== 0) return;
+        var p = raw.slice(11).split(":");
+        var group = p[0], fromIdx = +p[1];
+        var arr = cicloValoresArray(group);
+        if(!arr) return;
+        var rows = Array.prototype.filter.call(listEl.children, function(x){ return x.hasAttribute("data-ciclo-valor-row"); });
+        var toIdx = rows.length;
+        for(var i=0;i<rows.length;i++){
+          var rect = rows[i].getBoundingClientRect();
+          if(e.clientY < rect.top + rect.height/2){ toIdx = i; break; }
+        }
+        if(toIdx > fromIdx) toIdx--;
+        var moved = arr.splice(fromIdx,1)[0];
+        arr.splice(toIdx,0,moved);
         renderConfigModal();
       });
     });
@@ -2753,7 +3550,69 @@
       });
     });
 
+    // ---- Permissões ----
+    Array.prototype.forEach.call(m.querySelectorAll("[data-perm]"), function(chk){
+      chk.addEventListener("change", function(){
+        var p = chk.getAttribute("data-perm").split(":");
+        var papel = p[0], tipo = p[1], alvoId = p[2], acao = p[3];
+        draft.permissoes = draft.permissoes || {};
+        draft.permissoes[papel] = draft.permissoes[papel] || {abas:{}, campos:{}};
+        draft.permissoes[papel][tipo] = draft.permissoes[papel][tipo] || {};
+        draft.permissoes[papel][tipo][alvoId] = draft.permissoes[papel][tipo][alvoId] || {};
+        draft.permissoes[papel][tipo][alvoId][acao] = chk.checked;
+      });
+    });
+
+    // ---- Pesquisa e Exportação ----
+    function toggleChecklistId(arrGetter, id, checked){
+      var arr = arrGetter();
+      var idx = arr.indexOf(id);
+      if(checked && idx === -1) arr.push(id);
+      if(!checked && idx > -1) arr.splice(idx,1);
+    }
+    draft.pesquisaExportacao = draft.pesquisaExportacao || {pesquisaCampos:[], exportacaoCampos:[], parametroPadrao:"sem_relacionados"};
+    Array.prototype.forEach.call(m.querySelectorAll("[data-pesq-campo]"), function(chk){
+      chk.addEventListener("change", function(){
+        draft.pesquisaExportacao.pesquisaCampos = draft.pesquisaExportacao.pesquisaCampos || [];
+        toggleChecklistId(function(){ return draft.pesquisaExportacao.pesquisaCampos; }, chk.getAttribute("data-pesq-campo"), chk.checked);
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-exp-campo]"), function(chk){
+      chk.addEventListener("change", function(){
+        draft.pesquisaExportacao.exportacaoCampos = draft.pesquisaExportacao.exportacaoCampos || [];
+        toggleChecklistId(function(){ return draft.pesquisaExportacao.exportacaoCampos; }, chk.getAttribute("data-exp-campo"), chk.checked);
+      });
+    });
+    var expParamSel = m.querySelector("[data-exp-parametro]");
+    if(expParamSel) expParamSel.addEventListener("change", function(){ draft.pesquisaExportacao.parametroPadrao = expParamSel.value; });
+
     // ---- Abas & campos (construtor estilo Survey123) ----
+    // Popup de propriedades: só o OK salva as alterações feitas dentro do
+    // popup, e só o ✕ cancela (revertendo o campo/aba para como estava ao
+    // abrir o popup, via configSelectionSnapshot). Clicar fora da caixa (no
+    // fundo escurecido) NÃO faz nada — nem salva nem cancela, o popup
+    // continua aberto — só esses dois botões fecham.
+    function fecharPropsPopupSalvando(){ configSelection = null; renderConfigModal(); }
+    function fecharPropsPopupCancelando(){
+      if(configSelectionSnapshot){
+        var sel = configSelectionSnapshot.sel;
+        if(sel.type === "aba" && draft.abas[sel.ai]){
+          draft.abas[sel.ai] = clone(configSelectionSnapshot.data);
+        } else if(sel.type === "campo" && draft.abas[sel.ai] && draft.abas[sel.ai].campos && draft.abas[sel.ai].campos[sel.ci]){
+          draft.abas[sel.ai].campos[sel.ci] = clone(configSelectionSnapshot.data);
+        }
+      }
+      configSelection = null;
+      configSelectionSnapshot = null;
+      renderConfigModal();
+    }
+    var propsPopupOverlay = document.getElementById("cfg-props-popup-overlay");
+    if(propsPopupOverlay){
+      var propsPopupClose = document.getElementById("cfg-props-popup-close");
+      if(propsPopupClose) propsPopupClose.addEventListener("click", fecharPropsPopupCancelando);
+      var propsPopupOk = document.getElementById("cfg-props-popup-ok");
+      if(propsPopupOk) propsPopupOk.addEventListener("click", fecharPropsPopupSalvando);
+    }
     var addAbaBtn = document.getElementById("add-aba-btn");
     if(addAbaBtn) addAbaBtn.addEventListener("click", function(){
       var nome = uniqueAbaName("Nova aba", draft.abas.map(function(a){ return a.nome; }));
@@ -2789,7 +3648,9 @@
         draft.abas[ai].campos = draft.abas[ai].campos || [];
         var novoCampo = novoCampoDeTipo(tipo);
         draft.abas[ai].campos.push(novoCampo);
-        configSelection = {type:"campo", ai:ai, ci: draft.abas[ai].campos.length-1};
+        // Só cria o campo — não abre a Configuração dele sozinho; quem
+        // quiser configurar clica no campo (a seleção/popup atual, se
+        // houver, permanece como estava).
         renderConfigModal();
       });
     });
@@ -2869,7 +3730,7 @@
         if(raw.indexOf("palette:") === 0){
           var item2 = novoCampoDeTipo(raw.slice(8));
           draft.abas[dstAi].campos.splice(idx,0,item2);
-          configSelection = {type:"campo", ai:dstAi, ci:idx};
+          // Só cria o campo — não abre a Configuração dele sozinho.
           renderConfigModal();
           return;
         }
@@ -2897,7 +3758,7 @@
         var nome = uniqueAbaName("Nova aba", draft.abas.map(function(a){ return a.nome; }));
         if(raw.indexOf("palette:") === 0){
           draft.abas.push({id:uid("aba"), nome:nome, condicao:{tipo:"livre"}, campos:[novoCampoDeTipo(raw.slice(8))]});
-          configSelection = {type:"campo", ai: draft.abas.length-1, ci:0};
+          // Só cria o campo (e a aba) — não abre a Configuração do campo sozinho.
           renderConfigModal();
           return;
         }
@@ -2923,29 +3784,32 @@
         renderConfigModal();
       });
     });
-    Array.prototype.forEach.call(m.querySelectorAll("[data-aba-nome]"), function(inp){
-      inp.addEventListener("click", function(e){
-        e.stopPropagation();
-        var ai = parseInt(inp.getAttribute("data-aba-nome"),10);
-        // Só re-renderiza (e assim seleciona a aba, trocando o painel de
-        // propriedades) se ainda não estava selecionada — clicar de novo no
-        // campo já selecionado apenas foca para digitar, sem perder o foco.
-        if(!(configSelection && configSelection.type==="aba" && configSelection.ai===ai)){
-          configSelection = {type:"aba", ai:ai};
-          renderConfigModal();
-        }
-      });
+    // Nome da aba agora se edita dentro do popup de propriedades (igual ao
+    // Rótulo de um campo) — não mais direto no canvas. Atualiza o título no
+    // canvas por trás via DOM direto (sem re-renderizar), para não perder o
+    // foco de quem está digitando.
+    Array.prototype.forEach.call(m.querySelectorAll("[data-aba-nome-popup]"), function(inp){
       inp.addEventListener("input", function(){
-        draft.abas[parseInt(inp.getAttribute("data-aba-nome"),10)].nome = inp.value;
+        var ai = parseInt(inp.getAttribute("data-aba-nome-popup"),10);
+        draft.abas[ai].nome = inp.value;
+        var canvasTitle = m.querySelector('.canvas-page[data-select-aba="'+ai+'"] .canvas-page-title');
+        if(canvasTitle) canvasTitle.textContent = (inp.value || "(sem nome)") + (draft.abas[ai].validavel ? " ✓" : "");
       });
       // Ao sair do campo (blur/"change"), normaliza e garante nome único —
       // abas não podem ter o mesmo nome.
       inp.addEventListener("change", function(){
-        var ai = parseInt(inp.getAttribute("data-aba-nome"),10);
+        var ai = parseInt(inp.getAttribute("data-aba-nome-popup"),10);
         var outrosNomes = draft.abas.filter(function(a,i){ return i!==ai; }).map(function(a){ return a.nome; });
         var unico = uniqueAbaName(inp.value, outrosNomes);
         draft.abas[ai].nome = unico;
         if(unico !== inp.value.trim()) renderConfigModal();
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-aba-validavel]"), function(chk){
+      chk.addEventListener("change", function(){
+        var ai = parseInt(chk.getAttribute("data-aba-validavel"),10);
+        draft.abas[ai].validavel = chk.checked;
+        renderConfigModal();
       });
     });
     Array.prototype.forEach.call(m.querySelectorAll("[data-cond-tipo]"), function(sel){
@@ -2980,9 +3844,9 @@
         e.stopPropagation();
         var p = btn.getAttribute("data-remove-campo").split(":");
         draft.abas[+p[0]].campos.splice(+p[1],1);
-        // Fica selecionada a aba do campo removido, em vez de esvaziar o
-        // painel de propriedades — "no mesmo lugar" em vez de voltar ao início.
-        configSelection = {type:"aba", ai:+p[0]};
+        // Ao remover o campo, fecha o popup de propriedades — não abre a
+        // configuração da aba automaticamente.
+        configSelection = null;
         renderConfigModal();
       });
     });
@@ -3011,6 +3875,9 @@
         if(sel.value === "endereco_localidade" && !campo.locCampos){
           campo.locCampos = clone(DEFAULT_LOC_CAMPOS);
         }
+        if(sel.value === "lista" && !campo.listaOpcoes){
+          campo.listaModo = "sim_nao"; campo.listaOrdenacao = "manual"; campo.listaMultipla = false; campo.listaOpcoes = [];
+        }
         renderConfigModal();
       });
     });
@@ -3024,6 +3891,244 @@
     Array.prototype.forEach.call(m.querySelectorAll("[data-campo-formula]"), function(inp){
       inp.addEventListener("input", function(){ var p=inp.getAttribute("data-campo-formula").split(":"); draft.abas[+p[0]].campos[+p[1]].formula = inp.value; });
     });
+    // "Valor padrão" em texto livre (Texto, Número, Arquivo) — faltava esta
+    // ligação (bug antigo, não relacionado ao tipo Lista: o campo existia na
+    // Configuração desde sempre mas nunca gravava nada).
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-padrao]"), function(inp){
+      inp.addEventListener("input", function(){ var p=inp.getAttribute("data-campo-padrao").split(":"); draft.abas[+p[0]].campos[+p[1]].valorPadrao = inp.value; });
+    });
+    // ---- Campo tipo "Consulta (referência)" — Fonte (de onde vêm os
+    // valores) e Campo exibido (qual valor da fonte aparece). ----
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-consulta-fonte]"), function(sel){
+      sel.addEventListener("change", function(){
+        var p = sel.getAttribute("data-campo-consulta-fonte").split(":");
+        var campo = draft.abas[+p[0]].campos[+p[1]];
+        var val = sel.value;
+        if(!val){ campo.fonte = null; }
+        else {
+          var idx = val.indexOf(":");
+          campo.fonte = { tipo: val.slice(0,idx), key: val.slice(idx+1), campoExibido: "nome" };
+        }
+        renderConfigModal();
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-consulta-exibido]"), function(sel){
+      sel.addEventListener("change", function(){
+        var p = sel.getAttribute("data-campo-consulta-exibido").split(":");
+        var campo = draft.abas[+p[0]].campos[+p[1]];
+        if(campo.fonte) campo.fonte.campoExibido = sel.value;
+      });
+    });
+
+    // ---- Campo tipo "Lista" — Aparência (Sim/Não · Codificado), múltipla
+    // escolha, ordenação, editor de pares chave/valor (com arrastar-e-soltar
+    // quando Ordenação é Manual), Valor padrão e o Cálculo por regras. ----
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-lista-modo]"), function(sel){
+      sel.addEventListener("change", function(){
+        var p = sel.getAttribute("data-campo-lista-modo").split(":");
+        var campo = draft.abas[+p[0]].campos[+p[1]];
+        campo.listaModo = sel.value;
+        if(sel.value === "codificado" && !campo.listaOpcoes) campo.listaOpcoes = [];
+        campo.valorPadrao = ""; // as opções mudaram — evita ficar com um valor padrão inválido
+        renderConfigModal();
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-lista-multipla]"), function(inp){
+      inp.addEventListener("change", function(){
+        var p = inp.getAttribute("data-campo-lista-multipla").split(":");
+        draft.abas[+p[0]].campos[+p[1]].listaMultipla = inp.checked;
+        draft.abas[+p[0]].campos[+p[1]].valorPadrao = "";
+        renderConfigModal();
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-lista-ordenacao]"), function(sel){
+      sel.addEventListener("change", function(){
+        var p = sel.getAttribute("data-campo-lista-ordenacao").split(":");
+        draft.abas[+p[0]].campos[+p[1]].listaOrdenacao = sel.value;
+        renderConfigModal();
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-lista-padrao]"), function(sel){
+      sel.addEventListener("change", function(){
+        var p = sel.getAttribute("data-campo-lista-padrao").split(":");
+        draft.abas[+p[0]].campos[+p[1]].valorPadrao = sel.value || "";
+      });
+    });
+    // Liga uma linha do editor de opções (chave/valor): digitar, remover e
+    // arrastar (quando aplicável). Usada tanto nas linhas já presentes na
+    // renderização quanto na nova linha em branco inserida via DOM por
+    // promoverLinhaOpcaoEmBranco — por isso é uma função à parte, não um
+    // forEach solto.
+    function wireListaOpcaoRow(rowEl){
+      ["chave","valor"].forEach(function(campoNome){
+        var inp = rowEl.querySelector("[data-campo-lista-opcao-"+campoNome+"]");
+        if(!inp) return;
+        inp.addEventListener("input", function(){
+          var p = inp.getAttribute("data-campo-lista-opcao-"+campoNome).split(":");
+          var ai=+p[0], ci=+p[1], oi=+p[2];
+          var campo = draft.abas[ai] && draft.abas[ai].campos[ci];
+          if(!campo) return;
+          campo.listaOpcoes = campo.listaOpcoes || [];
+          var eraLinhaEmBranco = !campo.listaOpcoes[oi];
+          if(eraLinhaEmBranco) campo.listaOpcoes[oi] = {chave:"", valor:""};
+          campo.listaOpcoes[oi][campoNome] = inp.value;
+          // Só quando essa linha acabou de ganhar conteúdo pela primeira vez:
+          // vira uma opção "de verdade" (ganha botão de remover / arrastar) e
+          // uma nova linha em branco aparece logo abaixo — tudo via DOM, sem
+          // re-renderizar (perderia o foco de quem está digitando).
+          if(eraLinhaEmBranco) promoverLinhaOpcaoEmBranco(rowEl, ai, ci, oi, campo);
+        });
+      });
+      var removeBtn = rowEl.querySelector("[data-campo-lista-opcao-remove]");
+      if(removeBtn) removeBtn.addEventListener("click", function(){
+        var p = removeBtn.getAttribute("data-campo-lista-opcao-remove").split(":");
+        draft.abas[+p[0]].campos[+p[1]].listaOpcoes.splice(+p[2],1);
+        renderConfigModal();
+      });
+      // Arrastar-e-soltar para reordenar as opções — só ativo quando a
+      // Ordenação é Manual (nas outras, a ordem de exibição é sempre
+      // recalculada, então arrastar aqui não mudaria nada no formulário) e a
+      // linha já é uma opção de verdade (não a linha em branco ao final).
+      if(rowEl.getAttribute("draggable") === "true"){
+        rowEl.addEventListener("dragstart", function(e){
+          e.stopPropagation();
+          e.dataTransfer.effectAllowed = "move";
+          e.dataTransfer.setData("text/plain", "listaopcao:" + rowEl.getAttribute("data-campo-lista-opcao-row"));
+          rowEl.classList.add("dragging");
+        });
+        rowEl.addEventListener("dragend", function(){ rowEl.classList.remove("dragging"); });
+      }
+    }
+    // Promove a linha em branco ao final do editor de opções para uma opção
+    // "de verdade" assim que ganha o primeiro caractere: dá a ela um botão
+    // de remover (e arrastar, se a Ordenação for Manual) sem recriar a linha
+    // — os campos de texto continuam os mesmos elementos, então quem estava
+    // digitando não perde o foco — e insere uma nova linha em branco logo
+    // depois, pronta para a próxima opção.
+    function promoverLinhaOpcaoEmBranco(rowEl, ai, ci, oi, campo){
+      var removeSpan = rowEl.querySelector(".cf-remove");
+      if(removeSpan && removeSpan.tagName === "SPAN"){
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "cf-remove";
+        btn.title = "Remover opção";
+        btn.textContent = "✕";
+        btn.setAttribute("data-campo-lista-opcao-remove", ai+":"+ci+":"+oi);
+        removeSpan.parentNode.replaceChild(btn, removeSpan);
+        btn.addEventListener("click", function(){
+          var p = btn.getAttribute("data-campo-lista-opcao-remove").split(":");
+          draft.abas[+p[0]].campos[+p[1]].listaOpcoes.splice(+p[2],1);
+          renderConfigModal();
+        });
+      }
+      if((campo.listaOrdenacao||"manual") === "manual" && rowEl.getAttribute("draggable") !== "true"){
+        rowEl.setAttribute("draggable","true");
+        var handle = rowEl.querySelector(".cf-drag-handle");
+        if(handle){ handle.style.opacity = ""; handle.title = "Arraste para reordenar"; }
+        rowEl.addEventListener("dragstart", function(e){
+          e.stopPropagation();
+          e.dataTransfer.effectAllowed = "move";
+          e.dataTransfer.setData("text/plain", "listaopcao:" + rowEl.getAttribute("data-campo-lista-opcao-row"));
+          rowEl.classList.add("dragging");
+        });
+        rowEl.addEventListener("dragend", function(){ rowEl.classList.remove("dragging"); });
+      }
+      var proximoIdx = oi + 1;
+      if(!campo.listaOpcoes[proximoIdx]){
+        var temp = document.createElement("div");
+        temp.innerHTML = listaOpcaoRowHtml(ai, ci, proximoIdx, {chave:"", valor:""}, false);
+        var blankRowEl = temp.firstChild;
+        rowEl.parentNode.insertBefore(blankRowEl, rowEl.nextSibling);
+        wireListaOpcaoRow(blankRowEl);
+      }
+    }
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-lista-opcao-row]"), function(rowEl){
+      wireListaOpcaoRow(rowEl);
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-lista-opcoes]"), function(listEl){
+      listEl.addEventListener("dragover", function(e){ e.preventDefault(); e.dataTransfer.dropEffect = "move"; });
+      listEl.addEventListener("drop", function(e){
+        e.preventDefault();
+        var raw = e.dataTransfer.getData("text/plain");
+        if(!raw || raw.indexOf("listaopcao:") !== 0) return;
+        var p = raw.slice(11).split(":");
+        var ai=+p[0], ci=+p[1], fromIdx=+p[2];
+        var campo = draft.abas[ai] && draft.abas[ai].campos[ci];
+        if(!campo || !campo.listaOpcoes) return;
+        var rows = Array.prototype.filter.call(listEl.children, function(x){ return x.hasAttribute("data-campo-lista-opcao-row"); });
+        var toIdx = rows.length;
+        for(var i=0;i<rows.length;i++){
+          var rect = rows[i].getBoundingClientRect();
+          if(e.clientY < rect.top + rect.height/2){ toIdx = i; break; }
+        }
+        if(toIdx > fromIdx) toIdx--;
+        var moved = campo.listaOpcoes.splice(fromIdx,1)[0];
+        campo.listaOpcoes.splice(toIdx,0,moved);
+        renderConfigModal();
+      });
+    });
+    // ---- Cálculo do tipo Lista — regras visuais ----
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-regra-add]"), function(btn){
+      btn.addEventListener("click", function(){
+        var p = btn.getAttribute("data-campo-regra-add").split(":");
+        var campo = draft.abas[+p[0]].campos[+p[1]];
+        campo.regras = campo.regras || [];
+        campo.regras.push({condicoes:[{}], entao:""});
+        renderConfigModal();
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-regra-remove]"), function(btn){
+      btn.addEventListener("click", function(){
+        var p = btn.getAttribute("data-campo-regra-remove").split(":");
+        draft.abas[+p[0]].campos[+p[1]].regras.splice(+p[2],1);
+        renderConfigModal();
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-regra-cond-add]"), function(btn){
+      btn.addEventListener("click", function(){
+        var p = btn.getAttribute("data-campo-regra-cond-add").split(":");
+        var regra = draft.abas[+p[0]].campos[+p[1]].regras[+p[2]];
+        regra.condicoes = regra.condicoes || [];
+        regra.condicoes.push({});
+        renderConfigModal();
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-regra-cond-remove]"), function(btn){
+      btn.addEventListener("click", function(){
+        var p = btn.getAttribute("data-campo-regra-cond-remove").split(":");
+        draft.abas[+p[0]].campos[+p[1]].regras[+p[2]].condicoes.splice(+p[3],1);
+        renderConfigModal();
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-regra-cond-campo]"), function(sel){
+      sel.addEventListener("change", function(){
+        var p = sel.getAttribute("data-campo-regra-cond-campo").split(":");
+        draft.abas[+p[0]].campos[+p[1]].regras[+p[2]].condicoes[+p[3]].campoId = sel.value || null;
+        renderConfigModal();
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-regra-cond-operador]"), function(sel){
+      sel.addEventListener("change", function(){
+        var p = sel.getAttribute("data-campo-regra-cond-operador").split(":");
+        draft.abas[+p[0]].campos[+p[1]].regras[+p[2]].condicoes[+p[3]].operador = sel.value;
+        renderConfigModal();
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-regra-cond-valor]"), function(el){
+      var fn = function(){
+        var p = el.getAttribute("data-campo-regra-cond-valor").split(":");
+        draft.abas[+p[0]].campos[+p[1]].regras[+p[2]].condicoes[+p[3]].valor = el.value;
+      };
+      el.addEventListener("input", fn);
+      el.addEventListener("change", fn);
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-regra-entao]"), function(sel){
+      sel.addEventListener("change", function(){
+        var p = sel.getAttribute("data-campo-regra-entao").split(":");
+        draft.abas[+p[0]].campos[+p[1]].regras[+p[2]].entao = sel.value;
+      });
+    });
+
     Array.prototype.forEach.call(m.querySelectorAll("[data-campo-dependecampo]"), function(sel){
       sel.addEventListener("change", function(){
         var p = sel.getAttribute("data-campo-dependecampo").split(":");
@@ -3090,6 +4195,27 @@
         var p = inp.getAttribute("data-campo-precisao").split(":");
         var v = parseInt(inp.value, 10);
         draft.abas[+p[0]].campos[+p[1]].precisao = (isNaN(v) || v < 0) ? 0 : v;
+      });
+    });
+    // ---- Campo tipo Arquivo — limites de tamanho/quantidade/formato ----
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-arquivo-tamanho]"), function(inp){
+      inp.addEventListener("input", function(){
+        var p = inp.getAttribute("data-campo-arquivo-tamanho").split(":");
+        var v = parseFloat(inp.value);
+        draft.abas[+p[0]].campos[+p[1]].arquivoTamanhoMB = (isNaN(v) || v <= 0) ? null : v;
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-arquivo-qtd]"), function(inp){
+      inp.addEventListener("input", function(){
+        var p = inp.getAttribute("data-campo-arquivo-qtd").split(":");
+        var v = parseInt(inp.value, 10);
+        draft.abas[+p[0]].campos[+p[1]].arquivoQtdMax = (isNaN(v) || v <= 0) ? null : v;
+      });
+    });
+    Array.prototype.forEach.call(m.querySelectorAll("[data-campo-arquivo-formatos]"), function(inp){
+      inp.addEventListener("input", function(){
+        var p = inp.getAttribute("data-campo-arquivo-formatos").split(":");
+        draft.abas[+p[0]].campos[+p[1]].arquivoFormatos = inp.value;
       });
     });
     // ---- Campo tipo Data — Aparência (Só data/Data e Hora), Data mínima/máxima ----
@@ -3318,10 +4444,23 @@
   // padrão/nativos do registro (Nome, campos próprios da Entidade, ciclo de
   // vida na edição). Faz parte da mesma estrutura de abas, sempre a primeira
   // e nunca bloqueada por condição de aba.
-  function abaTabsBuilder(abas, fieldHtml, basicos){
+  // validState — objeto mutável {abaId: true} com o estado de validação
+  // (botão "Validar" clicado) das abas marcadas como validavel:true, para
+  // esta sessão de criação/edição de registro em andamento. Quem chama
+  // abaTabsBuilder decide de onde vem (objeto novo e vazio para um registro
+  // novo; clone(row.abasValidadas||{}) para editar um já existente) e é
+  // responsável por persistir esse mesmo objeto no registro ao salvar.
+  function abaTabsBuilder(abas, fieldHtml, basicos, validState){
+    validState = validState || {};
     var offset = basicos ? 1 : 0;
     var totalPages = abas.length + offset;
     var activeIdx = 0;
+    function getValidado(id){ return !!validState[id]; }
+    function validarBtnHtml(aba, ai){
+      if(!aba.validavel) return "";
+      var validada = !!validState[aba.id];
+      return '<div class="small-btn-row"><button type="button" class="btn sm'+(validada?' primary':'')+'" data-aba-validar="'+ai+'">'+(validada?'✓ Aba validada':'Validar esta aba')+'</button></div>';
+    }
     function html(){
       if(totalPages === 0) return "";
       var tabsHtml = '<div class="record-tabs">' +
@@ -3336,6 +4475,7 @@
           var pi = ai + offset;
           return '<div class="record-tab-panel" data-record-panel="'+pi+'"'+(pi===0?"":' style="display:none;"')+'>' +
             '<div data-aba-fields="'+ai+'">' + (aba.campos||[]).map(fieldHtml).join("") + '</div>' +
+            '<div data-aba-validar-wrap="'+ai+'">' + validarBtnHtml(aba, ai) + '</div>' +
             '<div class="aba-locked" data-aba-locked="'+ai+'" style="display:none;">🔒 <span></span></div>' +
           '</div>';
         }).join("");
@@ -3350,7 +4490,10 @@
         panel.style.display = (parseInt(panel.getAttribute("data-record-panel"),10) === idx) ? "" : "none";
       });
     }
-    function wire(m){
+    // onValidate — chamada depois de um clique em "Validar esta aba", para
+    // quem chamou refazer seu próprio updateVisibility()/tabs.update() (o
+    // estado de validação pode liberar outra aba condicionada a ele).
+    function wire(m, onValidate){
       if(totalPages === 0) return;
       Array.prototype.forEach.call(m.querySelectorAll("[data-record-tab]"), function(btn){
         btn.addEventListener("click", function(){
@@ -3358,12 +4501,22 @@
           selectTab(m, parseInt(btn.getAttribute("data-record-tab"),10));
         });
       });
+      Array.prototype.forEach.call(m.querySelectorAll("[data-aba-validar]"), function(btn){
+        btn.addEventListener("click", function(){
+          var ai = parseInt(btn.getAttribute("data-aba-validar"),10);
+          var aba = abas[ai];
+          validState[aba.id] = !validState[aba.id];
+          btn.classList.toggle("primary", !!validState[aba.id]);
+          btn.textContent = validState[aba.id] ? "✓ Aba validada" : "Validar esta aba";
+          if(onValidate) onValidate();
+        });
+      });
       selectTab(m, activeIdx);
     }
     function update(m, getVal){
       if(abas.length === 0) return; // só "Dados Básicos" — nada para (des)bloquear
       abas.forEach(function(aba, ai){
-        var unlocked = isAbaUnlocked(aba, abas, getVal);
+        var unlocked = isAbaUnlocked(aba, abas, getVal, getValidado);
         var pi = ai + offset;
         var tabBtn = m.querySelector('[data-record-tab="'+pi+'"]');
         var fields = m.querySelector('[data-aba-fields="'+ai+'"]');
@@ -3377,15 +4530,15 @@
       });
       var activeAi = activeIdx - offset;
       var activeAba = activeAi >= 0 ? abas[activeAi] : null;
-      if(activeAba && !isAbaUnlocked(activeAba, abas, getVal)){
+      if(activeAba && !isAbaUnlocked(activeAba, abas, getVal, getValidado)){
         var firstUnlockedPi = basicos ? 0 : -1; // "Dados Básicos" nunca trava
         if(firstUnlockedPi === -1){
-          abas.forEach(function(a, i){ if(firstUnlockedPi === -1 && isAbaUnlocked(a, abas, getVal)) firstUnlockedPi = i + offset; });
+          abas.forEach(function(a, i){ if(firstUnlockedPi === -1 && isAbaUnlocked(a, abas, getVal, getValidado)) firstUnlockedPi = i + offset; });
         }
         if(firstUnlockedPi > -1 && firstUnlockedPi !== activeIdx) selectTab(m, firstUnlockedPi);
       }
     }
-    return { html: html, wire: wire, update: update };
+    return { html: html, wire: wire, update: update, validState: validState, getValidado: getValidado };
   }
 
   // ---- Novo registro (Formulário Personalizado), com abas progressivas ----
@@ -3409,7 +4562,7 @@
     }
 
     var basicosHtml = '<div class="field"><label>Nome do registro</label><input type="text" id="nr-nome" placeholder="Identificação curta deste caso"></div>';
-    var tabs = abaTabsBuilder(abas, fieldHtml, {nome:"Dados Básicos", html: basicosHtml});
+    var tabs = abaTabsBuilder(abas, fieldHtml, {nome:"Dados Básicos", html: basicosHtml}, {});
     var body = tabs.html();
 
     m.innerHTML =
@@ -3418,16 +4571,17 @@
       '<div class="modal-body" id="nr-body">'+body+'</div>'+
       '<div class="modal-foot"><span id="nr-msg" class="empty-note"></span><button class="btn primary" id="nr-submit">Criar registro</button></div>';
     document.getElementById("modal-close").addEventListener("click", closeModal);
-    tabs.wire(m);
     wireDatePickers(m);
     wireEnderecoLocFields(m);
+    wireListaMultiFields(m);
+    wireConsultaFields(m, abas);
 
     function getVal(campoId){ return abaCampoValue(campoId); }
     function updateCalculados(){
       allCampos.forEach(function(c){
-        if(c.calculado && c.formula){
+        if(c.calculado){
           var el = m.querySelector('[data-nr-campo="'+c.id+'"]');
-          if(el) el.value = evalFormula(c.formula, getVal);
+          if(el) el.value = resolveCalculado(c, getVal);
         }
       });
     }
@@ -3438,6 +4592,7 @@
         if(wrap) wrap.style.display = campoVisible(c, getVal) ? "" : "none";
       });
     }
+    tabs.wire(m, updateVisibility); // um clique em "Validar esta aba" também refaz o desbloqueio
     m.addEventListener("input", function(){ updateCalculados(); updateVisibility(); });
     m.addEventListener("change", function(){ updateCalculados(); updateVisibility(); });
     updateCalculados(); updateVisibility();
@@ -3448,7 +4603,7 @@
       var existingRows = cache.formulario_personalizado.filter(function(r){ return r.categoria_id === cat.id; });
       var campos = {}; var missing = []; var invalid = [];
       abas.forEach(function(aba){
-        if(!isAbaUnlocked(aba, abas, getVal)) return; // campos de aba ainda bloqueada não contam
+        if(!isAbaUnlocked(aba, abas, getVal, tabs.getValidado)) return; // campos de aba ainda bloqueada não contam
         (aba.campos||[]).forEach(function(c){
           if(c.visivel === false || !campoVisible(c, getVal)) return;
           if(c.tipo === "codigo" && c.logica && c.logica.tipo){
@@ -3474,7 +4629,8 @@
       var valores = cat.ciclo_de_vida_valores || [];
       await db.collection("formulario_personalizado").add({
         codigo: "FRM-" + Date.now().toString(36).toUpperCase(),
-        nome: nome, categoria_id: cat.id, ciclo_de_vida: valores[0] || null, campos: campos
+        nome: nome, categoria_id: cat.id, ciclo_de_vida: valores[0] || null, campos: campos,
+        abasValidadas: tabs.validState
       });
       closeModal();
     });
@@ -3528,7 +4684,7 @@
         '</div>';
     }
 
-    var tabs = abaTabsBuilder(abas, fieldHtml, {nome:"Dados Básicos", html: nativeHtml});
+    var tabs = abaTabsBuilder(abas, fieldHtml, {nome:"Dados Básicos", html: nativeHtml}, {});
     var body = tabs.html();
 
     m.innerHTML =
@@ -3537,9 +4693,10 @@
       '<div class="modal-body" id="nf-body">'+body+'</div>'+
       '<div class="modal-foot"><span id="nf-msg" class="empty-note"></span><button class="btn primary" id="nf-submit">Criar '+escapeHtml(def.label)+'</button></div>';
     document.getElementById("modal-close").addEventListener("click", closeModal);
-    tabs.wire(m);
     wireDatePickers(m);
     wireEnderecoLocFields(m);
+    wireListaMultiFields(m);
+    wireConsultaFields(m, abas);
 
     var pendingTitulares = [];
     if(def.key === "titularidade"){
@@ -3603,9 +4760,9 @@
     function getVal(campoId){ return abaCampoValue(campoId); }
     function updateCalculados(){
       allCampos.forEach(function(c){
-        if(c.calculado && c.formula){
+        if(c.calculado){
           var el = m.querySelector('[data-nr-campo="'+c.id+'"]');
-          if(el) el.value = evalFormula(c.formula, getVal);
+          if(el) el.value = resolveCalculado(c, getVal);
         }
       });
     }
@@ -3616,6 +4773,7 @@
         if(wrap) wrap.style.display = campoVisible(c, getVal) ? "" : "none";
       });
     }
+    tabs.wire(m, updateVisibility); // um clique em "Validar esta aba" também refaz o desbloqueio
     m.addEventListener("input", function(){ updateCalculados(); updateVisibility(); });
     m.addEventListener("change", function(){ updateCalculados(); updateVisibility(); });
     updateCalculados(); updateVisibility();
@@ -3656,7 +4814,7 @@
       var existingRows = cache[def.key] || [];
       var campos = {}; var missing = []; var invalid = [];
       abas.forEach(function(aba){
-        if(!isAbaUnlocked(aba, abas, getVal)) return;
+        if(!isAbaUnlocked(aba, abas, getVal, tabs.getValidado)) return;
         (aba.campos||[]).forEach(function(c){
           if(c.visivel === false || !campoVisible(c, getVal)) return;
           if(c.tipo === "codigo" && c.logica && c.logica.tipo){
@@ -3677,7 +4835,7 @@
       if(invalid.length){ msg.style.color = "var(--selo)"; msg.textContent = "Corrija: " + invalid.join(", "); return; }
       if(!db) return;
       var ciclo = cicloValoresFor(def.key, nativePayload)[0] || null;
-      var payload = Object.assign({ codigo: genCodigo(def.key), nome: nome, ciclo_de_vida: ciclo, campos: campos }, nativePayload);
+      var payload = Object.assign({ codigo: genCodigo(def.key), nome: nome, ciclo_de_vida: ciclo, campos: campos, abasValidadas: tabs.validState }, nativePayload);
       var ref = await db.collection(def.key).add(payload);
       if(def.key === "titularidade"){
         for(var ti=0; ti<pendingTitulares.length; ti++){
