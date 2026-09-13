@@ -355,6 +355,11 @@
   .condicao-block select{width:100%; padding:6px 9px; border-radius:6px; border:1px solid var(--border); background:var(--surface); color:var(--ink); font-size:12.5px; margin-bottom:8px;}
   .checklist{display:flex; flex-direction:column; gap:5px; max-height:140px; overflow-y:auto;}
   .checklist label{display:flex; align-items:center; gap:7px; font-size:12px; color:var(--ink);}
+  /* Variante em grade — Pesquisa e Exportação (várias colunas responsivas
+     em vez de uma lista estreita de uma coluna só), com um pouco mais de
+     respiro vertical entre linhas do que a variante padrão. */
+  .checklist.cols{display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); gap:8px 18px; max-height:220px;}
+  .checklist.cols label{padding:2px 0;}
   .campo-row{background:var(--surface); border:1px solid var(--border-soft); border-radius:8px; padding:10px 12px; margin-bottom:8px;}
   .campo-row-top{display:flex; gap:8px; margin-bottom:8px;}
   .campo-row-top input{flex:1.4; padding:6px 9px; border-radius:6px; border:1px solid var(--border); background:var(--surface); color:var(--ink); font-size:12.5px;}
@@ -414,17 +419,31 @@
   .canvas-page-cond{font-size:11px; color:var(--ink-faint); padding:6px 11px 0;}
   .canvas-page-body{padding:10px 11px 11px;}
   .canvas-field{
-    position:relative; display:flex; align-items:center; justify-content:space-between; gap:10px;
+    /* justify-content era "space-between" — com só 3 filhos (alcinha, bloco
+       de texto, botão remover) isso empurrava o texto para o meio da
+       linha em vez de grudar na alcinha, então campos com rótulos de
+       tamanhos diferentes ficavam com o texto começando em posições
+       diferentes ("desalinhado"). O bloco de texto (.cf-text) agora é
+       flex:1 e ocupa todo o espaço livre, empurrando os ícones/botão de
+       remover para a direita e mantendo o texto sempre grudado à
+       esquerda, logo depois da alcinha. */
+    position:relative; display:flex; align-items:center; gap:10px;
     padding:9px 11px; border-radius:8px; border:1px solid var(--border-soft); background:var(--surface);
-    margin-bottom:6px; cursor:pointer;
+    margin-bottom:6px; cursor:pointer; text-align:left;
   }
   .canvas-field:hover{border-color:var(--accent);}
   .canvas-field.selected{border-color:var(--accent); background:var(--info-bg);}
   .canvas-field.dragging{opacity:.4;}
+  .canvas-field .cf-text{flex:1; min-width:0; text-align:left;}
   .canvas-field .cf-label{font-size:13px; font-weight:500;}
   .canvas-field .cf-meta{font-size:11px; color:var(--ink-faint); margin-top:2px;}
   .cf-drag-handle{cursor:grab; color:var(--ink-faint); font-size:14px; flex:0 0 auto; line-height:1;}
   .canvas-field:active .cf-drag-handle{cursor:grabbing;}
+  /* Ícones de propriedades (item de teste) — usam o espaço que sobrava
+     entre o texto e o botão de remover; discretos de propósito (opacidade
+     reduzida, sem cor de destaque) até decidirmos se ficam. */
+  .cf-icons{display:flex; align-items:center; gap:5px; flex:0 0 auto; color:var(--ink-faint); opacity:.7; font-size:12px;}
+  .cf-icons span{line-height:1;}
   .cf-remove{background:none; border:none; color:var(--ink-faint); font-size:13px; padding:2px; flex:0 0 auto;}
   .cf-remove:hover{color:var(--selo);}
   /* Linha indicadora de onde o campo vai cair ao soltar — inserida/removida
@@ -775,6 +794,15 @@
     if(campos.length === 0) return true; // nada a preencher (aba vazia, ou tudo oculto) conta como preenchida
     return campos.every(function(c){ return getVal(c.id) !== ""; });
   }
+  // "Parcialmente preenchida" = tem ao menos um campo visível com valor, mas
+  // não todos (usada só pelo configurador de Situações, abaixo — não muda a
+  // regra de desbloqueio de aba, que continua exigindo tudo preenchido).
+  function isAbaPartiallyFilled(aba, getVal){
+    var campos = (aba.campos || []).filter(function(c){ return c.visivel !== false && campoVisible(c, getVal); });
+    if(campos.length === 0) return false;
+    var algum = campos.some(function(c){ return getVal(c.id) !== ""; });
+    return algum && !campos.every(function(c){ return getVal(c.id) !== ""; });
+  }
   // getValidado(abaId) -> booleano — se informado, lê o estado de validação
   // (botão "Validar" clicado) de uma aba marcada como validável, mantido
   // pelo abaTabsBuilder da sessão de criação/edição em andamento. Quando
@@ -813,6 +841,48 @@
       return "aparece depois que <strong>" + labels.map(escapeHtml).join(", ") + "</strong> for preenchido";
     }
     return "sempre visível (livre)";
+  }
+
+  // =========================================================================
+  // Situações — status dinâmico do registro, calculado a partir do estado
+  // das abas (parcialmente preenchida/totalmente preenchida/validada); a
+  // primeira Situação (de cima para baixo) cuja(s) condição(ões) baterem é
+  // a Situação do registro. Recurso opcional — só existe numa Entidade/
+  // Formulário quando o configurador ativa (ver situacoesTabHtml); uma vez
+  // ativado, sempre há ao menos uma Situação "coringa" (sem condições,
+  // sempre por último), garantindo que nenhum registro fique sem Situação.
+  // =========================================================================
+  var SITUACAO_ESTADO_LABEL = {parcial:"Parcialmente preenchida", total:"Totalmente preenchida", validada:"Validada"};
+  function situacaoAtual(situacoes, abas, getVal, getValidado){
+    situacoes = situacoes || [];
+    if(!situacoes.length) return null;
+    var abasById = {}; (abas||[]).forEach(function(a){ abasById[a.id] = a; });
+    function estadoBate(cond){
+      var aba = abasById[cond.abaId];
+      if(!aba) return false;
+      if(cond.estado === "parcial") return isAbaPartiallyFilled(aba, getVal);
+      if(cond.estado === "total") return isAbaFilled(aba, getVal);
+      if(cond.estado === "validada") return !!(getValidado && getValidado(aba.id));
+      return false;
+    }
+    for(var i=0;i<situacoes.length;i++){
+      var conds = situacoes[i].condicoes || [];
+      if(!conds.length) continue; // situação-coringa — só decide no fallback, abaixo
+      if(conds.every(estadoBate)) return situacoes[i];
+    }
+    var coringas = situacoes.filter(function(s){ return !(s.condicoes && s.condicoes.length); });
+    return coringas[coringas.length-1] || situacoes[situacoes.length-1];
+  }
+  // Atualiza o selo "Situação: …" no cabeçalho de um modal de registro
+  // (criação ou edição), chamado a cada mudança de campo/validação — some
+  // (display:none) quando a Entidade/Formulário não tem Situações
+  // configuradas, para não mostrar um selo vazio.
+  function updateSituacaoBadge(m, badgeId, situacoes, abas, getVal, getValidado){
+    var badge = m.querySelector("#"+badgeId);
+    if(!badge) return;
+    var sit = situacaoAtual(situacoes, abas, getVal, getValidado);
+    if(sit){ badge.textContent = "Situação: " + (sit.nome || "—"); badge.style.display = ""; }
+    else { badge.style.display = "none"; }
   }
 
   // Dependência de campo individual ("Dependente de") — mostra/esconde um
@@ -1960,7 +2030,7 @@
   // Drawer de detalhe
   // =========================================================================
   function fieldRows(row, skipKeys){
-    var skip = Object.assign({id:1, created_at:1, updated_at:1, campos:1}, skipKeys||{});
+    var skip = Object.assign({id:1, created_at:1, updated_at:1, campos:1, abasValidadas:1}, skipKeys||{});
     var out = [];
     Object.keys(row).forEach(function(k){
       if(skip[k]) return;
@@ -1970,6 +2040,7 @@
       if(k === "cartorio_id"){ var c = byId(cache.cartorio, val); val = c ? c.nome : val; label = "Cartório"; }
       if(k === "tipo_evidencia"){ val = EVIDENCIA_LABEL[val] || val; }
       if(k === "tipo_pessoa"){ val = TIPO_PESSOA_LABEL[val] || val; }
+      if(k === "situacao"){ label = "Situação"; }
       out.push({k:label, v:val});
     });
     return out;
@@ -2241,14 +2312,22 @@
     var bodyHtml = tabs.html();
 
     m.innerHTML =
-      '<div class="modal-head"><div><h3>Editar — '+escapeHtml(row.nome||row.codigo||"registro")+'</h3><p>Mostra todos os campos de uma vez, sem bloqueio por aba — é o fluxo de corrigir o que já existe.</p></div>'+
+      '<div class="modal-head"><div><h3>Editar — '+escapeHtml(row.nome||row.codigo||"registro")+'</h3><p>Mostra todos os campos de uma vez, sem bloqueio por aba — é o fluxo de corrigir o que já existe.</p>'+
+      '<span class="badge info" id="ed-situacao-badge" style="display:none; margin-top:6px;"></span></div>'+
       '<button class="icon-btn" id="modal-close">✕</button></div>'+
       '<div class="modal-body" id="ed-body">'+bodyHtml+'</div>'+
       '<div class="modal-foot"><span id="ed-msg" class="empty-note"></span>'+
       '<span style="display:flex; gap:8px;"><button type="button" class="btn sm" id="ed-cancel">Cancelar</button>'+
       '<button type="button" class="btn primary sm" id="ed-save">Salvar</button></span></div>';
     var bodyEl = document.getElementById("ed-body");
-    tabs.wire(m); // só organiza em abas (sem update() — nada aqui trava por dependência)
+    var situacoesCfg = ctx.type === "categoria" ? (ctx.categoria && ctx.categoria.situacoes) : ((byId(cache.config_entidade, entityKey)||{}).situacoes);
+    function updateSituacao(){
+      updateSituacaoBadge(m, "ed-situacao-badge", situacoesCfg, abas, getValEdit, function(abaId){ return !!validState[abaId]; });
+    }
+    // "só organiza em abas" continua valendo (sem tabs.update()/isAbaUnlocked
+    // — nada aqui trava por dependência) — passamos onValidate só para o
+    // selo de Situação acompanhar um clique em "Validar esta aba".
+    tabs.wire(m, updateSituacao);
     wireDatePickers(bodyEl);
     wireEnderecoLocFields(bodyEl);
     wireListaMultiFields(bodyEl);
@@ -2298,9 +2377,9 @@
         }
       });
     }
-    bodyEl.addEventListener("input", updateCalculados);
-    bodyEl.addEventListener("change", updateCalculados);
-    updateCalculados();
+    bodyEl.addEventListener("input", function(){ updateCalculados(); updateSituacao(); });
+    bodyEl.addEventListener("change", function(){ updateCalculados(); updateSituacao(); });
+    updateCalculados(); updateSituacao();
 
     document.getElementById("ed-save").addEventListener("click", async function(){
       var msg = document.getElementById("ed-msg");
@@ -2350,6 +2429,8 @@
       });
       patch.campos = campos;
       patch.abasValidadas = tabs.validState;
+      var sit = situacaoAtual(situacoesCfg, abas, getValEdit, function(abaId){ return !!tabs.validState[abaId]; });
+      patch.situacao = sit ? sit.nome : null;
 
       if(!db) return;
       await db.doc(col + "/" + row.id).update(patch);
@@ -2405,7 +2486,7 @@
   // Ajuda — explica os conceitos do sistema; atualizar HELP_SECTIONS e
   // HELP_CHANGELOG a cada nova versão publicada.
   // =========================================================================
-  var APP_VERSION = "v30";
+  var APP_VERSION = "v32";
   var HELP_SECTIONS = [
     { titulo:"O que é o Registro ABA",
       corpo:"<p>Protótipo funcional de um sistema de gestão fundiária — pensado para substituir o modelo rígido de \"processo/formulário\" por Entidades e Formulários totalmente configuráveis. Os dados aqui são de exemplo.</p>" },
@@ -2497,6 +2578,8 @@
         "</ul>" }
   ];
   var HELP_CHANGELOG = [
+    { versao:"v32", texto:"Situações virou opcional: uma Entidade/Formulário só ganha o selo e a regra de \"sempre ter uma Situação\" depois que alguém clica em \"Ativar Situações\" na aba de Configuração — formulários simples, sem fluxo nenhum, continuam sem nada disso. Uma vez ativada, a Situação padrão (coringa) já vem chamada de \"Cadastrado\". O parâmetro de condição de cada regra ficou mais simples — agora só três opções por aba: Parcialmente preenchida, Totalmente preenchida e Validada (essa última continua só para abas marcadas Validável); os textos explicativos da aba Situações ficaram mais curtos e diretos. Corrigido visual da aba Pesquisa e Exportação, que estava com espaçamento inconsistente (uns trechos grudados, outros longe demais) — agora cada bloco (pesquisa, exportação, parâmetro) vem numa caixinha própria, com a lista de campos em grade (várias colunas) em vez de uma coluna estreita só, e um contador \"X de Y\" mostrando quantos campos estão marcados." },
+    { versao:"v31", texto:"Na tela de Abas & Campos, o texto do campo (nome + tipo/observações) parou de ficar puxado para o meio da linha do cartão — agora fica sempre colado à esquerda, junto da alcinha de arrastar; no espaço que sobrou à direita, ícones discretos mostram de relance as propriedades já ligadas nesse campo (🔒 somente leitura, ƒ calculado, 🔗 tem campo requisito, 🚫 oculto) sem precisar abrir a Configuração dele. Nome de campo não pode mais se repetir dentro da mesma aba — se você tentar (na criação ou renomeando), ele ganha um sufixo numérico automático, do mesmo jeito que já acontecia com nome de aba. Ciclo de vida, quando configurado numa Entidade/Formulário, virou de fato um campo obrigatório na criação do registro — aparece com \"Selecione…\" em branco (nunca mais escolhido sozinho por baixo dos panos) e bloqueia salvar sem escolha. Nova aba de Configuração, Situações, entre Abas & Campos e Ciclo de vida: um configurador de regras que decide sozinho, a cada registro, qual é a Situação dele com base no quanto cada aba está preenchida ou validada — cada regra é uma lista de condições (aba está preenchida/não preenchida/validada/não validada; validada só aparece para abas marcadas Validável), a primeira regra que bater manda, e sempre existe uma regra coringa (sem condições) por último, garantindo que nenhum registro fica sem Situação. Substitui a ideia de um fluxo fixo de estados por regras configuráveis por você, sem nada engessado no sistema. O nome da Situação atual aparece ao vivo, recalculado a cada mudança, num selo no topo do formulário de criação/edição e na gaveta de detalhe do registro; ainda não aparece como coluna nas tabelas de listagem. Por fim, o nome interno de cada campo, usado só quando formos exportar para Excel (ainda não implementado), passou a ser a junção do nome da aba com o nome do campo — isso nunca aparece na interface, é só o rótulo por baixo dos panos." },
     { versao:"v30", texto:"Nome da aba saiu de cima do cartão no canvas e entrou na Configuração dela, como um campo Nome no topo do popup (igual à Configuração de campo) — o cartão agora só mostra o nome, sem edição direta. Dentro da Configuração de uma aba, nova propriedade Validável: uma aba validável ganha um botão \"Validar esta aba\" ao preencher um registro, e depois de clicado ela fica marcada como validada — o que agora pode ser usado como condição para liberar outra aba (\"Depois que outra(s) aba(s) forem validadas\"), ao lado da condição já existente por preenchimento. As abas de Configuração foram reordenadas: Abas & Campos primeiro, Ciclo de vida depois. O editor de Ciclo de vida deixou de ser em \"chips\": agora é uma lista de linhas (uma por valor, sem código/chave — só o nome do estágio), reordenável arrastando, sempre com uma linha em branco pronta para o próximo valor, no mesmo estilo do editor de Opções do campo Lista Codificado. Duas abas de Configuração novas, depois de Ciclo de vida: Permissões, onde por papel (admin/editor/leitor) dá para marcar visualizar/criar/editar/excluir/exportar em cada aba inteira ou em campos específicos dela — sem marcação, a ação fica permitida; e Pesquisa e Exportação, onde dá para escolher quais campos aparecem na busca e quais aparecem na exportação (sempre em .xlsx, UTF-8 padrão Brasil), com um parâmetro padrão de Sem relacionados/Com relacionados. Por ora essas duas telas só gravam a configuração — a aplicação de fato dessas regras na tela de visualização/criação/edição/exportação fica para quando formos testar esse fluxo de verdade." },
     { versao:"v29", texto:"Removido também o Valor padrão da Configuração do campo tipo Arquivo (não fazia sentido — um Valor padrão em texto livre não representa um arquivo pré-anexado)." },
     { versao:"v28", texto:"Popup de propriedades do campo/aba: clicar fora dele deixou de fazer qualquer coisa (não salva, não cancela) — o popup só fecha pelo ✕ (cancela/reverte) ou pelo OK (salva). Campo tipo Arquivo ganhou sua própria Configuração: Aparência, Cálculo, Visível e Somente leitura saíram (não fazem sentido para upload), mantido Obrigatório; em troca, três propriedades novas — Limite de tamanho (MB), Limite de quantidade de arquivos e Formatos permitidos (ex.: pdf, jpg, png — em branco aceita qualquer um). O próprio upload de arquivos no formulário de registro ainda não foi implementado neste protótipo; por ora isso só grava a configuração para quando for construído." },
@@ -2675,11 +2758,16 @@
     var base = seed || rawConfigFor(key);
     var permissoes = clone(base.permissoes || {});
     var pesquisaExportacao = clone(base.pesquisaExportacao || {pesquisaCampos:[], exportacaoCampos:[], parametroPadrao:"sem_relacionados"});
+    // Situações é opcional: fica de fato vazio até o configurador clicar em
+    // "Ativar Situações" (situacoesTabHtml) — só aí ganha a Situação-coringa
+    // "Cadastrado" que passa a garantir que nenhum registro fique sem
+    // Situação nesta Entidade/Formulário.
+    var situacoes = clone(base.situacoes || []);
     if(key === "pessoa"){
       var v = base.ciclo_de_vida_variantes || {};
-      return { pessoa:true, fisica:(v.fisica||[]).slice(), juridica:(v.juridica||[]).slice(), abas: clone(base.abas||[]), permissoes: permissoes, pesquisaExportacao: pesquisaExportacao };
+      return { pessoa:true, fisica:(v.fisica||[]).slice(), juridica:(v.juridica||[]).slice(), abas: clone(base.abas||[]), permissoes: permissoes, pesquisaExportacao: pesquisaExportacao, situacoes: situacoes };
     }
-    return { pessoa:false, ciclo_de_vida_valores:(base.ciclo_de_vida_valores||[]).slice(), abas: clone(base.abas||[]), permissoes: permissoes, pesquisaExportacao: pesquisaExportacao };
+    return { pessoa:false, ciclo_de_vida_valores:(base.ciclo_de_vida_valores||[]).slice(), abas: clone(base.abas||[]), permissoes: permissoes, pesquisaExportacao: pesquisaExportacao, situacoes: situacoes };
   }
 
   function openConfigModal(key, seed){
@@ -2710,7 +2798,7 @@
     var key = modal.key, ctx = contextFor(key), draft = modal.draft;
     var title = ctx.type === "fixed" ? ctx.def.label : (ctx.categoria ? ctx.categoria.nome : "—");
     var m = document.getElementById("modal");
-    m.classList.toggle("wide", configTab === "abas" || configTab === "permissoes");
+    m.classList.toggle("wide", configTab === "abas" || configTab === "situacoes" || configTab === "permissoes");
 
     // Selecionar uma aba/campo, ou remover um deles, reconstrói o modal
     // inteiro — sem isso a rolagem do canvas (que pode ter muitas abas e
@@ -2722,7 +2810,7 @@
       '<div class="modal-head"><div><h3>Configurar — '+escapeHtml(title)+'</h3>'+
       '<p>Ciclo de vida, abas, campos, tipos e propriedades — configurável por Entidade ou Formulário.</p></div>'+
       '<button class="icon-btn" id="modal-close">✕</button></div>'+
-      '<div class="modal-tabs">'+tabBtn("abas","Abas & Campos")+tabBtn("ciclo","Ciclo de vida")+tabBtn("permissoes","Permissões")+tabBtn("pesquisa","Pesquisa e Exportação")+'</div>'+
+      '<div class="modal-tabs">'+tabBtn("abas","Abas & Campos")+tabBtn("situacoes","Situações")+tabBtn("ciclo","Ciclo de vida")+tabBtn("permissoes","Permissões")+tabBtn("pesquisa","Pesquisa e Exportação")+'</div>'+
       '<div class="modal-body" id="modal-body"></div>'+
       '<div class="modal-foot"><button class="btn" id="cfg-cancel">Cancelar</button>'+
       '<button class="btn primary" id="cfg-save-close">Salvar e fechar</button></div>';
@@ -2732,8 +2820,8 @@
     document.getElementById("cfg-save-close").addEventListener("click", async function(){
       var btn = this; btn.textContent = "Salvando…"; btn.disabled = true;
       var patch = draft.pessoa
-        ? {ciclo_de_vida_variantes:{fisica:draft.fisica, juridica:draft.juridica}, abas: draft.abas, permissoes: draft.permissoes, pesquisaExportacao: draft.pesquisaExportacao}
-        : {ciclo_de_vida_valores: draft.ciclo_de_vida_valores, abas: draft.abas, permissoes: draft.permissoes, pesquisaExportacao: draft.pesquisaExportacao};
+        ? {ciclo_de_vida_variantes:{fisica:draft.fisica, juridica:draft.juridica}, abas: draft.abas, permissoes: draft.permissoes, pesquisaExportacao: draft.pesquisaExportacao, situacoes: draft.situacoes}
+        : {ciclo_de_vida_valores: draft.ciclo_de_vida_valores, abas: draft.abas, permissoes: draft.permissoes, pesquisaExportacao: draft.pesquisaExportacao, situacoes: draft.situacoes};
       var ok = await saveConfigDoc(key, patch);
       if(ok){ closeModal(); }
       else { btn.textContent = "Erro ao salvar"; btn.disabled = false; setTimeout(function(){ btn.textContent = "Salvar e fechar"; }, 1600); }
@@ -2744,6 +2832,7 @@
 
     var body = document.getElementById("modal-body");
     body.innerHTML = configTab === "ciclo" ? cicloTabHtml(draft)
+      : configTab === "situacoes" ? situacoesTabHtml(draft)
       : configTab === "permissoes" ? permissoesTabHtml(draft)
       : configTab === "pesquisa" ? pesquisaExportacaoTabHtml(draft)
       : abasTabHtml(draft);
@@ -2783,6 +2872,68 @@
         valoresRender.map(function(v, vi){ return cicloValorRowHtml(group, vi, v, !!v); }).join("") +
       '</div>' +
       '<div class="small-btn-row"><button class="btn primary sm" data-save-ciclo="'+group+'">Salvar ciclo de vida</button></div>';
+  }
+
+  // =========================================================================
+  // Configuração de Situações — a interface para montar as regras que
+  // situacaoAtual() (lá em cima, perto de isAbaUnlocked) avalia de verdade.
+  // Cada Situação (menos a "coringa", sempre a última) tem uma ou mais
+  // condições de aba (Parcialmente preenchida/Totalmente preenchida/
+  // Validada); "Validada" só faz sentido — e só aparece no seletor — para
+  // uma aba marcada como Validável, mesmo padrão do checklist da condição
+  // "abas_validadas" de desbloqueio de aba.
+  // =========================================================================
+  function situacaoCondRowHtml(si, ci, cond, abas){
+    var abaSel = abas.filter(function(a){ return a.id === cond.abaId; })[0];
+    var estados = (abaSel && abaSel.validavel) ? ["parcial","total","validada"] : ["parcial","total"];
+    return '<div class="condicao-row" data-sit-cond-row="'+si+':'+ci+'">' +
+      '<select data-sit-cond-aba="'+si+':'+ci+'">' +
+        abas.map(function(a){ return '<option value="'+a.id+'"'+(a.id===cond.abaId?" selected":"")+'>'+escapeHtml(a.nome)+'</option>'; }).join("") +
+      '</select>' +
+      '<select data-sit-cond-estado="'+si+':'+ci+'">' +
+        estados.map(function(e){ return '<option value="'+e+'"'+(e===cond.estado?" selected":"")+'>'+SITUACAO_ESTADO_LABEL[e]+'</option>'; }).join("") +
+      '</select>' +
+      (ci > 0 ? '<button type="button" class="cf-remove" data-sit-cond-remove="'+si+':'+ci+'" title="Remover condição">✕</button>' : '<span class="cf-remove" style="visibility:hidden;">✕</span>') +
+    '</div>';
+  }
+  function situacaoCardHtml(sit, si, isCoringa, podeMover){
+    var head = '<div class="regra-head"><input type="text" value="'+escapeHtml(sit.nome||"")+'" data-sit-nome="'+si+'" placeholder="Nome da situação" style="flex:1; margin-right:8px; padding:6px 8px; border-radius:6px; border:1px solid var(--border); background:var(--surface); color:var(--ink); font-size:13px; font-weight:600;">' +
+      (isCoringa ? '<span class="empty-note">Situação padrão</span>' :
+        '<span style="display:flex; gap:4px; flex:0 0 auto;">' +
+          '<button type="button" class="icon-btn" data-sit-up="'+si+'" title="Mover para cima"'+(podeMover.up?"":" disabled")+'>↑</button>' +
+          '<button type="button" class="icon-btn" data-sit-down="'+si+'" title="Mover para baixo"'+(podeMover.down?"":" disabled")+'>↓</button>' +
+          '<button type="button" class="cf-remove" data-sit-remove="'+si+'" title="Remover situação">✕</button>' +
+        '</span>') +
+    '</div>';
+    if(isCoringa){
+      return '<div class="regra-block" data-sit-card="'+si+'">' + head +
+        '<p class="empty-note">Aplicada quando nenhuma regra acima bater (inclui o registro recém-criado, sem nada preenchido ainda) — garante que todo registro sempre tenha uma Situação.</p>' +
+      '</div>';
+    }
+    return '<div class="regra-block" data-sit-card="'+si+'">' + head +
+      '<div class="regra-quando">' + (sit.condicoes||[]).map(function(c,ci){ return situacaoCondRowHtml(si, ci, c, sit._abas); }).join("") + '</div>' +
+      '<button type="button" class="btn sm" data-sit-add-cond="'+si+'">+ Condição</button>' +
+    '</div>';
+  }
+  function situacoesTabHtml(draft){
+    var abas = draft.abas || [];
+    if(abas.length === 0) return '<p class="empty-note">Crie ao menos uma aba em Abas &amp; Campos primeiro — a Situação de um registro é calculada a partir do preenchimento/validação das abas.</p>';
+    var situacoes = draft.situacoes || [];
+    if(situacoes.length === 0){
+      return '<p class="empty-note">Nem todo Formulário precisa disso — só ative se este seguir um fluxo, com uma Situação calculada sozinha a partir do preenchimento das abas.</p>' +
+        '<button type="button" class="btn primary sm" id="situacoes-ativar-btn">+ Ativar Situações</button>';
+    }
+    var lastIdx = situacoes.length - 1;
+    var html = '<p class="empty-note">A primeira regra que bater (de cima para baixo) define a Situação do registro; a última, sem condições, é a Situação padrão, sempre presente.</p>';
+    situacoes.forEach(function(sit, si){
+      sit._abas = abas; // referência só para o render das linhas de condição acima
+      html += situacaoCardHtml(sit, si, si === lastIdx, {up: si > 0, down: si < lastIdx - 1});
+    });
+    html += '<div style="display:flex; align-items:center; gap:8px; margin-top:4px;">' +
+      '<button type="button" class="btn sm" id="add-situacao-btn">+ Situação</button>' +
+      '<button type="button" class="btn sm danger" id="situacoes-desativar-btn" style="margin-left:auto;">Desativar Situações</button>' +
+    '</div>';
+    return html;
   }
 
   // =========================================================================
@@ -2840,34 +2991,51 @@
     var pe = draft.pesquisaExportacao || {pesquisaCampos:[], exportacaoCampos:[], parametroPadrao:"sem_relacionados"};
     var pesq = pe.pesquisaCampos || [], exp = pe.exportacaoCampos || [];
     function checklist(prefix, selecionados){
-      return '<div class="checklist">' + campos.map(function(c){
+      return '<div class="checklist cols">' + campos.map(function(c){
         return '<label><input type="checkbox" data-'+prefix+'-campo="'+c.id+'" '+(selecionados.indexOf(c.id)>-1?"checked":"")+'> '+escapeHtml(c.label)+' <span class="empty-note">('+escapeHtml(c.abaNome)+')</span></label>';
       }).join("") + '</div>';
     }
-    return '<div class="field"><label>Campos que aparecem na pesquisa</label>' + checklist("pesq", pesq) + '</div>' +
-      '<div class="field"><label>Campos que aparecem na exportação</label>' + checklist("exp", exp) + '</div>' +
-      '<div class="field"><label>Parâmetro de exportação padrão</label><select data-exp-parametro>' +
-        '<option value="sem_relacionados"'+((pe.parametroPadrao||"sem_relacionados")==="sem_relacionados"?" selected":"")+'>Sem relacionados</option>' +
-        '<option value="com_relacionados"'+(pe.parametroPadrao==="com_relacionados"?" selected":"")+'>Com relacionados</option>' +
-      '</select></div>' +
-      '<p class="empty-note">A exportação sempre gera um arquivo .xlsx, codificação UTF-8 (padrão Brasil).</p>';
+    return '<div class="condicao-block">' +
+        '<label class="cb-label">Campos que aparecem na pesquisa <span class="empty-note">('+pesq.length+' de '+campos.length+')</span></label>' +
+        checklist("pesq", pesq) +
+      '</div>' +
+      '<div class="condicao-block">' +
+        '<label class="cb-label">Campos que aparecem na exportação <span class="empty-note">('+exp.length+' de '+campos.length+')</span></label>' +
+        checklist("exp", exp) +
+      '</div>' +
+      '<div class="condicao-block">' +
+        '<label class="cb-label">Parâmetro de exportação padrão</label>' +
+        '<select data-exp-parametro>' +
+          '<option value="sem_relacionados"'+((pe.parametroPadrao||"sem_relacionados")==="sem_relacionados"?" selected":"")+'>Sem relacionados</option>' +
+          '<option value="com_relacionados"'+(pe.parametroPadrao==="com_relacionados"?" selected":"")+'>Com relacionados</option>' +
+        '</select>' +
+        '<p class="empty-note" style="margin:0;">Sempre gera um arquivo .xlsx, codificação UTF-8 (padrão Brasil).</p>' +
+      '</div>';
   }
 
   var CONDICAO_LABELS = {livre:"Sempre visível (livre)", abas:"Depois que outra(s) aba(s) forem preenchidas", abas_validadas:"Depois que outra(s) aba(s) forem validadas", campos:"Depois que certos campos forem preenchidos"};
 
-  // Nomes de aba não podem se repetir dentro do mesmo Formulário/Entidade —
-  // gera "Nova aba 2", "Nova aba 3"... quando o nome pedido já existe.
-  // (Nomes de campo podem repetir por ora — quando formos exportar dados,
-  // vamos precisar de um identificador único por campo; o id interno já
-  // gerado via uid("campo") cobre isso, falta só decidir se/como aplicar
-  // essa regra também ao rótulo visível.)
-  function uniqueAbaName(base, existingNames){
-    var name = (base||"").trim() || "Nova aba";
+  // Gera um nome único dentro de um conjunto de nomes já existentes —
+  // "Nova aba 2", "Nova aba 3"... quando o nome pedido já existe. Usado
+  // tanto para nomes de aba (únicos dentro do Formulário/Entidade) quanto
+  // para rótulos de campo (únicos dentro da mesma aba — campos de abas
+  // diferentes podem ter o mesmo rótulo).
+  function uniqueNameIn(base, existingNames, fallback){
+    var name = (base||"").trim() || fallback || "Sem nome";
     var lower = existingNames.map(function(n){ return (n||"").trim().toLowerCase(); });
     if(lower.indexOf(name.toLowerCase()) === -1) return name;
     var i = 2;
     while(lower.indexOf((name+" "+i).toLowerCase()) > -1) i++;
     return name + " " + i;
+  }
+  // Nome interno de exportação de um campo — Aba+Campo concatenados (sem
+  // separador, como pedido), usado como cabeçalho da coluna quando o
+  // registro for exportado para Excel; nunca aparece na interface, é só
+  // a convenção interna para não colidir campos de mesmo rótulo em abas
+  // diferentes (rótulos já são únicos dentro da mesma aba — ver
+  // uniqueNameIn — mas nada impede o mesmo rótulo em duas abas distintas).
+  function campoNomeExportacao(aba, campo){
+    return (aba && aba.nome || "") + (campo && campo.label || "");
   }
 
   // Construtor de Abas & Campos — inspirado no designer online do ArcGIS
@@ -2945,6 +3113,20 @@
     return html;
   }
 
+  // Ícones discretos de propriedades do campo, mostrados no espaço livre
+  // do cartão do canvas (item de teste — ver changelog) — resume em ícone
+  // o que antes só aparecia como texto (" · calculado", " · dependente"
+  // etc.) na 2ª linha do cartão. Obrigatório continua marcado pelo "*" já
+  // existente ao lado do rótulo, não duplicado aqui.
+  function cfIconsHtml(c){
+    var icons = [];
+    if(c.leitura) icons.push({s:"🔒", t:"Somente leitura"});
+    if(c.calculado) icons.push({s:"ƒ", t:"Calculado"});
+    if(c.dependeCampo) icons.push({s:"🔗", t:"Campo requisito (depende de outro campo)"});
+    if(c.visivel === false) icons.push({s:"🚫", t:"Oculto (Visível desligado)"});
+    if(!icons.length) return "";
+    return '<span class="cf-icons">' + icons.map(function(i){ return '<span title="'+escapeHtml(i.t)+'">'+i.s+'</span>'; }).join("") + '</span>';
+  }
   function canvasHtml(abas){
     var html = '<div class="cfg-pane cfg-canvas">';
     if(abas.length === 0){
@@ -2964,8 +3146,9 @@
             var campoSelected = configSelection && configSelection.type==="campo" && configSelection.ai===ai && configSelection.ci===ci;
             return '<div class="canvas-field'+(campoSelected?" selected":"")+'" data-select-campo="'+ai+':'+ci+'" draggable="true" title="Arraste para reordenar ou mover para outra aba">' +
               '<span class="cf-drag-handle">⠿</span>' +
-              '<span><span class="cf-label">'+escapeHtml(c.label||"(sem nome)")+(c.obrigatorio?' *':'')+'</span>' +
-              '<div class="cf-meta">'+escapeHtml(FIELD_TYPE_LABEL[c.tipo]||c.tipo)+(c.calculado?" · calculado":"")+(c.dependeCampo?" · dependente":"")+(c.visivel===false?" · oculto":"")+'</div></span>' +
+              '<span class="cf-text"><span class="cf-label">'+escapeHtml(c.label||"(sem nome)")+(c.obrigatorio?' *':'')+'</span>' +
+              '<div class="cf-meta">'+escapeHtml(FIELD_TYPE_LABEL[c.tipo]||c.tipo)+'</div></span>' +
+              cfIconsHtml(c) +
               '<button type="button" class="cf-remove" data-remove-campo="'+ai+':'+ci+'" title="Remover campo">✕</button>' +
             '</div>';
           }).join("") +
@@ -3563,6 +3746,97 @@
       });
     });
 
+    // ---- Situações ----
+    // Renderiza tudo de novo a cada mudança, no mesmo padrão já usado em
+    // outras partes desta Configuração (aba/campo selecionados, condição de
+    // desbloqueio de aba etc.) — o formulário de condições é pequeno, o
+    // custo de um re-render completo é imperceptível.
+    (function(){
+      draft.situacoes = draft.situacoes || [];
+      var lastIdx = draft.situacoes.length - 1;
+      var ativarBtn = m.querySelector("#situacoes-ativar-btn");
+      if(ativarBtn) ativarBtn.addEventListener("click", function(){
+        draft.situacoes = [{id: uid("sit"), nome: "Cadastrado", condicoes: []}];
+        renderConfigModal();
+      });
+      var desativarBtn = m.querySelector("#situacoes-desativar-btn");
+      if(desativarBtn) desativarBtn.addEventListener("click", function(){
+        draft.situacoes = [];
+        renderConfigModal();
+      });
+      var addBtn = m.querySelector("#add-situacao-btn");
+      if(addBtn) addBtn.addEventListener("click", function(){
+        var abas = draft.abas || [];
+        draft.situacoes.splice(draft.situacoes.length - 1, 0, {
+          id: uid("sit"), nome: "Nova situação",
+          condicoes: [{abaId: abas[0].id, estado: "total"}]
+        });
+        renderConfigModal();
+      });
+      Array.prototype.forEach.call(m.querySelectorAll("[data-sit-nome]"), function(inp){
+        inp.addEventListener("input", function(){
+          draft.situacoes[+inp.getAttribute("data-sit-nome")].nome = inp.value;
+        });
+      });
+      Array.prototype.forEach.call(m.querySelectorAll("[data-sit-remove]"), function(btn){
+        btn.addEventListener("click", function(){
+          draft.situacoes.splice(+btn.getAttribute("data-sit-remove"), 1);
+          renderConfigModal();
+        });
+      });
+      Array.prototype.forEach.call(m.querySelectorAll("[data-sit-up]"), function(btn){
+        btn.addEventListener("click", function(){
+          var si = +btn.getAttribute("data-sit-up");
+          if(si <= 0) return;
+          var arr = draft.situacoes, tmp = arr[si-1]; arr[si-1] = arr[si]; arr[si] = tmp;
+          renderConfigModal();
+        });
+      });
+      Array.prototype.forEach.call(m.querySelectorAll("[data-sit-down]"), function(btn){
+        btn.addEventListener("click", function(){
+          var si = +btn.getAttribute("data-sit-down");
+          if(si >= lastIdx - 1) return;
+          var arr = draft.situacoes, tmp = arr[si+1]; arr[si+1] = arr[si]; arr[si] = tmp;
+          renderConfigModal();
+        });
+      });
+      Array.prototype.forEach.call(m.querySelectorAll("[data-sit-add-cond]"), function(btn){
+        btn.addEventListener("click", function(){
+          var si = +btn.getAttribute("data-sit-add-cond");
+          var abas = draft.abas || [];
+          draft.situacoes[si].condicoes = draft.situacoes[si].condicoes || [];
+          draft.situacoes[si].condicoes.push({abaId: abas[0].id, estado: "total"});
+          renderConfigModal();
+        });
+      });
+      Array.prototype.forEach.call(m.querySelectorAll("[data-sit-cond-remove]"), function(btn){
+        btn.addEventListener("click", function(){
+          var p = btn.getAttribute("data-sit-cond-remove").split(":");
+          draft.situacoes[+p[0]].condicoes.splice(+p[1], 1);
+          renderConfigModal();
+        });
+      });
+      Array.prototype.forEach.call(m.querySelectorAll("[data-sit-cond-aba]"), function(sel){
+        sel.addEventListener("change", function(){
+          var p = sel.getAttribute("data-sit-cond-aba").split(":");
+          var cond = draft.situacoes[+p[0]].condicoes[+p[1]];
+          cond.abaId = sel.value;
+          // A aba escolhida pode não ser Validável — "Validada" só existe
+          // no seletor de Estado para abas Validáveis, então zera para
+          // "total" ao trocar de aba (evita guardar um estado que não vai
+          // mais aparecer como opção).
+          cond.estado = "total";
+          renderConfigModal();
+        });
+      });
+      Array.prototype.forEach.call(m.querySelectorAll("[data-sit-cond-estado]"), function(sel){
+        sel.addEventListener("change", function(){
+          var p = sel.getAttribute("data-sit-cond-estado").split(":");
+          draft.situacoes[+p[0]].condicoes[+p[1]].estado = sel.value;
+        });
+      });
+    })();
+
     // ---- Pesquisa e Exportação ----
     function toggleChecklistId(arrGetter, id, checked){
       var arr = arrGetter();
@@ -3615,7 +3889,7 @@
     }
     var addAbaBtn = document.getElementById("add-aba-btn");
     if(addAbaBtn) addAbaBtn.addEventListener("click", function(){
-      var nome = uniqueAbaName("Nova aba", draft.abas.map(function(a){ return a.nome; }));
+      var nome = uniqueNameIn("Nova aba", draft.abas.map(function(a){ return a.nome; }), "Nova aba");
       draft.abas.push({id:uid("aba"), nome:nome, condicao:{tipo:"livre"}, campos:[]});
       configSelection = {type:"aba", ai: draft.abas.length-1};
       renderConfigModal();
@@ -3647,6 +3921,7 @@
         }
         draft.abas[ai].campos = draft.abas[ai].campos || [];
         var novoCampo = novoCampoDeTipo(tipo);
+        novoCampo.label = uniqueNameIn(novoCampo.label, draft.abas[ai].campos.map(function(c){ return c.label; }), "Novo campo");
         draft.abas[ai].campos.push(novoCampo);
         // Só cria o campo — não abre a Configuração dele sozinho; quem
         // quiser configurar clica no campo (a seleção/popup atual, se
@@ -3729,6 +4004,7 @@
         var idx = campoDropRef(bodyEl, e.clientY).index;
         if(raw.indexOf("palette:") === 0){
           var item2 = novoCampoDeTipo(raw.slice(8));
+          item2.label = uniqueNameIn(item2.label, draft.abas[dstAi].campos.map(function(c){ return c.label; }), "Novo campo");
           draft.abas[dstAi].campos.splice(idx,0,item2);
           // Só cria o campo — não abre a Configuração dele sozinho.
           renderConfigModal();
@@ -3738,6 +4014,12 @@
         if(!draft.abas[srcAi] || !draft.abas[srcAi].campos[srcCi]) return;
         var item = draft.abas[srcAi].campos.splice(srcCi,1)[0];
         if(srcAi === dstAi && idx > srcCi) idx--; // a remoção anterior já deslocou os índices seguintes
+        // Mover para outra aba pode colidir com um rótulo já existente lá
+        // (dentro da mesma aba os rótulos continuam únicos, mas nada
+        // impede repetir entre abas — só a MOVIMENTAÇÃO precisa checar).
+        if(srcAi !== dstAi){
+          item.label = uniqueNameIn(item.label, draft.abas[dstAi].campos.map(function(c){ return c.label; }), "Novo campo");
+        }
         draft.abas[dstAi].campos.splice(idx,0,item);
         configSelection = {type:"campo", ai:dstAi, ci:idx};
         renderConfigModal();
@@ -3755,7 +4037,7 @@
         addAbaBtn.classList.remove("drag-target-hover");
         var raw = e.dataTransfer.getData("text/plain");
         if(!raw) return;
-        var nome = uniqueAbaName("Nova aba", draft.abas.map(function(a){ return a.nome; }));
+        var nome = uniqueNameIn("Nova aba", draft.abas.map(function(a){ return a.nome; }), "Nova aba");
         if(raw.indexOf("palette:") === 0){
           draft.abas.push({id:uid("aba"), nome:nome, condicao:{tipo:"livre"}, campos:[novoCampoDeTipo(raw.slice(8))]});
           // Só cria o campo (e a aba) — não abre a Configuração do campo sozinho.
@@ -3800,7 +4082,7 @@
       inp.addEventListener("change", function(){
         var ai = parseInt(inp.getAttribute("data-aba-nome-popup"),10);
         var outrosNomes = draft.abas.filter(function(a,i){ return i!==ai; }).map(function(a){ return a.nome; });
-        var unico = uniqueAbaName(inp.value, outrosNomes);
+        var unico = uniqueNameIn(inp.value, outrosNomes, "Nova aba");
         draft.abas[ai].nome = unico;
         if(unico !== inp.value.trim()) renderConfigModal();
       });
@@ -3857,6 +4139,17 @@
         c.label = inp.value;
         var canvasLabel = m.querySelector('.canvas-field[data-select-campo="'+p[0]+':'+p[1]+'"] .cf-label');
         if(canvasLabel) canvasLabel.textContent = (inp.value || "(sem nome)") + (c.obrigatorio ? " *" : "");
+      });
+      // Ao sair do campo (blur/"change"), normaliza e garante rótulo único
+      // dentro da mesma aba — campos de abas diferentes ainda podem
+      // repetir o rótulo.
+      inp.addEventListener("change", function(){
+        var p=inp.getAttribute("data-campo-label").split(":");
+        var ai=+p[0], ci=+p[1];
+        var outrosRotulos = draft.abas[ai].campos.filter(function(c,i){ return i!==ci; }).map(function(c){ return c.label; });
+        var unico = uniqueNameIn(inp.value, outrosRotulos, "Novo campo");
+        draft.abas[ai].campos[ci].label = unico;
+        if(unico !== inp.value.trim()) renderConfigModal();
       });
     });
     Array.prototype.forEach.call(m.querySelectorAll("[data-campo-tipo]"), function(sel){
@@ -4561,12 +4854,18 @@
         campoControlHtml(c, "data-nr-campo", c.valorPadrao||"") + '</div>';
     }
 
-    var basicosHtml = '<div class="field"><label>Nome do registro</label><input type="text" id="nr-nome" placeholder="Identificação curta deste caso"></div>';
+    var cicloValores = cat.ciclo_de_vida_valores || [];
+    var basicosHtml = '<div class="field"><label>Nome do registro</label><input type="text" id="nr-nome" placeholder="Identificação curta deste caso"></div>' +
+      (cicloValores.length ?
+        '<div class="field"><label>Ciclo de vida *</label><select id="nr-ciclo"><option value="">Selecione…</option>' +
+          cicloValores.map(function(v){ return '<option value="'+escapeHtml(v)+'">'+escapeHtml(v)+'</option>'; }).join("") +
+        '</select></div>' : "");
     var tabs = abaTabsBuilder(abas, fieldHtml, {nome:"Dados Básicos", html: basicosHtml}, {});
     var body = tabs.html();
 
     m.innerHTML =
-      '<div class="modal-head"><div><h3>Novo registro — '+escapeHtml(cat.nome)+'</h3><p>Campos * são obrigatórios. Abas bloqueadas aparecem conforme você preenche.</p></div>'+
+      '<div class="modal-head"><div><h3>Novo registro — '+escapeHtml(cat.nome)+'</h3><p>Campos * são obrigatórios. Abas bloqueadas aparecem conforme você preenche.</p>'+
+      '<span class="badge info" id="nr-situacao-badge" style="display:none; margin-top:6px;"></span></div>'+
       '<button class="icon-btn" id="modal-close">✕</button></div>'+
       '<div class="modal-body" id="nr-body">'+body+'</div>'+
       '<div class="modal-foot"><span id="nr-msg" class="empty-note"></span><button class="btn primary" id="nr-submit">Criar registro</button></div>';
@@ -4591,6 +4890,7 @@
         var wrap = m.querySelector('[data-campo-wrap="'+c.id+'"]');
         if(wrap) wrap.style.display = campoVisible(c, getVal) ? "" : "none";
       });
+      updateSituacaoBadge(m, "nr-situacao-badge", cat.situacoes, abas, getVal, tabs.getValidado);
     }
     tabs.wire(m, updateVisibility); // um clique em "Validar esta aba" também refaz o desbloqueio
     m.addEventListener("input", function(){ updateCalculados(); updateVisibility(); });
@@ -4600,6 +4900,7 @@
     document.getElementById("nr-submit").addEventListener("click", async function(){
       var nome = document.getElementById("nr-nome").value.trim();
       var msg = document.getElementById("nr-msg");
+      var cicloSel = document.getElementById("nr-ciclo");
       var existingRows = cache.formulario_personalizado.filter(function(r){ return r.categoria_id === cat.id; });
       var campos = {}; var missing = []; var invalid = [];
       abas.forEach(function(aba){
@@ -4620,17 +4921,17 @@
           }
         });
       });
-      if(!nome || missing.length || invalid.length){
+      if(!nome || (cicloSel && !cicloSel.value) || missing.length || invalid.length){
         msg.style.color = "var(--selo)";
-        msg.textContent = !nome ? "Informe um nome para o registro." : (missing.length ? "Faltando: " + missing.join(", ") : "Corrija: " + invalid.join(", "));
+        msg.textContent = !nome ? "Informe um nome para o registro." : ((cicloSel && !cicloSel.value) ? "Selecione o Ciclo de vida." : (missing.length ? "Faltando: " + missing.join(", ") : "Corrija: " + invalid.join(", ")));
         return;
       }
       if(!db) return;
-      var valores = cat.ciclo_de_vida_valores || [];
+      var sit = situacaoAtual(cat.situacoes, abas, getVal, tabs.getValidado);
       await db.collection("formulario_personalizado").add({
         codigo: "FRM-" + Date.now().toString(36).toUpperCase(),
-        nome: nome, categoria_id: cat.id, ciclo_de_vida: valores[0] || null, campos: campos,
-        abasValidadas: tabs.validState
+        nome: nome, categoria_id: cat.id, ciclo_de_vida: cicloSel ? cicloSel.value : null, campos: campos,
+        abasValidadas: tabs.validState, situacao: sit ? sit.nome : null
       });
       closeModal();
     });
@@ -4683,12 +4984,14 @@
           '<div id="nf-titular-results"></div>' +
         '</div>';
     }
+    nativeHtml += '<div id="nf-ciclo-wrap"></div>';
 
     var tabs = abaTabsBuilder(abas, fieldHtml, {nome:"Dados Básicos", html: nativeHtml}, {});
     var body = tabs.html();
 
     m.innerHTML =
-      '<div class="modal-head"><div><h3>Novo '+escapeHtml(def.label)+'</h3><p>Campos * são obrigatórios. Abas bloqueadas aparecem conforme você preenche.</p></div>'+
+      '<div class="modal-head"><div><h3>Novo '+escapeHtml(def.label)+'</h3><p>Campos * são obrigatórios. Abas bloqueadas aparecem conforme você preenche.</p>'+
+      '<span class="badge info" id="nf-situacao-badge" style="display:none; margin-top:6px;"></span></div>'+
       '<button class="icon-btn" id="modal-close">✕</button></div>'+
       '<div class="modal-body" id="nf-body">'+body+'</div>'+
       '<div class="modal-foot"><span id="nf-msg" class="empty-note"></span><button class="btn primary" id="nf-submit">Criar '+escapeHtml(def.label)+'</button></div>';
@@ -4697,6 +5000,24 @@
     wireEnderecoLocFields(m);
     wireListaMultiFields(m);
     wireConsultaFields(m, abas);
+
+    // Ciclo de vida, quando configurado, funciona como um campo obrigatório
+    // de verdade: obriga escolher uma opção (sem valor pré-selecionado),
+    // igual já acontecia na edição — não mais um valor escolhido sozinho
+    // por baixo dos panos ao criar.
+    function renderCicloOptions(){
+      var probe = def.key === "pessoa" ? {tipo_pessoa: document.getElementById("nf-tipo-pessoa").value} : {};
+      var valores = cicloValoresFor(def.key, probe);
+      var wrap = document.getElementById("nf-ciclo-wrap");
+      if(!valores.length){ wrap.innerHTML = ""; return; }
+      wrap.innerHTML = '<div class="field"><label>Ciclo de vida *</label><select id="nf-ciclo"><option value="">Selecione…</option>' +
+        valores.map(function(v){ return '<option value="'+escapeHtml(v)+'">'+escapeHtml(v)+'</option>'; }).join("") +
+        '</select></div>';
+    }
+    renderCicloOptions();
+    if(def.key === "pessoa"){
+      document.getElementById("nf-tipo-pessoa").addEventListener("change", renderCicloOptions);
+    }
 
     var pendingTitulares = [];
     if(def.key === "titularidade"){
@@ -4772,6 +5093,7 @@
         var wrap = m.querySelector('[data-campo-wrap="'+c.id+'"]');
         if(wrap) wrap.style.display = campoVisible(c, getVal) ? "" : "none";
       });
+      updateSituacaoBadge(m, "nf-situacao-badge", cfg && cfg.situacoes, abas, getVal, tabs.getValidado);
     }
     tabs.wire(m, updateVisibility); // um clique em "Validar esta aba" também refaz o desbloqueio
     m.addEventListener("input", function(){ updateCalculados(); updateVisibility(); });
@@ -4782,6 +5104,8 @@
       var msg = document.getElementById("nf-msg");
       var nome = document.getElementById("nf-nome").value.trim();
       if(!nome){ msg.style.color = "var(--selo)"; msg.textContent = "Informe um nome."; return; }
+      var cicloSel = document.getElementById("nf-ciclo");
+      if(cicloSel && !cicloSel.value){ msg.style.color = "var(--selo)"; msg.textContent = "Selecione o Ciclo de vida."; return; }
 
       var nativePayload = {};
       if(def.key === "pessoa"){
@@ -4834,8 +5158,8 @@
       if(missing.length){ msg.style.color = "var(--selo)"; msg.textContent = "Faltando: " + missing.join(", "); return; }
       if(invalid.length){ msg.style.color = "var(--selo)"; msg.textContent = "Corrija: " + invalid.join(", "); return; }
       if(!db) return;
-      var ciclo = cicloValoresFor(def.key, nativePayload)[0] || null;
-      var payload = Object.assign({ codigo: genCodigo(def.key), nome: nome, ciclo_de_vida: ciclo, campos: campos, abasValidadas: tabs.validState }, nativePayload);
+      var sit = situacaoAtual(cfg && cfg.situacoes, abas, getVal, tabs.getValidado);
+      var payload = Object.assign({ codigo: genCodigo(def.key), nome: nome, ciclo_de_vida: cicloSel ? cicloSel.value : null, campos: campos, abasValidadas: tabs.validState, situacao: sit ? sit.nome : null }, nativePayload);
       var ref = await db.collection(def.key).add(payload);
       if(def.key === "titularidade"){
         for(var ti=0; ti<pendingTitulares.length; ti++){
@@ -4972,4 +5296,5 @@
   boot();
 })();
 </script>
+
 </head><body></body></html>
