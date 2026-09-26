@@ -474,6 +474,7 @@
   .pe-grupo-lbl{display:flex; align-items:center; gap:5px; cursor:pointer;}
   .pe-conta{font-size:10.5px; color:var(--ink-faint); font-variant-numeric:tabular-nums;}
   .pe-resumo{display:flex; flex-wrap:wrap; gap:6px; margin:8px 0 2px;}
+  .export-cols{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;}
   .pe-pill{font-size:11.5px; padding:4px 10px; border-radius:999px; background:var(--surface-2); border:1px solid var(--border-soft); color:var(--ink-muted);}
   .condicao-block{background:var(--surface); border:1px solid var(--border-soft); border-radius:8px; padding:10px 12px; margin-bottom:12px;}
   .condicao-block label.cb-label{font-size:11px; color:var(--ink-muted); display:block; margin-bottom:6px;}
@@ -2728,7 +2729,7 @@
     return evalFormula(c.formula, getVal);
   }
 
-  var CODIGO_PREFIX = { terreno:"TER", titularidade:"TIT", empreendimento:"EMP", edificacao:"EDF", pessoa:"PES" };
+  var CODIGO_PREFIX = { terreno:"TER", titularidade:"TIT", empreendimento:"EMP", edificacao:"EDF", pessoa:"PES", cartorio:"CART" };
   function genCodigo(key){ return (CODIGO_PREFIX[key]||"REG") + "-" + Date.now().toString(36).toUpperCase(); }
 
   // ---- Geração do valor de um campo tipo "Código" com Lógica configurada
@@ -3160,6 +3161,16 @@
       btnL.title = "Tabela com todos os registros: editar várias linhas de uma vez, colar do Excel, criar e excluir em lote";
       btnL.addEventListener("click", function(){ openLoteModal(currentKey); });
       slot.appendChild(btnL);
+    }
+    // v64: Exportar para Excel, ao lado do Editar em lote
+    if(loteSuportado(currentKey) && (ctx.type === "categoria" ? !!ctx.categoria : true) && podeExportarEntidade(currentKey)){
+      var btnX = document.createElement("button");
+      btnX.className = "btn";
+      btnX.id = "btn-exportar";
+      btnX.textContent = "⬇ Exportar Excel";
+      btnX.title = "Baixar os registros da lista em .xlsx, conforme Configuração › Pesquisa e Exportação";
+      btnX.addEventListener("click", function(){ openExportModal(currentKey); });
+      slot.appendChild(btnX);
     }
   }
 
@@ -4156,7 +4167,7 @@
   // Ajuda — explica os conceitos do sistema; atualizar HELP_SECTIONS e
   // HELP_CHANGELOG a cada nova versão publicada.
   // =========================================================================
-  var APP_VERSION = "v63";
+  var APP_VERSION = "v65";
   var HELP_SECTIONS = [
     { titulo:"O que é o Registro ABA",
       corpo:"<p>Protótipo funcional de um sistema de gestão fundiária — pensado para substituir o modelo rígido de \"processo/formulário\" por Entidades totalmente configuráveis. Os dados aqui são de exemplo.</p>" },
@@ -4267,6 +4278,8 @@
         "</ul>" }
   ];
   var HELP_CHANGELOG = [
+    { versao:"v65", texto:"Cartório ganhou ▦ Editar em lote e ⬇ Exportar Excel, como as outras Entidades. No lote: Nome, UF e Município obrigatórios e Contato; linhas novas recebem código CART-…; um cartório usado por alguma Titularidade não é excluído (troque o cartório delas antes). Contato passou a ser campo do sistema do Cartório (aparece no construtor e na exportação)." },
+    { versao:"v64", texto:"Novo botão ⬇ Exportar Excel, ao lado de Editar em lote. Gera um .xlsx com os registros que estão na lista (com a busca aplicada, se houver), seguindo a Configuração › Pesquisa e Exportação: campos do sistema (Código sempre, mesmo oculto na tela; Nome; Ciclo de vida; os nativos da Entidade; Situação, quando configurada) e só os campos marcados em Exportação, na ordem das abas. O Parâmetro de exportação padrão vem marcado e pode ser trocado na hora: Com relacionados acrescenta uma coluna por associação ativa, com Código - Nome de cada vínculo (e os dados escolhidos em Associações). Respeita as permissões: o botão só aparece para quem tem Exportar no Papel, e aba/campo sem Exportar na aba Permissões da Entidade fica de fora. Números saem como número, datas em dd/mm/aaaa, listas com o texto da opção; cabeçalho fixo e com filtro." },
     { versao:"v63", texto:"Código oculto (⚙ do Código no construtor) some também da lista de registros e da edição em lote — só a exportação continua trazendo. O mesmo vale para o Ciclo de vida marcado como não Visível; e o Rótulo configurado no Ciclo de vida passa a aparecer no cabeçalho da lista." },
     { versao:"v62", texto:"Revisão de qualidade, sem mudar o jeito de usar. Correções: (1) data inexistente (ex.: 30/02) era aceita e gravada — agora é recusada, e o limite de Data mínima/máxima aparece em dd/mm/aaaa e é comparado sem erro de fuso; (2) o Contato do Cartório passou a ser gravado, e o formulário do Cartório não apaga mais o que está sendo digitado quando a base atualiza; (3) as Situações não gravam mais uma cópia das abas junto na base (e a sobra das versões anteriores é limpa ao abrir a Configuração); (4) Ciclo de vida não salva mais valores em branco nem repetidos; (5) remover uma aba ou um campo limpa as referências a ele — condição de outra aba, Campo requisito, regras de Lista, parte \"Campo\" do Código, Situações, Pesquisa/Exportação/Lista em Tela, Permissões e GIS; (6) trocar o tipo de um campo não herda mais Cálculo, Valor padrão ou o Somente leitura do Código; (7) na edição, um Ciclo de vida que saiu da lista configurada continua selecionado (marcado \"fora da lista atual\") em vez de o sistema trocar sozinho pela primeira opção; (8) a visualização aberta se atualiza sozinha quando o registro muda na base; (9) erros de gravação (salvar, excluir, associar, desassociar, lote) aparecem na tela em vez de sumir, e os botões de gravar não aceitam clique duplo; (10) rótulos e nomes digitados pelo usuário não são mais interpretados como HTML na tabela e no menu. Melhorias: busca sem distinção de acento (\"mario\" acha \"Mário\") em todas as buscas; UF e Município como listas (base do IBGE) no Cartório e na Titularidade; \"Nova Titularidade/Edificação/Pessoa\" com o gênero certo; rótulos acentuados na visualização; Esc fecha a Ajuda, o Associar, a visualização do registro e listas de sugestões; linhas da tabela abrem pelo teclado; foco visível; tema escuro na mesma família de cores do claro e da barra lateral; layout para celular; textos da Ajuda atualizados ao comportamento atual." },
     { versao:"v61", texto:"(1) As abas mudam de ordem arrastando pela alça ⠿ do cabeçalho, no construtor (Dados Básicos fica sempre em primeiro). (2) Saiu o rótulo \"fixa\" do cabeçalho de Dados Básicos. (3) O Código ganhou ⚙ própria, com Visível no formulário; oculto (o padrão) some da criação, da edição e da visualização — na lista de registros ele continua. A caixinha que ficava nas propriedades da aba saiu. Os campos do sistema na visualização passaram a usar o rótulo certo (\"Código\", \"Ciclo de vida\"). (4) Salvar ou cancelar a edição volta para a visualização na mesma aba." },
@@ -5660,7 +5673,8 @@
     ],
     cartorio: [
       {k:"municipio", l:"Município", tipo:"Texto"},
-      {k:"uf", l:"UF", tipo:"Texto"}
+      {k:"uf", l:"UF", tipo:"Texto"},
+      {k:"contato", l:"Contato", tipo:"Texto"}
     ]
   };
   // =========================================================================
@@ -8873,10 +8887,208 @@
   // titular, e apaga junto os vínculos (tabelas de ligação e Associações)
   // do que for excluído.
   // =========================================================================
-  var LOTE_ENTIDADES = { terreno:1, titularidade:1, empreendimento:1, edificacao:1, pessoa:1 };
+  var LOTE_ENTIDADES = { terreno:1, titularidade:1, empreendimento:1, edificacao:1, pessoa:1, cartorio:1 }; // v65: Cartório também
   var LOTE_JOIN_COLS = ["terreno_titularidade", "titularidade_pessoa", "edificacao_terreno"];
   var lote = null;
 
+  // =========================================================================
+  // v64 — Exportar para Excel (.xlsx), ao lado de "Editar em lote".
+  // Segue a Configuração › Pesquisa e Exportação: só os campos marcados em
+  // Exportação (na ordem das abas) + os campos do sistema (Código sempre,
+  // mesmo oculto na tela); "Com relacionados" acrescenta uma coluna por
+  // associação ativa. Respeita as permissões: Exportar da Entidade no Papel
+  // e Exportar por aba/campo na aba Permissões da Entidade. Exporta os
+  // registros que estão na lista (com a busca aplicada, se houver).
+  // =========================================================================
+  function podeExportarParte(key, tipo, id){
+    var ctx = permCtx();
+    if(!ctx || ctx.super || adminPassaPorCima(key, ctx)) return true;
+    if(!ctx.papel) return false;
+    var p = cfgEntidadePerm(key).permissoes || {};
+    var g = p[ctx.papel.id] && p[ctx.papel.id][tipo];
+    var v = g && g[id] && g[id].exportar;
+    return v === undefined ? true : !!v;
+  }
+  function podeExportarEntidade(key){ return podeEntidade(key, "exportar"); }
+  function exportCfgDe(key){
+    var cfg = loteCfgDe(key) || {};
+    return {abas: loteAbasDe(key), pe: cfg.pesquisaExportacao || {exportacaoCampos:[], parametroPadrao:"sem_relacionados"}, situacoes: cfg.situacoes || []};
+  }
+  // vínculos de um registro com outra Entidade (pares dedicados e genéricos)
+  function exportVinculados(key, row, outraKey){
+    function via(col, meu, outro, outraCol){
+      return (cache[col] || []).filter(function(j){ return j[meu] === row.id; }).map(function(j){ return byId(cache[outraCol], j[outro]); }).filter(Boolean);
+    }
+    var ded = {
+      "titularidade>terreno": function(){ return via("terreno_titularidade", "titularidade_id", "terreno_id", "terreno"); },
+      "titularidade>pessoa": function(){ return via("titularidade_pessoa", "titularidade_id", "pessoa_id", "pessoa"); },
+      "terreno>titularidade": function(){ return via("terreno_titularidade", "terreno_id", "titularidade_id", "titularidade"); },
+      "terreno>edificacao": function(){ return via("edificacao_terreno", "terreno_id", "edificacao_id", "edificacao"); },
+      "edificacao>terreno": function(){ return via("edificacao_terreno", "edificacao_id", "terreno_id", "terreno"); },
+      "pessoa>titularidade": function(){ return via("titularidade_pessoa", "pessoa_id", "titularidade_id", "titularidade"); },
+      "cartorio>titularidade": function(){ return (cache.titularidade || []).filter(function(t){ return t.cartorio_id === row.id; }); }
+    }[key + ">" + outraKey];
+    if(assocParDedicado(key, outraKey)) return ded ? ded() : [];
+    return assocGenericaLista(key, row.id, outraKey).map(function(i){ return i.registro; });
+  }
+  function exportColunas(key, comRelacionados){
+    var e = exportCfgDe(key), cols = [];
+    var basica = e.abas.length && e.abas[0].fixo ? e.abas[0] : null;
+    var cp = cicloPropsDeAba(basica);
+    camposNativosDe(key).forEach(function(n){
+      if(n.k === "ciclo_de_vida"){
+        var temCiclo = key === "pessoa" ? !!(byId(cache.config_entidade, "pessoa") || {}).ciclo_de_vida_variantes : cicloValoresFor(key, {}).length > 0;
+        if(!temCiclo) return;
+        cols.push({l: cp.label || "Ciclo de vida", v: function(r){ return r.ciclo_de_vida || ""; }});
+        return;
+      }
+      cols.push({l: n.l, v: function(r){ var x = relacaoCampoValor(r, "nativo:" + n.k); return x == null ? "" : x; }});
+    });
+    if(e.situacoes.length) cols.push({l:"Situação", v: function(r){ return r.situacao || ""; }});
+    var sel = e.pe.exportacaoCampos || [], rotulos = {};
+    e.abas.forEach(function(a){ (a.campos || []).forEach(function(c){ rotulos[c.label] = (rotulos[c.label] || 0) + 1; }); });
+    e.abas.forEach(function(a){
+      if(!a.fixo && !podeExportarParte(key, "abas", a.id)) return;
+      (a.campos || []).forEach(function(c){
+        if(sel.indexOf(c.id) < 0 || c.tipo === "arquivo" || !podeExportarParte(key, "campos", c.id)) return;
+        var rot = rotulos[c.label] > 1 && !a.fixo ? (a.nome + " › " + c.label) : c.label;
+        cols.push({l: rot, campo: c, v: function(r){ var x = abaCampoValueFromRecord(r, c.id); return x == null || x === "" ? "" : campoDisplayValue(c, x); }});
+      });
+    });
+    if(comRelacionados){
+      assocCandidatos(key).forEach(function(cand){
+        if(!relacaoAtiva(key, cand.key)) return;
+        var extras = relacaoCamposExibidos(key, cand.key);
+        cols.push({l: assocLabelEntidade(cand.key) + " (relacionados)", v: function(r){
+          return exportVinculados(key, r, cand.key).map(function(o){
+            var t = (o.codigo ? o.codigo + " - " : "") + (o.nome || "");
+            var det = extras.map(function(ref){ var x = relacaoCampoValor(o, ref); return (x === null || x === undefined || x === "") ? "" : relacaoCampoLabel(cand.key, ref) + ": " + x; }).filter(Boolean);
+            return det.length ? t + " (" + det.join(", ") + ")" : t;
+          }).join("; ");
+        }});
+      });
+    }
+    return cols;
+  }
+  // ---- gerador de .xlsx (zip sem compressão, sem biblioteca externa) ----
+  var XLSX_CRC = null;
+  function xlsxCrc32(bytes){
+    if(!XLSX_CRC){ XLSX_CRC = []; for(var n = 0; n < 256; n++){ var c = n; for(var k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; XLSX_CRC[n] = c >>> 0; } }
+    var crc = 0xFFFFFFFF;
+    for(var i = 0; i < bytes.length; i++) crc = XLSX_CRC[(crc ^ bytes[i]) & 0xFF] ^ (crc >>> 8);
+    return (crc ^ 0xFFFFFFFF) >>> 0;
+  }
+  function xlsxZip(arquivos){
+    var enc = new TextEncoder(), partes = [], central = [], offset = 0;
+    function u16(v){ return [v & 255, (v >>> 8) & 255]; }
+    function u32(v){ return [v & 255, (v >>> 8) & 255, (v >>> 16) & 255, (v >>> 24) & 255]; }
+    arquivos.forEach(function(a){
+      var nome = enc.encode(a.nome), dados = enc.encode(a.conteudo), crc = xlsxCrc32(dados);
+      var local = [].concat([0x50,0x4b,0x03,0x04], u16(20), u16(0x0800), u16(0), u16(0), u16(0), u32(crc), u32(dados.length), u32(dados.length), u16(nome.length), u16(0));
+      partes.push(new Uint8Array(local), nome, dados);
+      central.push(new Uint8Array([].concat([0x50,0x4b,0x01,0x02], u16(20), u16(20), u16(0x0800), u16(0), u16(0), u16(0), u32(crc), u32(dados.length), u32(dados.length), u16(nome.length), u16(0), u16(0), u16(0), u16(0), u32(0), u32(offset))), nome);
+      offset += local.length + nome.length + dados.length;
+    });
+    var tamCentral = central.reduce(function(s, p){ return s + p.length; }, 0);
+    var fim = new Uint8Array([].concat([0x50,0x4b,0x05,0x06], u16(0), u16(0), u16(arquivos.length), u16(arquivos.length), u32(tamCentral), u32(offset), u16(0)));
+    return new Blob(partes.concat(central, [fim]), {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+  }
+  function xlsxEsc(s){ return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, ""); }
+  function xlsxColuna(i){ var s = ""; i++; while(i > 0){ var m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; }
+  function xlsxGerar(nomeAba, cabecalho, linhas, larguras){
+    var sheet = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+      '<sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>' +
+      '<cols>' + larguras.map(function(w, i){ return '<col min="'+(i+1)+'" max="'+(i+1)+'" width="'+w+'" customWidth="1"/>'; }).join("") + '</cols><sheetData>';
+    [cabecalho].concat(linhas).forEach(function(l, ri){
+      sheet += '<row r="'+(ri+1)+'">' + l.map(function(v, ci){
+        var ref = xlsxColuna(ci) + (ri + 1), st = ri === 0 ? ' s="1"' : '';
+        if(typeof v === "number" && isFinite(v)) return '<c r="'+ref+'"'+st+'><v>'+v+'</v></c>';
+        if(v === "" || v == null) return ri === 0 ? '<c r="'+ref+'"'+st+'/>' : '';
+        return '<c r="'+ref+'" t="inlineStr"'+st+'><is><t xml:space="preserve">'+xlsxEsc(v)+'</t></is></c>';
+      }).join("") + '</row>';
+    });
+    sheet += '</sheetData>' + (linhas.length ? '<autoFilter ref="A1:'+xlsxColuna(cabecalho.length - 1)+(linhas.length + 1)+'"/>' : '') + '</worksheet>';
+    var nomeSeguro = xlsxEsc(String(nomeAba).replace(/[\\\/\?\*\[\]:]/g, " ").slice(0, 31) || "Registros");
+    return xlsxZip([
+      {nome:"[Content_Types].xml", conteudo:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>'},
+      {nome:"_rels/.rels", conteudo:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'},
+      {nome:"xl/workbook.xml", conteudo:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="'+nomeSeguro+'" sheetId="1" r:id="rId1"/></sheets>' + (linhas.length ? '<definedNames><definedName name="_xlnm._FilterDatabase" localSheetId="0" hidden="1">\''+nomeSeguro.replace(/'/g, "''")+'\'!$A$1:$'+xlsxColuna(cabecalho.length - 1)+'$'+(linhas.length + 1)+'</definedName></definedNames>' : '') + '</workbook>'},
+      {nome:"xl/_rels/workbook.xml.rels", conteudo:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>'},
+      {nome:"xl/styles.xml", conteudo:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFEDF1F6"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>'},
+      {nome:"xl/worksheets/sheet1.xml", conteudo:sheet}
+    ]);
+  }
+  function exportMontar(key, comRelacionados){
+    var cols = exportColunas(key, comRelacionados), regs = filteredRows();
+    var linhas = regs.map(function(r){
+      return cols.map(function(c){
+        var v = c.v(r);
+        if(c.campo && c.campo.tipo === "numero" && v !== ""){ var n = Number(String(v).replace(",", ".")); if(!isNaN(n)) return n; }
+        return v == null ? "" : String(v);
+      });
+    });
+    var cab = cols.map(function(c){ return c.l; });
+    var larg = cab.map(function(h, i){ var m = String(h).length; linhas.slice(0, 200).forEach(function(l){ m = Math.max(m, String(l[i]).length); }); return Math.min(60, Math.max(8, m + 2)); });
+    return {cols:cols, cabecalho:cab, linhas:linhas, larguras:larg};
+  }
+  async function exportBaixar(key, comRelacionados){
+    var t = exportMontar(key, comRelacionados);
+    var nome = assocLabelEntidade(key);
+    var blob = xlsxGerar(nome, t.cabecalho, t.linhas, t.larguras);
+    var d = new Date(), dd = function(n){ return (n < 10 ? "0" : "") + n; };
+    var arq = nome.replace(/[\\\/:*?"<>|]/g, " ").trim() + " - " + dd(d.getDate()) + "-" + dd(d.getMonth() + 1) + "-" + d.getFullYear() + ".xlsx";
+    // publicado no claude.ai: o download passa pela confirmação do visualizador
+    var dls = null;
+    if(window.claude && typeof window.claude.use === "function"){ try{ dls = await window.claude.use("downloads"); }catch(e){ dls = null; } }
+    if(dls){
+      try{ await dls.save({filename: arq, data: blob}); }
+      catch(err){
+        if(err && err.code === "declined") return {cancelado:true};
+        throw new Error((err && err.message) || "download indisponível aqui");
+      }
+    } else {
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob); a.download = arq;
+      document.body.appendChild(a); a.click();
+      setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+    }
+    return {arquivo:arq, linhas:t.linhas.length, colunas:t.cabecalho.length};
+  }
+  function openExportModal(key){
+    var e = exportCfgDe(key);
+    var padraoCom = e.pe.parametroPadrao === "com_relacionados";
+    var n = filteredRows().length;
+    var m = document.getElementById("modal");
+    modal = {type:"exportar", key:key};
+    function corpo(com){
+      var cols = exportColunas(key, com);
+      return '<p class="empty-note" style="margin-top:0;">' + n + (n === 1 ? " registro" : " registros") + (searchText ? " (com a busca atual)" : "") + ' · ' + cols.length + ' colunas, conforme Configuração › Pesquisa e Exportação.</p>' +
+        '<div class="export-cols">' + cols.map(function(c){ return '<span class="pe-pill">' + escapeHtml(c.l) + '</span>'; }).join("") + '</div>';
+    }
+    m.innerHTML = '<div class="modal-head"><div><h3>Exportar para Excel</h3><p>' + escapeHtml(assocLabelEntidade(key)) + ' · arquivo .xlsx</p></div><button class="icon-btn" id="modal-close">✕</button></div>' +
+      '<div class="modal-body" id="modal-body">' +
+        '<div class="condicao-block"><label class="cb-label">Parâmetro de exportação</label>' +
+          '<label class="toggle-row"><input type="radio" name="exp-rel" value="sem"' + (padraoCom ? '' : ' checked') + '> Sem relacionados</label>' +
+          '<label class="toggle-row"><input type="radio" name="exp-rel" value="com"' + (padraoCom ? ' checked' : '') + '> Com relacionados (uma coluna por associação ativa)</label>' +
+        '</div><div id="exp-corpo">' + corpo(padraoCom) + '</div>' +
+      '</div>' +
+      '<div class="modal-foot"><span class="form-msg" id="exp-msg"></span><button class="btn" id="exp-cancel">Cancelar</button><button class="btn primary" id="exp-baixar"' + (n ? '' : ' disabled') + '>⬇ Baixar .xlsx</button></div>';
+    function com(){ var r = m.querySelector('input[name="exp-rel"]:checked'); return r && r.value === "com"; }
+    Array.prototype.forEach.call(m.querySelectorAll('input[name="exp-rel"]'), function(r){ r.addEventListener("change", function(){ document.getElementById("exp-corpo").innerHTML = corpo(com()); }); });
+    document.getElementById("modal-close").addEventListener("click", closeModal);
+    document.getElementById("exp-cancel").addEventListener("click", closeModal);
+    document.getElementById("exp-baixar").addEventListener("click", async function(){
+      var msg = document.getElementById("exp-msg"), bt = this;
+      bt.disabled = true;
+      try{
+        var r = await exportBaixar(key, com());
+        if(r.cancelado){ msg.style.color = ""; msg.textContent = "Download cancelado."; }
+        else { msg.style.color = "var(--ok)"; msg.textContent = "✓ " + r.arquivo + " — " + r.linhas + " linhas"; }
+      }catch(err){ msg.style.color = "var(--selo)"; msg.textContent = "Não foi possível gerar o arquivo: " + err.message; }
+      bt.disabled = false;
+    });
+    openModalShell();
+  }
   function loteSuportado(key){
     if(String(key).indexOf("form:") === 0) return !!contextFor(key).categoria;
     return !!LOTE_ENTIDADES[key];
@@ -8967,6 +9179,11 @@
       cols.push({k:"numero_matricula", l:"Nº matrícula/transcrição", grupo:nomeBasicoLote, nativo:true, visivelSe:loteTitExigeNumero, motivoOculto:"Só vale para Matrícula e Transcrição"});
       cols.push({k:"__titulares", l:"Titular(es)", tipo:"titulares", obrig:true, grupo:nomeBasicoLote, nativo:true, motivo:"Uma ou mais Pessoas, pelo Código ou pelo nome, separadas por ponto e vírgula"});
     }
+    if(key === "cartorio"){
+      cols.push({k:"uf", l:"UF", tipo:"uf", obrig:true, grupo:nomeBasicoLote, nativo:true});
+      cols.push({k:"municipio", l:"Município", obrig:true, grupo:nomeBasicoLote, nativo:true});
+      cols.push({k:"contato", l:"Contato", grupo:nomeBasicoLote, nativo:true});
+    }
     abas.forEach(function(aba){
       var grupo = aba.fixo ? "Dados Básicos" : (aba.nome || "Aba");
       (aba.campos || []).forEach(function(c){
@@ -9017,6 +9234,7 @@
       var tits = loteTitularesDe(r.id);
       valores.__titulares = tits.length ? JSON.stringify(tits) : "";
     }
+    if(lote.key === "cartorio") ["uf","municipio","contato"].forEach(function(k){ valores[k] = r[k] == null ? "" : String(r[k]); });
     lote.colunas.forEach(function(col){
       if(col.campo){ var v = r.campos ? r.campos[col.campo.id] : ""; valores[col.k] = (v === undefined || v === null) ? "" : String(v); }
       if(col.tipo === "validada") valores[col.k] = !!(r.abasValidadas && r.abasValidadas[col.abaId]);
@@ -9246,7 +9464,7 @@
         return;
       }
       if(opts.semObrigatorio) return;
-      if(vazio && (col.obrig || col.visivelSe)) linha.erros[col.k] = col.tipo === "titulares" ? "informe ao menos um titular (Pessoa)" : "obrigatório para este tipo de evidência";
+      if(vazio && (col.obrig || col.visivelSe)) linha.erros[col.k] = col.tipo === "titulares" ? "informe ao menos um titular (Pessoa)" : (col.visivelSe ? "obrigatório para este tipo de evidência" : "obrigatório");
       if(col.k === "tipo_evidencia" && vazio) linha.erros[col.k] = "obrigatório";
     });
     lote.colunas.forEach(function(col){
@@ -9897,6 +10115,7 @@
         else { payload.codigo = (CODIGO_PREFIX[lote.key] || "REG") + "-" + sufixo; }
         if(lote.key === "pessoa") payload.tipo_pessoa = linha.valores.tipo_pessoa || "fisica";
         if(lote.key === "titularidade") loteTitNativos(linha, payload);
+        if(lote.key === "cartorio"){ loteCartNativos(linha, payload); payload.fonte_externa = null; }
         var refNovo = await db.collection(col).add(payload);
         if(lote.key === "titularidade") await loteTitSincronizar(refNovo.id, [], listaMultiParse(linha.valores.__titulares));
         criadas++;
@@ -9915,6 +10134,7 @@
         if(lote.colPorK.ciclo_de_vida) patch.ciclo_de_vida = linha.valores.ciclo_de_vida || null;
         if(lote.key === "pessoa") patch.tipo_pessoa = linha.valores.tipo_pessoa || "fisica";
         if(lote.key === "titularidade") loteTitNativos(linha, patch);
+        if(lote.key === "cartorio") loteCartNativos(linha, patch);
         await db.doc(col + "/" + linha.id).update(patch);
         if(lote.key === "titularidade") await loteTitSincronizar(linha.id, loteTitularesDe(linha.id), listaMultiParse(linha.valores.__titulares));
         atualizadas++;
@@ -9944,13 +10164,18 @@
     // encontrado)", como já acontece quando a referência some.
     var alvo = {}; ids.forEach(function(id){ alvo[id] = 1; });
     var n = 0;
-    ["terreno","titularidade","empreendimento","edificacao","pessoa","formulario_personalizado"].forEach(function(cn){
+    ["terreno","titularidade","empreendimento","edificacao","pessoa","cartorio","formulario_personalizado"].forEach(function(cn){
       (cache[cn] || []).forEach(function(r){
         if(alvo[r.id] || !r.campos) return;
         if(Object.keys(r.campos).some(function(k){ return alvo[r.campos[k]]; })) n++;
       });
     });
     return n;
+  }
+  function loteCartNativos(linha, alvo){
+    alvo.uf = String(linha.valores.uf || "").trim().toUpperCase() || null;
+    alvo.municipio = String(linha.valores.municipio || "").trim() || null;
+    alvo.contato = String(linha.valores.contato || "").trim() || null;
   }
   function lotePedirExclusao(){
     var sel = lote.linhas.filter(function(l){ return l.sel; });
@@ -9979,6 +10204,16 @@
             bloqueios.push((l.valores.nome || l.valores.codigo) + " " + motivo);
           }
         });
+      });
+    }
+    // v65: Cartório usado por Titularidade não sai (a Titularidade exige cartório)
+    if(lote.key === "cartorio"){
+      existentes.forEach(function(l){
+        var usos = (cache.titularidade || []).filter(function(t){ return t.cartorio_id === l.id; });
+        if(!usos.length) return;
+        var motivo = "é o cartório de " + usos.length + " Titularidade(s) (" + usos.slice(0, 3).map(function(t){ return t.codigo || t.nome; }).join(", ") + (usos.length > 3 ? "…" : "") + ") — troque o cartório delas antes";
+        l.geral.push(motivo);
+        bloqueios.push((l.valores.nome || l.valores.codigo) + " " + motivo);
       });
     }
     if(bloqueios.length){
