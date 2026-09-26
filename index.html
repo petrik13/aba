@@ -1,11 +1,14 @@
-<!doctype html><html><head><meta charset="utf-8"><title>Registro ABA</title>
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Registro ABA</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#f4f6f9; --surface:#ffffff; --surface-2:#edf1f6;
-    --ink:#1e2733; --ink-muted:#5b6577; --ink-faint:#8993a4;
+    --ink:#1e2733; --ink-muted:#5b6577; --ink-faint:#6b7588;
     --border:#dde3ec; --border-soft:#e9edf3;
     --accent:#2f5fd8; --accent-strong:#23439e; --accent-ink:#ffffff;
     --selo:#c0392b; --selo-ink:#fdecea;
@@ -14,39 +17,51 @@
     --info:#2f6fb0; --info-bg:#e7f1fa;
     --neutral:#6b7280; --neutral-bg:#eef0f3;
     --shadow: 0 12px 32px -16px rgba(30,39,51,.18);
+    --scrim: rgba(17,24,33,.4);
+    --font-mono: "IBM Plex Mono", ui-monospace, monospace;
 
     /* Sidebar chrome — always dark, regardless of the app's own light/dark
        theme (a fixed enterprise-app look, distinct from the content area). */
     --sb-bg:#161b22; --sb-surface-2:#1f2733; --sb-border:#262e3a;
-    --sb-ink:#e7ebe3; --sb-ink-muted:#a3ab9f; --sb-ink-faint:#79817a;
-    --sb-accent:#5b8dd9; --sb-accent-ink:#0b1420; --sb-selo:#e2896c;
+    --sb-ink:#e6eaf0; --sb-ink-muted:#a4adbb; --sb-ink-faint:#7b8595;
+    --sb-accent:#5b8dd9; --sb-accent-ink:#0b1420; --sb-selo:#f08a78;
   }
   /* Claro é sempre o padrão — o sistema NÃO segue mais a preferência do SO
      automaticamente; escuro só entra se a pessoa escolher pelo botão
      🌙/☀ na barra lateral (preferência salva em localStorage). */
+  /* v62: escuro na mesma família fria (azul-acinzentada) da barra lateral
+     e do tema claro — antes era um cinza-esverdeado que destoava do resto. */
   :root[data-theme="dark"]{
-    --bg:#12160f; --surface:#191e17; --surface-2:#1f2620;
-    --ink:#e7ebe3; --ink-muted:#a3ab9f; --ink-faint:#79817a;
-    --border:#313a2f; --border-soft:#252d24;
-    --accent:#7fa0c2; --accent-strong:#9db8d6; --accent-ink:#0c1620;
-    --selo:#e2896c; --selo-ink:#2a1712;
-    --ok:#79c491; --ok-bg:#1c2c20;
-    --warn:#dab06a; --warn-bg:#2e2718;
-    --info:#7fb2e6; --info-bg:#182432;
-    --neutral:#9aa197; --neutral-bg:#232a21;
+    --bg:#0e1319; --surface:#151b23; --surface-2:#1c232d;
+    --ink:#e6eaf0; --ink-muted:#a4adbb; --ink-faint:#8691a1;
+    --border:#2c3542; --border-soft:#222a35;
+    --accent:#6f9cf0; --accent-strong:#94b6f6; --accent-ink:#0b1420;
+    --selo:#f08a78; --selo-ink:#3a1c18;
+    --ok:#6fcf97; --ok-bg:#15291e;
+    --warn:#e6b35c; --warn-bg:#2f2614;
+    --info:#7fb2e6; --info-bg:#172433;
+    --neutral:#9aa3b0; --neutral-bg:#222a35;
     --shadow: 0 12px 32px -16px rgba(0,0,0,.6);
+    --scrim: rgba(0,0,0,.55);
+    color-scheme: dark;
   }
 
   *{box-sizing:border-box;}
+  /* hidden sempre esconde, mesmo em elementos com display próprio (ex.: .badge). */
+  [hidden]{display:none !important;}
   body{
     margin:0; background:var(--bg); color:var(--ink);
     font-family:"IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
     font-size:14px; line-height:1.5;
   }
   h1,h2,h3,h4{font-family:"IBM Plex Serif", Georgia, serif; font-weight:600; margin:0; text-wrap:balance;}
-  code, .mono{font-family:"IBM Plex Mono", ui-monospace, monospace;}
+  code, .mono{font-family:var(--font-mono);}
   a{color:var(--accent);}
   button{font-family:inherit; cursor:pointer;}
+  button:disabled{cursor:not-allowed;}
+  /* Foco visível só na navegação por teclado (não aparece no clique). */
+  :focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  .sidebar :focus-visible{outline-color:var(--sb-accent);}
   input,select,textarea{font-family:inherit;}
   /* Placeholder discreto e em itálico — em toda a aplicação, para qualquer
      campo (nativo ou configurado) — o padrão de alguns navegadores é escuro
@@ -162,6 +177,9 @@
   .btn.sm{padding:5px 10px; font-size:12px;}
   .btn.danger{color:var(--selo); border-color:transparent;}
   .btn.danger:hover{background:var(--selo-ink); border-color:var(--selo-ink);}
+  .btn:disabled, .btn:disabled:hover{opacity:.55; border-color:var(--border);}
+  .btn.primary:disabled, .btn.primary:disabled:hover{background:var(--accent); border-color:var(--accent);}
+  .btn.primary.btn-perigo{background:var(--selo); border-color:var(--selo);}
 
   .table-wrap{
     background:var(--surface); border:1px solid var(--border-soft);
@@ -176,7 +194,8 @@
   tbody td{padding:11px 14px; border-bottom:1px solid var(--border-soft); vertical-align:top;}
   tbody tr:last-child td{border-bottom:none;}
   tbody tr{cursor:pointer;}
-  tbody tr:hover td{background:var(--surface-2);}
+  tbody tr:hover td, tbody tr:focus-visible td{background:var(--surface-2);}
+  tbody tr:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
   tbody tr.selected td{background:var(--info-bg);}
   .empty-row td{padding:34px 14px; text-align:center; color:var(--ink-faint);}
 
@@ -272,7 +291,7 @@
   .assoc-result{display:flex; flex-direction:column; align-items:flex-start; gap:2px; text-align:left; background:var(--surface-2); border:1px solid var(--border-soft); border-radius:8px; padding:9px 12px; font-family:inherit; cursor:pointer;}
   .assoc-result:hover{border-color:var(--accent);}
   .assoc-result strong{font-size:13px; color:var(--ink); font-weight:600;}
-  .assoc-result span{font-size:11px; color:var(--ink-faint); font-family:var(--font-mono, monospace);}
+  .assoc-result span{font-size:11px; color:var(--ink-faint); font-family:var(--font-mono);}
   .order-row{display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--border-soft);}
   .order-row:last-child{border-bottom:none;}
   .order-label{flex:1; font-size:13px;}
@@ -297,16 +316,19 @@
   .cartorio-form{
     background:var(--surface); border:1px solid var(--border-soft); border-radius:12px;
     padding:16px 18px; margin-bottom:16px; box-shadow:var(--shadow);
-    display:grid; grid-template-columns:1.4fr 1fr .5fr 1.3fr auto; gap:10px; align-items:end;
+    display:grid; grid-template-columns:1.4fr .6fr 1.1fr 1.2fr auto; gap:10px; align-items:end;
   }
   .cartorio-form label{display:block; font-size:11px; color:var(--ink-muted); margin-bottom:4px;}
   .cartorio-form input{width:100%; padding:7px 10px; border-radius:7px; border:1px solid var(--border); background:var(--surface); color:var(--ink); font-size:13px;}
   .cartorio-form input:focus{outline:2px solid var(--accent); outline-offset:-1px;}
   .form-msg{font-size:12px; margin-top:8px;}
+  .msg-error{color:var(--selo) !important;}
+  .msg-ok{color:var(--ok) !important;}
+  .cartorio-form select{width:100%; padding:7px 10px; border-radius:7px; border:1px solid var(--border); background:var(--surface); color:var(--ink); font-size:13px;}
 
   /* ---------- modal (center) ---------- */
   .modal-overlay{
-    position:fixed; inset:0; background:rgba(15,20,14,.4); z-index:30;
+    position:fixed; inset:0; background:var(--scrim); z-index:30;
     display:none; align-items:flex-start; justify-content:center; padding:5vh 20px; overflow-y:auto;
   }
   .modal-overlay.show{display:flex;}
@@ -831,7 +853,7 @@
   .cfg-props-popup-overlay{
     position:fixed; inset:0; z-index:40;
     display:flex; align-items:center; justify-content:center; padding:4vh 3vw;
-    background:rgba(15,20,14,.4);
+    background:var(--scrim);
   }
   .cfg-props-popup{
     position:relative; background:var(--surface); border:1px solid var(--border-soft); border-radius:12px;
@@ -886,7 +908,7 @@
   table.lote-grade td.lote-ref input.lote-cel{ padding-right:30px; min-width:220px; }
   .lote-ref-btn{ position:absolute; right:3px; top:50%; transform:translateY(-50%); border:none; background:transparent; cursor:pointer; font-size:13px; padding:3px 5px; border-radius:5px; opacity:.55; }
   .lote-ref-btn:hover, td.lote-ref:focus-within .lote-ref-btn{ opacity:1; background:var(--surface-2); }
-  .lote-busca-overlay{ position:fixed; inset:0; background:rgba(15,20,14,.35); z-index:60; display:flex; align-items:flex-start; justify-content:center; padding-top:10vh; }
+  .lote-busca-overlay{ position:fixed; inset:0; background:var(--scrim); z-index:60; display:flex; align-items:flex-start; justify-content:center; padding-top:10vh; }
   .lote-busca{ background:var(--surface); border:1px solid var(--border); border-radius:12px; width:min(720px, 94vw); max-height:75vh; display:flex; flex-direction:column; box-shadow:0 24px 60px -20px rgba(0,0,0,.5); }
   .lote-busca-head{ display:flex; gap:8px; align-items:center; padding:14px 16px 8px; }
   .lote-busca-head .icon-btn{ margin-left:auto; }
@@ -954,8 +976,42 @@
     main{padding:20px;}
     .cartorio-form{grid-template-columns:1fr 1fr;}
   }
+  /* v62 — celular: a barra lateral vira um cabeçalho com as Entidades
+     roláveis na horizontal; tudo em uma coluna, sem rolagem lateral. */
+  @media (max-width:720px){
+    .app{flex-direction:column;}
+    .sidebar{width:auto; flex:0 0 auto; padding:14px 16px; gap:12px; border-right:none; border-bottom:1px solid var(--sb-border); overflow:visible;}
+    .brand p, .sidebar-foot{display:none;}
+    nav.nav-group{flex-direction:row; overflow-x:auto; gap:6px; padding-bottom:4px;}
+    .nav-item{width:auto; flex:0 0 auto;}
+    .nav-item span.label{max-width:160px;}
+    .sidebar-globalbtns{flex-direction:row; flex-wrap:wrap; margin-top:0;}
+    .sidebar-globalbtns .btn{width:auto;}
+    main{padding:16px 16px 40px;}
+    .topbar{flex-direction:column; gap:10px;}
+    .topbar-actions{flex-direction:row; align-items:center; flex-wrap:wrap;}
+    .toolbar{flex-wrap:wrap;}
+    .search-wrap{flex:1 1 100%; max-width:none;}
+    #toolbar-actions{flex-wrap:wrap;}
+    .cartorio-form{grid-template-columns:1fr;}
+    .modal-overlay{padding:12px;}
+    .modal.tall{width:100%; height:auto; max-height:94vh; resize:none;}
+    .modal-head, .modal-body, .modal-foot{padding-left:16px; padding-right:16px;}
+    .modal-tabs{padding:10px 16px 0; overflow-x:auto;}
+    .modal-tab{flex:0 0 auto;}
+    .cfg-builder{flex-direction:column; height:auto;}
+    .cfg-palette{flex:none; padding:0 0 12px; border-right:none; border-bottom:1px solid var(--border-soft);}
+    .cfg-canvas{padding:12px 0;}
+    .papeis-layout{grid-template-columns:1fr;}
+    .field-row{flex-direction:column; gap:2px;}
+    .field-row .v{text-align:left;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .nav-item, .record-tab .rt-bar i{transition:none;}
+  }
 </style>
-
+</head>
+<body>
 <div class="app">
   <aside class="sidebar">
     <div class="brand">
@@ -965,8 +1021,8 @@
     </div>
 
     <div>
-      <div class="nav-section-label">Entidades</div>
-      <nav class="nav-group" id="nav-all"></nav>
+      <div class="nav-section-label" id="nav-label">Entidades</div>
+      <nav class="nav-group" id="nav-all" aria-labelledby="nav-label"></nav>
     </div>
 
     <div class="entrar-como-box">
@@ -975,9 +1031,9 @@
       <div class="entrar-como-info" id="entrar-como-info"></div>
     </div>
     <div class="sidebar-globalbtns">
-      <button class="btn sm" id="btn-theme-toggle">🌙 Modo escuro</button>
-      <button class="btn sm" id="btn-config-geral">⚙ Configuração geral</button>
-      <button class="btn sm" id="btn-help">﹖ Ajuda</button>
+      <button type="button" class="btn sm" id="btn-theme-toggle">🌙 Modo escuro</button>
+      <button type="button" class="btn sm" id="btn-config-geral">⚙ Configuração geral</button>
+      <button type="button" class="btn sm" id="btn-help">? Ajuda</button>
     </div>
 
     <div class="sidebar-foot" id="sidebar-foot">
@@ -986,7 +1042,7 @@
   </aside>
 
   <main>
-    <div id="local-mode-banner" class="local-mode-banner" style="display:none;">
+    <div id="local-mode-banner" class="local-mode-banner" role="note" hidden>
       ⚠ <strong>Modo de demonstração local</strong> — este exemplar não está rodando dentro do claude.ai, então os dados ficam salvos só neste navegador (não são compartilhados nem sincronizados com nenhuma outra instância). Ótimo para testar a navegação e o preenchimento; limpar os dados do site apaga tudo.
     </div>
     <div class="topbar">
@@ -996,7 +1052,7 @@
       </div>
       <div class="topbar-actions">
         <div id="meta-chip"></div>
-        <button class="btn sm" id="btn-config">⚙ Configurar</button>
+        <button type="button" class="btn sm" id="btn-config">⚙ Configurar</button>
       </div>
     </div>
 
@@ -1004,8 +1060,8 @@
 
     <div class="toolbar">
       <div class="search-wrap">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-        <input class="search" id="search" type="text" placeholder="Buscar por nome ou código… (Enter para buscar)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input class="search" id="search" type="search" placeholder="Buscar por nome ou código… (Enter para buscar)" aria-label="Buscar por nome ou código">
       </div>
       <button type="button" class="btn sm" id="search-go">Buscar</button>
       <div id="toolbar-actions"></div>
@@ -1021,12 +1077,29 @@
 </div>
 
 <div class="modal-overlay" id="modal-overlay">
-  <div class="modal" id="modal"></div>
+  <div class="modal" id="modal" role="dialog" aria-modal="true"></div>
 </div>
 
 <script>
 (function(){
   "use strict";
+
+  // Mapa do arquivo (na ordem em que aparece):
+  //   Tema · Configuração estática (Entidades nativas, tipos de campo, UF/IBGE)
+  //   Utilitários (escape, pad2, setMsg, runBusy, normBusca, datas ISO)
+  //   Estado · Regras de desbloqueio de aba · Situações (regras, sobreposição)
+  //   Cálculo/validação · Tipos compostos (Data, Endereço, Lista, Consulta, Código)
+  //   Visualização em abas · Menu lateral · Cartório · Tabela principal
+  //   Associações · Visualização e Edição de registro · Modal genérico · Ajuda
+  //   Configuração geral (Entidades, Usuários, Grupos, Papéis)
+  //   Configuração por Entidade (Ciclo, Abas & Campos, Associações, Situações,
+  //     GIS, Pesquisa e Exportação, Permissões) · Novo registro
+  //   Edição em lote · GIS · Permissões aplicadas ("Entrar como") · Base e boot
+  //
+  // Convenções: todo valor vindo do usuário/base que entra em HTML montado
+  // como texto passa por escapeHtml(); cada modal liga seus ouvintes em
+  // elementos recriados junto com ele (nunca no #modal permanente nem no
+  // document); gravações usam runBusy() e mostram o erro na tela.
 
   // =========================================================================
   // Tema — claro é sempre o padrão; escuro só por escolha explícita (botão),
@@ -1052,16 +1125,16 @@
     { key:"terreno", label:"Terreno", glyph:"Te",
       desc:"A terra nua, independente de benfeitorias — o espaço geográfico como se apresenta na realidade, não integralmente definida pela Titularidade.",
       cols:[{k:"codigo", l:"Código", mono:true},{k:"nome", l:"Nome"},{k:"ciclo_de_vida", l:"Ciclo de vida", badge:true}]},
-    { key:"titularidade", label:"Titularidade", glyph:"Ti",
+    { key:"titularidade", label:"Titularidade", glyph:"Ti", fem:true,
       desc:"O documento (ou a posse) que comprova a quem pertence uma porção de terra — a Entidade estruturalmente mais complexa.",
       cols:[{k:"codigo", l:"Código", mono:true},{k:"nome", l:"Nome"},{k:"tipo_evidencia", l:"Tipo de evidência", badge:"evidencia"},{k:"_cartorio", l:"Cartório"},{k:"_uf", l:"UF"}]},
     { key:"empreendimento", label:"Empreendimento", glyph:"Em",
       desc:"Obra ou ativo em qualquer fase — planejamento, implantação, operação, desativação — podendo se dividir, se fundir ou ser renomeado ao mudar de fase.",
       cols:[{k:"codigo", l:"Código", mono:true},{k:"nome", l:"Nome"},{k:"ciclo_de_vida", l:"Ciclo de vida", badge:true}]},
-    { key:"edificacao", label:"Edificação", glyph:"Ed",
+    { key:"edificacao", label:"Edificação", glyph:"Ed", fem:true,
       desc:"Construção existente sobre o Terreno, tendendo a respeitar seus limites — é Edificação o que é alvo de alvará.",
       cols:[{k:"codigo", l:"Código", mono:true},{k:"nome", l:"Nome"},{k:"ciclo_de_vida", l:"Ciclo de vida", badge:true}]},
-    { key:"pessoa", label:"Pessoa", glyph:"Pe",
+    { key:"pessoa", label:"Pessoa", glyph:"Pe", fem:true,
       desc:"Cadastro de pessoa física ou jurídica.",
       cols:[{k:"codigo", l:"Código", mono:true},{k:"nome", l:"Nome"},{k:"tipo_pessoa", l:"Tipo", badge:"tipo_pessoa"},{k:"ciclo_de_vida", l:"Ciclo de vida", badge:true}]},
     { key:"cartorio", label:"Cartório", glyph:"Ca",
@@ -1070,6 +1143,10 @@
   ];
   var FIXED_BY_KEY = {};
   FIXED_ENTITIES.forEach(function(e){ FIXED_BY_KEY[e.key] = e; });
+  // "Novo Terreno" / "Nova Titularidade" — concordância de gênero (fem:true).
+  // Vale também para o nome dado pelo usuário a uma nativa renomeada, que
+  // herda o gênero da original (ex.: Titularidade → "Posse" continua "Nova").
+  function novoLabel(def){ return (def.fem ? "Nova " : "Novo ") + def.label; }
   // v57: Entidades nativas podem ser renomeadas e excluídas (Configuração
   // geral › Entidades). O modelo delas (definição + config_entidade) fica
   // guardado, então dá para recriar depois. Estado em config_sistema/geral
@@ -1150,6 +1227,54 @@
   function clone(obj){ return JSON.parse(JSON.stringify(obj)); }
   function escapeHtml(s){
     return String(s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; });
+  }
+  function pad2(n){ n = String(n); return n.length < 2 ? "0" + n : n; }
+  // Iniciais (até 2 letras) usadas como "glifo" no menu — Array.from para
+  // não partir ao meio letras fora do BMP (ex.: emoji no início do nome).
+  function initialsOf(nome){
+    return String(nome || "?").split(/\s+/).filter(Boolean).slice(0,2)
+      .map(function(w){ return Array.from(w)[0]; }).join("").toUpperCase() || "?";
+  }
+  // Mensagem de retorno de um formulário (erro/sucesso) — um só lugar para
+  // o estilo, em vez de "msg.style.color = …" repetido em cada tela.
+  function setMsg(el, text, kind){
+    if(!el) return;
+    el.textContent = text || "";
+    el.classList.toggle("msg-error", kind === "error");
+    el.classList.toggle("msg-ok", kind === "ok");
+    if(text) el.style.display = "";
+  }
+  // Protege um botão de envio contra clique duplo: fica desabilitado
+  // enquanto fn() (normalmente uma gravação assíncrona) roda e volta ao
+  // normal ao terminar — se o modal já fechou, o botão nem existe mais.
+  async function runBusy(btn, busyLabel, fn){
+    if(!btn || btn.disabled) return;
+    var original = btn.textContent;
+    btn.disabled = true;
+    if(busyLabel) btn.textContent = busyLabel;
+    try{ return await fn(); }
+    finally{
+      if(document.body.contains(btn)){ btn.disabled = false; btn.textContent = original; }
+    }
+  }
+  function errorText(err){ return (err && (err.code || err.message)) || "erro desconhecido"; }
+  // Texto para busca: minúsculo e sem acentos — "mario" encontra "Mário".
+  function normBusca(v){
+    return String(v == null ? "" : v).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+  }
+  function nomeOuCodigoContem(reg, q){
+    return normBusca(reg.nome).indexOf(q) > -1 || normBusca(reg.codigo).indexOf(q) > -1;
+  }
+  // Rótulos dos atributos nativos mostrados na visualização — com acento
+  // certo, em vez de derivar do nome técnico ("Municipio", "Numero Matricula").
+  var NATIVE_FIELD_LABEL = {
+    codigo:"Código", nome:"Nome", ciclo_de_vida:"Ciclo de vida", situacao:"Situação",
+    tipo_evidencia:"Tipo de evidência", tipo_pessoa:"Tipo de pessoa", cartorio_id:"Cartório",
+    municipio:"Município", uf:"UF", numero_matricula:"Número da matrícula / transcrição",
+    contato:"Contato", fonte_externa:"Fonte externa", categoria_id:"Entidade"
+  };
+  function nativeFieldLabel(k){
+    return NATIVE_FIELD_LABEL[k] || String(k).replace(/_/g, " ").replace(/^./, function(m){ return m.toUpperCase(); });
   }
   function cicloToneByPosition(idx, total){
     if(total <= 1) return "neutral";
@@ -1716,10 +1841,13 @@
       if(v === "" || isNaN(Number(v))) allNumeric = false;
       resolved = resolved.split(token).join(v);
     });
+    // Só avalia como expressão quando, depois de trocar as referências, o
+    // texto contém apenas dígitos, espaços e operadores — nunca código.
     if(allNumeric && /^[\d\s+\-*/().]+$/.test(resolved)){
       try{
         var val = Function('"use strict"; return (' + resolved + ')')();
-        if(typeof val === "number" && isFinite(val)) return String(val);
+        // arredonda ruído de ponto flutuante (0.1 + 0.2 = 0.30000000000000004)
+        if(typeof val === "number" && isFinite(val)) return String(Math.round(val * 1e10) / 1e10);
       }catch(e){}
     }
     return resolved;
@@ -1790,15 +1918,31 @@
   // data fixa (aaaa-mm-dd) normalmente, que passa direto sem alteração.
   function todayISO(){
     var d = new Date();
-    var mm = String(d.getMonth()+1); if(mm.length<2) mm = "0"+mm;
-    var dd = String(d.getDate()); if(dd.length<2) dd = "0"+dd;
-    return d.getFullYear() + "-" + mm + "-" + dd;
+    return d.getFullYear() + "-" + pad2(d.getMonth()+1) + "-" + pad2(d.getDate());
   }
   function nowHHMM(){
     var d = new Date();
-    var hh = String(d.getHours()); if(hh.length<2) hh = "0"+hh;
-    var mm = String(d.getMinutes()); if(mm.length<2) mm = "0"+mm;
-    return hh + ":" + mm;
+    return pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+  }
+  // Data ISO (aaaa-mm-dd, opcionalmente com Thh:mm) que existe de verdade
+  // no calendário — new Date("2026-02-30") não falha, "vira" outro dia.
+  function isValidIsoDate(v){
+    var m = /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?$/.exec(String(v||""));
+    if(!m) return false;
+    var y = +m[1], mo = +m[2], d = +m[3];
+    var dt = new Date(y, mo-1, d);
+    if(dt.getFullYear() !== y || dt.getMonth() !== mo-1 || dt.getDate() !== d) return false;
+    if(m[4] != null && (+m[4] > 23 || +m[5] > 59)) return false;
+    return true;
+  }
+  // Normaliza para comparar como texto (ISO ordena igual ao tempo): em Data
+  // e Hora, uma data sem hora vale 00:00. Comparar texto evita a mistura de
+  // UTC ("aaaa-mm-dd") com hora local ("aaaa-mm-ddThh:mm") do new Date().
+  function isoComparable(v, isDH){
+    if(!v) return "";
+    v = String(v);
+    if(!isDH) return v.slice(0,10);
+    return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v + "T00:00" : v.slice(0,16);
   }
   // isDH (Data e Hora): resolve "hoje"/"today()" para a data E hora atuais —
   // não só o dia, também o momento exato — em vez de sempre 00:00.
@@ -1851,9 +1995,7 @@
     html += '<div class="cal-grid">';
     for(var i=0;i<startWeekday;i++) html += '<span></span>';
     for(var day=1; day<=daysInMonth; day++){
-      var mm = String(viewMonth+1); if(mm.length<2) mm = "0"+mm;
-      var dd = String(day); if(dd.length<2) dd = "0"+dd;
-      var iso = viewYear + "-" + mm + "-" + dd;
+      var iso = viewYear + "-" + pad2(viewMonth+1) + "-" + pad2(day);
       var disabled = (minISO && iso < minISO) || (maxISO && iso > maxISO);
       var cls = "cal-day" + (iso===selectedISO?" cal-selected":"") + (iso===hoje?" cal-today":"") + (disabled?" cal-disabled":"");
       html += '<button type="button" class="'+cls+'" data-cal-pick="'+iso+'"'+(disabled?" disabled":"")+'>'+day+'</button>';
@@ -1864,11 +2006,13 @@
   // Seletor de hora/minuto (Data e Hora) — evita depender do relógio nativo
   // do <input type="time">, pela mesma razão do calendário.
   function timeSelectHtml(h, min){
-    var hh = "", mm = "";
-    for(var i=0;i<24;i++){ var v=String(i); if(v.length<2)v="0"+v; hh += '<option value="'+v+'"'+(v===h?" selected":"")+'>'+v+'</option>'; }
-    for(var j=0;j<60;j++){ var v2=String(j); if(v2.length<2)v2="0"+v2; mm += '<option value="'+v2+'"'+(v2===min?" selected":"")+'>'+v2+'</option>'; }
-    return '<div class="cal-time"><label>Hora</label><select data-cal-hour>'+hh+'</select>' +
-           '<label>Min.</label><select data-cal-minute>'+mm+'</select></div>';
+    function options(total, selected){
+      var out = "";
+      for(var i=0;i<total;i++){ var v = pad2(i); out += '<option value="'+v+'"'+(v===selected?" selected":"")+'>'+v+'</option>'; }
+      return out;
+    }
+    return '<div class="cal-time"><label>Hora</label><select data-cal-hour aria-label="Hora">'+options(24, h)+'</select>' +
+           '<label>Min.</label><select data-cal-minute aria-label="Minutos">'+options(60, min)+'</select></div>';
   }
 
   // Validação de formato — texto com aparência E-mail/Link, número com Valor
@@ -1880,18 +2024,21 @@
       if(c.aparencia === "link" && !/^https?:\/\/\S+$/i.test(val)) return "formato de link inválido (use http:// ou https://)";
     }
     if(c.tipo === "numero"){
-      var n = parseFloat(val);
-      if(isNaN(n)) return "valor numérico inválido";
+      // Number() (e não parseFloat) para recusar "12abc" em vez de ler 12.
+      var n = Number(String(val).trim());
+      if(String(val).trim() === "" || isNaN(n)) return "valor numérico inválido";
       if(c.aparencia === "inteiro" && !Number.isInteger(n)) return "deve ser um número inteiro";
-      if(c.valorMinimo != null && n < c.valorMinimo) return "mínimo " + c.valorMinimo;
-      if(c.valorMaximo != null && n > c.valorMaximo) return "máximo " + c.valorMaximo;
+      if(c.valorMinimo != null && c.valorMinimo !== "" && n < Number(c.valorMinimo)) return "mínimo " + c.valorMinimo;
+      if(c.valorMaximo != null && c.valorMaximo !== "" && n > Number(c.valorMaximo)) return "máximo " + c.valorMaximo;
     }
     if(c.tipo === "data"){
-      var dt = new Date(val);
-      if(isNaN(dt.getTime())) return "data inválida";
-      var minR = resolveDataVar(c.dataMinima, c.aparencia === "data_hora"), maxR = resolveDataVar(c.dataMaxima, c.aparencia === "data_hora");
-      if(minR){ var dmin = new Date(minR); if(!isNaN(dmin.getTime()) && dt < dmin) return "não pode ser antes de " + minR; }
-      if(maxR){ var dmax = new Date(maxR); if(!isNaN(dmax.getTime()) && dt > dmax) return "não pode ser depois de " + maxR; }
+      var isDH = c.aparencia === "data_hora";
+      if(!isValidIsoDate(val)) return "data inválida";
+      var atual = isoComparable(val, isDH);
+      var minR = isoComparable(resolveDataVar(c.dataMinima, isDH), isDH);
+      var maxR = isoComparable(resolveDataVar(c.dataMaxima, isDH), isDH);
+      if(minR && isValidIsoDate(minR) && atual < minR) return "não pode ser antes de " + formatBR(minR, isDH);
+      if(maxR && isValidIsoDate(maxR) && atual > maxR) return "não pode ser depois de " + formatBR(maxR, isDH);
     }
     if(c.tipo === "cpf_cnpj"){
       var clean = cpfCnpjClean(val), cpfModo = c.cpfModo || "ambos";
@@ -1992,6 +2139,31 @@
   function ufSiglaPorNome(nome){
     var found = UF_BRASIL.filter(function(u){ return u.nome.toLowerCase() === String(nome||"").trim().toLowerCase(); })[0];
     return found ? found.sigla : "";
+  }
+  // v62: par UF + Município dos cadastros nativos (Cartório, Titularidade)
+  // — a mesma lista de UFs e a mesma base do IBGE do campo Endereço/
+  // Localidade, em vez de texto livre (antes dava para gravar "Mg" ou
+  // "Belo Horizone"). Valor antigo fora da lista continua aparecendo e
+  // selecionado, para não se perder ao editar um registro existente.
+  function ufSelectHtml(id, selected, comNome){
+    return '<select id="'+id+'"><option value="">'+(comNome ? "Selecione a UF…" : "UF")+'</option>' +
+      UF_BRASIL.map(function(u){
+        return '<option value="'+u.sigla+'"'+(selected===u.sigla?" selected":"")+'>'+(comNome ? u.sigla+" — "+escapeHtml(u.nome) : u.sigla)+'</option>';
+      }).join("") +
+      (selected && !UF_BRASIL.some(function(u){ return u.sigla === selected; }) ? '<option value="'+escapeHtml(selected)+'" selected>'+escapeHtml(selected)+'</option>' : '') +
+      '</select>';
+  }
+  function municipioSelectHtml(id, uf, selected){
+    var opts = municipioOptionsHtml(uf, selected);
+    if(selected && (MUNICIPIOS_POR_UF[uf] || []).indexOf(selected) === -1){
+      opts += '<option value="'+escapeHtml(selected)+'" selected>'+escapeHtml(selected)+'</option>';
+    }
+    return '<select id="'+id+'">'+opts+'</select>';
+  }
+  function wireUfMunicipio(ufId, munId){
+    var ufEl = document.getElementById(ufId), munEl = document.getElementById(munId);
+    if(!ufEl || !munEl) return;
+    ufEl.addEventListener("change", function(){ munEl.innerHTML = municipioOptionsHtml(ufEl.value, ""); });
   }
   function enderecoLocControlHtml(c, attrName, value){
     var loc = c.locCampos || DEFAULT_LOC_CAMPOS;
@@ -2175,24 +2347,21 @@
       var suggestWrap = wrap.querySelector('[data-endloc-suggest="'+campoId+':logradouro"]');
       if(logEl){
         var debounceTimer = null;
+        var buscaSeq = 0; // só a resposta da busca mais recente é aplicada
         logEl.addEventListener("input", function(){
           sync();
           if(!isLocalDb || !suggestWrap) return;
           var q = logEl.value.trim();
           clearTimeout(debounceTimer);
-          if(q.length < 5){ suggestWrap.hidden = true; return; }
-          debounceTimer = setTimeout(function(){ buscarEnderecoLivre(q, suggestWrap, wrap, campoId, sync, logEl); }, 500);
+          if(q.length < 5){ buscaSeq++; suggestWrap.hidden = true; return; }
+          debounceTimer = setTimeout(function(){
+            var mySeq = ++buscaSeq;
+            buscarEnderecoLivre(q, suggestWrap, wrap, campoId, sync, logEl, function(){ return mySeq === buscaSeq; });
+          }, 500);
         });
-        // Fecha a lista ao clicar fora dela (não pelo blur do campo) — um
-        // clique dentro da lista dispara blur antes do click da sugestão em
-        // alguns navegadores, o que fechava a lista antes da escolha valer.
-        if(suggestWrap){
-          document.addEventListener("mousedown", function(e){
-            if(suggestWrap.hidden) return;
-            if(e.target === logEl || suggestWrap.contains(e.target)) return;
-            suggestWrap.hidden = true;
-          });
-        }
+        // Fechar a lista ao clicar fora fica com o ouvinte global único
+        // (closeSuggestionLists) — antes cada campo registrava o seu no
+        // document a cada formulário aberto, e eles nunca saíam.
       }
     });
   }
@@ -2258,10 +2427,13 @@
   // "só fora do claude.ai" acima; se nada for encontrado, a lista de
   // sugestões simplesmente não aparece e o texto digitado continua valendo
   // normalmente (cria com o que foi escrito à mão).
-  function buscarEnderecoLivre(q, suggestWrap, wrap, campoId, sync, logEl){
+  // isCurrent() — falso quando a pessoa já digitou de novo depois desta
+  // busca; evita que uma resposta atrasada sobrescreva sugestões mais novas.
+  function buscarEnderecoLivre(q, suggestWrap, wrap, campoId, sync, logEl, isCurrent){
     fetch("https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&countrycodes=br&limit=6&q=" + encodeURIComponent(q))
       .then(function(r){ return r.ok ? r.json() : []; })
       .then(function(list){
+        if(isCurrent && !isCurrent()) return;
         if(!list || !list.length){ suggestWrap.hidden = true; return; }
         suggestWrap.innerHTML = list.map(function(item, i){
           return '<button type="button" class="geo-suggestion" data-geo-idx="'+i+'">'+escapeHtml(item.display_name)+'</button>';
@@ -2449,7 +2621,7 @@
         // livre (evita salvar uma referência que não bate com o texto exibido).
         if(hidden.value) { hidden.value = ""; hidden.dispatchEvent(new Event("input", {bubbles:true})); }
         if(!suggestWrap) return;
-        var q = buscaEl.value.trim().toLowerCase();
+        var q = normBusca(buscaEl.value);
         if(!q){ suggestWrap.hidden = true; return; }
         var registros = fonteRegistros(fonte).filter(function(r){ return r.busca.indexOf(q) > -1; }).slice(0, 20);
         if(!registros.length){ suggestWrap.hidden = true; return; }
@@ -2459,16 +2631,6 @@
           btn.addEventListener("click", function(){ escolher(registros[i]); buscaEl.focus(); });
         });
       });
-      // Fecha a lista ao clicar fora dela (não pelo blur do campo) — mesmo
-      // ajuste feito no Logradouro do Endereço/Localidade no v24 (um clique
-      // na sugestão dispara blur antes do click valer, em alguns navegadores).
-      if(suggestWrap){
-        document.addEventListener("mousedown", function(e){
-          if(suggestWrap.hidden) return;
-          if(e.target === buscaEl || suggestWrap.contains(e.target)) return;
-          suggestWrap.hidden = true;
-        });
-      }
       if(abrirBuscaBtn){
         abrirBuscaBtn.addEventListener("click", function(){
           abrirConsultaBuscaPopup(fonte, function(reg){ escolher(reg); });
@@ -2495,10 +2657,10 @@
       if(list.length > 50) out += '<p class="empty-note">Mostrando 50 de '+list.length+' resultados — refine a busca.</p>';
       return out;
     }
-    overlay.innerHTML = '<div class="modal" style="max-width:520px;">' +
+    overlay.innerHTML = '<div class="modal" style="max-width:520px;" role="dialog" aria-modal="true" aria-label="Buscar">' +
       '<div class="modal-head"><div><h3>Buscar — '+escapeHtml(fonteLabel(fonte))+'</h3><p>Busca em qualquer campo do registro, não só no Campo exibido.</p></div>' +
-      '<button type="button" class="icon-btn" id="consulta-busca-close">✕</button></div>' +
-      '<div class="modal-body"><div class="field"><input type="text" id="consulta-busca-input" placeholder="Digite para buscar…"></div>' +
+      '<button type="button" class="icon-btn" id="consulta-busca-close" aria-label="Fechar">✕</button></div>' +
+      '<div class="modal-body"><div class="field"><input type="text" id="consulta-busca-input" placeholder="Digite para buscar…" aria-label="Buscar"></div>' +
       '<div id="consulta-busca-results">'+resultsHtml(registros)+'</div></div>' +
     '</div>';
     document.body.appendChild(overlay);
@@ -2517,7 +2679,7 @@
     wirePicks();
     var input = document.getElementById("consulta-busca-input");
     input.addEventListener("input", function(){
-      var q = input.value.trim().toLowerCase();
+      var q = normBusca(input.value);
       var filtered = !q ? registros : registros.filter(function(r){ return r.busca.indexOf(q) > -1; });
       document.getElementById("consulta-busca-results").innerHTML = resultsHtml(filtered);
       wirePicks();
@@ -2588,8 +2750,8 @@
   function gerarSegmentoData(tipo, d){
     d = d || new Date();
     if(tipo === "ano") return String(d.getFullYear());
-    if(tipo === "mes") { var m = String(d.getMonth()+1); return m.length<2 ? "0"+m : m; }
-    if(tipo === "dia") { var dd = String(d.getDate()); return dd.length<2 ? "0"+dd : dd; }
+    if(tipo === "mes") return pad2(d.getMonth()+1);
+    if(tipo === "dia") return pad2(d.getDate());
     return "";
   }
   // Todos os campos configurados no Formulário/Entidade, exceto o próprio
@@ -2641,6 +2803,18 @@
   // nunca trava aba nenhuma); antes, uma aba ainda bloqueada aparecia com
   // um aviso de cadeado em vez do valor — agora mostra o valor salvo nela
   // normalmente, em qualquer aba.
+  // Texto de exibição do valor gravado de um campo configurado — um lugar
+  // só para a tabela, a visualização em abas e "Dados Básicos" (antes o
+  // mesmo bloco de ifs aparecia copiado em três funções).
+  function campoDisplayValue(c, v){
+    if(!v || !c) return v;
+    if(c.tipo === "data") return formatBR(v, c.aparencia === "data_hora");
+    if(c.tipo === "cpf_cnpj") return formatCpfCnpjDisplay(v);
+    if(c.tipo === "endereco_localidade") return enderecoLocDisplay(v);
+    if(c.tipo === "lista" && !c.calculado) return listaDisplay(c, v);
+    if(c.tipo === "consulta") return consultaDisplay(c, v);
+    return v;
+  }
   function abaViewRowsHtml(aba, getVal, getValidado, hideEmptyNote){
     var visibleCampos = (aba.campos||[]).filter(function(c){ return c.visivel !== false; });
     var badge = aba.validavel ? (getValidado && getValidado(aba.id) ? ' <span class="badge ok">✓ Validada</span>' : ' <span class="badge neutral">Não validada</span>') : "";
@@ -2651,12 +2825,7 @@
     // na linha continua como sempre (rótulo à esquerda, valor à direita);
     // campo dividindo a linha empilha rótulo sobre valor.
     function linhaHtml(c, pct, dividida){
-      var v = getVal(c.id);
-      if(v && c.tipo === "data") v = formatBR(v, c.aparencia === "data_hora");
-      if(v && c.tipo === "cpf_cnpj") v = formatCpfCnpjDisplay(v);
-      if(v && c.tipo === "endereco_localidade") v = enderecoLocDisplay(v);
-      if(v && c.tipo === "lista" && !c.calculado) v = listaDisplay(c, v);
-      if(v && c.tipo === "consulta") v = consultaDisplay(c, v);
+      var v = campoDisplayValue(c, getVal(c.id));
       return '<div class="field-row'+(dividida?' empilhado':'')+'"'+(dividida?' style="flex:'+pct.toFixed(3)+' 1 0%"':'')+'><span class="k">'+escapeHtml(c.label)+'</span><span class="v">'+(v?escapeHtml(v):'<span class="empty-note">—</span>')+'</span></div>';
     }
     var rows = linhasDeCampos(aba.campos || []).map(function(l){
@@ -2722,7 +2891,7 @@
     cache.categoria.forEach(function(cat){
       var key = "form:" + cat.id;
       var count = cache.formulario_personalizado.filter(function(r){ return r.categoria_id === cat.id; }).length;
-      var glyph = (cat.nome || "?").split(" ").filter(Boolean).slice(0,2).map(function(w){return w[0];}).join("").toUpperCase();
+      var glyph = initialsOf(cat.nome);
       entries.push({ key:key, glyph:glyph, label:cat.nome||cat.codigo, count:count });
     });
     var cfg = byId(cache.config_sistema, "geral");
@@ -2747,8 +2916,11 @@
   }
   function navButton(glyph, label, count, key, active){
     var btn = document.createElement("button");
+    btn.type = "button";
     btn.className = "nav-item" + (active ? " active" : "");
-    btn.innerHTML = '<span class="nav-glyph">'+glyph+'</span><span class="label">'+escapeHtml(label)+'</span><span class="nav-count">'+count+'</span>';
+    if(active) btn.setAttribute("aria-current", "page");
+    btn.title = label;
+    btn.innerHTML = '<span class="nav-glyph" aria-hidden="true">'+escapeHtml(glyph)+'</span><span class="label">'+escapeHtml(label)+'</span><span class="nav-count" aria-label="'+count+' registros">'+count+'</span>';
     btn.addEventListener("click", function(){ selectKey(key); });
     return btn;
   }
@@ -2766,39 +2938,41 @@
   function renderCartorioForm(){
     var slot = document.getElementById("cartorio-form-slot");
     if(currentKey !== "cartorio"){ slot.innerHTML = ""; return; }
+    // v62: já montado, não recria — render() roda a cada atualização da
+    // base e apagava o que a pessoa estava digitando.
+    if(slot.querySelector(".cartorio-form")) return;
     slot.innerHTML =
       '<div class="cartorio-form">'+
         '<div><label for="cf-nome">Nome do cartório</label><input id="cf-nome" placeholder="Ex.: 2º Ofício de Registro de Imóveis"></div>'+
-        '<div><label for="cf-municipio">Município</label><input id="cf-municipio" placeholder="Ex.: Belo Horizonte"></div>'+
-        '<div><label for="cf-uf">UF</label><input id="cf-uf" maxlength="2" placeholder="MG"></div>'+
-        '<div><label for="cf-contato">Contato (opcional)</label><input id="cf-contato" placeholder="Telefone, email…"></div>'+
-        '<button class="btn primary" id="cf-submit">+ Adicionar</button>'+
-      '</div><div class="form-msg" id="cf-msg" style="display:none;"></div>';
+        '<div><label for="cf-uf">UF</label>'+ufSelectHtml("cf-uf", "", false)+'</div>'+
+        '<div><label for="cf-municipio">Município</label>'+municipioSelectHtml("cf-municipio", "", "")+'</div>'+
+        '<div><label for="cf-contato">Contato (opcional)</label><input id="cf-contato" placeholder="Telefone, e-mail…"></div>'+
+        '<button type="button" class="btn primary" id="cf-submit">+ Adicionar</button>'+
+      '</div><div class="form-msg" id="cf-msg" role="status"></div>';
+    wireUfMunicipio("cf-uf", "cf-municipio");
 
-    document.getElementById("cf-submit").addEventListener("click", async function(){
+    var submitBtn = document.getElementById("cf-submit");
+    submitBtn.addEventListener("click", function(){ runBusy(submitBtn, "Salvando…", async function(){
       var nome = document.getElementById("cf-nome").value.trim();
+      var uf = document.getElementById("cf-uf").value;
       var municipio = document.getElementById("cf-municipio").value.trim();
-      var uf = document.getElementById("cf-uf").value.trim().toUpperCase();
       var contato = document.getElementById("cf-contato").value.trim();
       var msg = document.getElementById("cf-msg");
-      if(!nome || !municipio || uf.length !== 2){
-        msg.style.display = "block"; msg.style.color = "var(--selo)";
-        msg.textContent = "Preencha nome, município e UF (2 letras) antes de adicionar."; return;
-      }
-      if(!db){ msg.style.display = "block"; msg.style.color = "var(--selo)"; msg.textContent = "Sem conexão com a base neste momento."; return; }
+      if(!nome || !uf || !municipio){ setMsg(msg, "Preencha nome, UF e município antes de adicionar.", "error"); return; }
+      if(!db){ setMsg(msg, "Sem conexão com a base neste momento.", "error"); return; }
       try{
         await db.collection("cartorio").add({
           codigo: "CART-" + Date.now().toString(36).toUpperCase(),
-          nome: nome, municipio: municipio, uf: uf, fonte_externa: null, campos:{}, ciclo_de_vida: null
+          nome: nome, municipio: municipio, uf: uf, contato: contato || null,
+          fonte_externa: null, campos:{}, ciclo_de_vida: null
         });
-        document.getElementById("cf-nome").value = ""; document.getElementById("cf-municipio").value = "";
-        document.getElementById("cf-uf").value = ""; document.getElementById("cf-contato").value = "";
-        msg.style.display = "block"; msg.style.color = "var(--ok)"; msg.textContent = "Cartório adicionado.";
+        document.getElementById("cf-nome").value = "";
+        document.getElementById("cf-contato").value = "";
+        setMsg(msg, "Cartório adicionado.", "ok");
       }catch(err){
-        msg.style.display = "block"; msg.style.color = "var(--selo)";
-        msg.textContent = "Não foi possível salvar (" + (err && err.code || "erro") + ").";
+        setMsg(msg, "Não foi possível salvar (" + errorText(err) + ").", "error");
       }
-    });
+    }); });
   }
 
   // =========================================================================
@@ -2806,11 +2980,9 @@
   // =========================================================================
   function filteredRows(){
     var rows = recordsFor(currentKey);
-    if(!searchText) return rows;
-    var q = searchText.toLowerCase();
-    return rows.filter(function(r){
-      return (r.nome||"").toLowerCase().indexOf(q) > -1 || (r.codigo||"").toLowerCase().indexOf(q) > -1;
-    });
+    var q = normBusca(searchText);
+    if(!q) return rows;
+    return rows.filter(function(r){ return nomeOuCodigoContem(r, q); });
   }
 
   function fixedCellValue(row, col){
@@ -2833,7 +3005,7 @@
     var out = [];
     ids.forEach(function(id){
       var c = camposPorId[id];
-      if(c) out.push({k:"_campo:"+c.id, l:c.label, campoId:c.id, campoTipo:c.tipo, campoAparencia:c.aparencia, campo:c});
+      if(c) out.push({k:"_campo:"+c.id, l:c.label, campo:c});
     });
     return out;
   }
@@ -2895,7 +3067,7 @@
     renderToolbarActions(ctx);
 
     var thead = document.getElementById("thead");
-    thead.innerHTML = "<tr>" + cols.map(function(c){ return "<th>"+c.l+"</th>"; }).join("") + "</tr>";
+    thead.innerHTML = "<tr>" + cols.map(function(c){ return '<th scope="col">'+escapeHtml(c.l)+"</th>"; }).join("") + "</tr>";
 
     var tbody = document.getElementById("tbody");
     var rowsF = filteredRows();
@@ -2916,36 +3088,35 @@
     rowsF.forEach(function(row){
       var tr = document.createElement("tr");
       if(row.id === selectedId) tr.className = "selected";
+      tr.tabIndex = 0; // a linha abre também pelo teclado (Enter/Espaço)
       tr.innerHTML = cols.map(function(col){
         var val;
-        if(col.campoId){
-          val = row.campos ? row.campos[col.campoId] : undefined;
-          if(val && col.campoTipo === "data") val = formatBR(val, col.campoAparencia === "data_hora");
-          if(val && col.campoTipo === "cpf_cnpj") val = formatCpfCnpjDisplay(val);
-          if(val && col.campoTipo === "endereco_localidade") val = enderecoLocDisplay(val);
-          if(val && col.campoTipo === "lista" && !(col.campo && col.campo.calculado)) val = listaDisplay(col.campo, val);
-          if(val && col.campoTipo === "consulta") val = consultaDisplay(col.campo, val);
+        if(col.campo){
+          val = campoDisplayValue(col.campo, row.campos ? row.campos[col.campo.id] : undefined);
         }
         else if(ctx.type === "fixed"){ val = fixedCellValue(row, col); }
         else { val = row[col.k]; }
 
         if(col.badge){
-          if(col.k === "tipo_evidencia") return '<td><span class="badge '+evidenciaTone(val)+'">'+(EVIDENCIA_LABEL[val]||val||"—")+'</span></td>';
-          if(col.k === "tipo_pessoa") return '<td><span class="badge '+(val==="fisica"?"info":"ok")+'">'+(TIPO_PESSOA_LABEL[val]||val||"—")+'</span></td>';
+          if(col.k === "tipo_evidencia") return '<td><span class="badge '+evidenciaTone(val)+'">'+escapeHtml(EVIDENCIA_LABEL[val]||val||"—")+'</span></td>';
+          if(col.k === "tipo_pessoa") return '<td><span class="badge '+(val==="fisica"?"info":"ok")+'">'+escapeHtml(TIPO_PESSOA_LABEL[val]||val||"—")+'</span></td>';
           // Situação gravada no registro (não recalculada aqui — é o valor
           // de quando o registro foi salvo pela última vez); sem tom por
           // posição (não é uma progressão linear como ciclo de vida), só
           // "info" quando tem valor e "neutral" (—) quando não tem ainda.
           if(col.k === "situacao") return '<td><span class="badge '+(val?"info":"neutral")+'">'+escapeHtml(val||"—")+'</span></td>';
-          var valores = cicloValoresFor(currentKey==="pessoa"?"pessoa":currentKey, row);
+          var valores = cicloValoresFor(currentKey, row);
           var idx = valores.indexOf(val);
           var tone = val ? cicloToneByPosition(idx<0?0:idx, valores.length||1) : "neutral";
-          return '<td><span class="badge '+tone+'">'+(val||"—")+'</span></td>';
+          return '<td><span class="badge '+tone+'">'+escapeHtml(val||"—")+'</span></td>';
         }
         var cls = col.mono ? ' class="mono"' : "";
         return "<td"+cls+">"+ (val || val === 0 ? escapeHtml(String(val)) : '<span class="empty-note">—</span>') +"</td>";
       }).join("");
       tr.addEventListener("click", function(){ openDrawer(currentKey, row.id); });
+      tr.addEventListener("keydown", function(e){
+        if(e.key === "Enter" || e.key === " "){ e.preventDefault(); openDrawer(currentKey, row.id); }
+      });
       tbody.appendChild(tr);
     });
   }
@@ -2964,7 +3135,7 @@
     if(ctx.type === "fixed" && ctx.def.key !== "cartorio" && podeCriar){
       var btnF = document.createElement("button");
       btnF.className = "btn primary";
-      btnF.textContent = "+ Novo " + ctx.def.label;
+      btnF.textContent = "+ " + novoLabel(ctx.def);
       btnF.addEventListener("click", function(){ openNewFixedModal(ctx.def); });
       slot.appendChild(btnF);
     }
@@ -2990,13 +3161,12 @@
     Object.keys(row).forEach(function(k){
       if(skip[k]) return;
       if(row[k] === null || row[k] === undefined || row[k] === "") return;
-      var label = k.replace(/_/g,' ').replace(/\b\w/g, function(m){return m.toUpperCase();});
+      if(typeof row[k] === "object") return; // estruturas internas (listas, mapas) não são "um valor"
       var val = row[k];
-      if(k === "cartorio_id"){ var c = byId(cache.cartorio, val); val = c ? c.nome : val; label = "Cartório"; }
+      if(k === "cartorio_id"){ var c = byId(cache.cartorio, val); val = c ? c.nome : val; }
       if(k === "tipo_evidencia"){ val = EVIDENCIA_LABEL[val] || val; }
       if(k === "tipo_pessoa"){ val = TIPO_PESSOA_LABEL[val] || val; }
-      if(k === "situacao"){ label = "Situação"; }
-      out.push({k:label, v:val, key:k});
+      out.push({k:nativeFieldLabel(k), v:val, key:k});
     });
     return out;
   }
@@ -3004,12 +3174,7 @@
   // com os nativos posicionados pelo layout; o que não é nativo configurável
   // (ex.: Situação) vem depois, uma linha cada.
   function campoViewRowHtml(c, getVal){
-    var v = getVal(c.id);
-    if(v && c.tipo === "data") v = formatBR(v, c.aparencia === "data_hora");
-    if(v && c.tipo === "cpf_cnpj") v = formatCpfCnpjDisplay(v);
-    if(v && c.tipo === "endereco_localidade") v = enderecoLocDisplay(v);
-    if(v && c.tipo === "lista" && !c.calculado) v = listaDisplay(c, v);
-    if(v && c.tipo === "consulta") v = consultaDisplay(c, v);
+    var v = campoDisplayValue(c, getVal(c.id));
     return '<div class="field-row"><span class="k">'+escapeHtml(c.label)+'</span><span class="v">'+(v?escapeHtml(v):'<span class="empty-note">—</span>')+'</span></div>';
   }
   // v56: a visualização mostra os mesmos itens da edição, nos mesmos
@@ -3214,8 +3379,8 @@
     function chips(list){
       if(list.length === 0) return '<p class="empty-note">Nenhum vínculo registrado.</p>';
       return '<div class="chip-list">' + list.map(function(item){
-        return '<button class="chip" data-nav-key="'+item.key+'" data-nav-id="'+item.id+'">'+
-          (item.tag ? '<span class="tag">'+item.tag+'</span>' : '') + escapeHtml(item.label) + '</button>';
+        return '<button type="button" class="chip" data-nav-key="'+escapeHtml(item.key)+'" data-nav-id="'+escapeHtml(item.id)+'">'+
+          (item.tag ? '<span class="tag">'+escapeHtml(item.tag)+'</span>' : '') + escapeHtml(item.label) + '</button>';
       }).join("") + '</div>';
     }
     // Chips com botão de desassociar — usados nas relações editáveis
@@ -3360,12 +3525,15 @@
       });
     });
     Array.prototype.forEach.call(container.querySelectorAll("[data-unlink-collection]"), function(btn){
-      btn.addEventListener("click", async function(e){
+      btn.addEventListener("click", function(e){
         e.stopPropagation();
-        if(!db) return;
-        var col = btn.getAttribute("data-unlink-collection"), joinId = btn.getAttribute("data-unlink-id");
-        await db.doc(col + "/" + joinId).delete();
-        onDone();
+        runBusy(btn, null, async function(){
+          if(!db) return;
+          var col = btn.getAttribute("data-unlink-collection"), joinId = btn.getAttribute("data-unlink-id");
+          try{ await db.doc(col + "/" + joinId).delete(); }
+          catch(err){ btn.title = "Não foi possível desassociar (" + errorText(err) + ")"; return; }
+          onDone();
+        });
       });
     });
     // v50 (item 3): associação genérica — sem tabela de ligação dedicada, o
@@ -3406,7 +3574,7 @@
       if(list.length === 0) return '<p class="empty-note">Nenhum resultado.</p>';
       var shown = list.slice(0, 50);
       var out = '<div class="assoc-results">' + shown.map(function(o){
-        return '<button type="button" class="assoc-result" data-assoc-pick="'+o.id+'"><strong>'+escapeHtml(o.nome||"(sem nome)")+'</strong><span>'+escapeHtml(o.codigo||"")+'</span></button>';
+        return '<button type="button" class="assoc-result" data-assoc-pick="'+escapeHtml(o.id)+'"><strong>'+escapeHtml(o.nome||"(sem nome)")+'</strong><span>'+escapeHtml(o.codigo||"")+'</span></button>';
       }).join("") + '</div>';
       if(list.length > 50) out += '<p class="empty-note">Mostrando 50 de '+list.length+' resultados — refine a busca.</p>';
       return out;
@@ -3414,27 +3582,33 @@
 
     m.innerHTML =
       '<div class="modal-head"><div><h3>Associar '+escapeHtml(label)+'</h3><p>Busque pelo nome ou código do registro.</p></div>'+
-      '<button class="icon-btn" id="modal-close">✕</button></div>'+
+      '<button type="button" class="icon-btn" id="modal-close" aria-label="Fechar">✕</button></div>'+
       '<div class="modal-body"><div class="field"><label>Buscar</label>'+
         '<div class="search-row"><input type="text" id="assoc-search" placeholder="Nome ou código de '+escapeHtml(label)+'… (Enter para buscar)">'+
         '<button type="button" class="btn sm" id="assoc-search-go">Buscar</button></div></div>'+
-      '<div id="assoc-results">' + resultsHtml(allItems) + '</div></div>';
+      '<div id="assoc-results">' + resultsHtml(allItems) + '</div>' +
+      '<p class="form-msg" id="assoc-msg" role="status"></p></div>';
     document.getElementById("modal-close").addEventListener("click", closeModal);
 
     function wireResults(){
       Array.prototype.forEach.call(m.querySelectorAll("[data-assoc-pick]"), function(btn){
-        btn.addEventListener("click", async function(){
+        btn.addEventListener("click", function(){ runBusy(btn, null, async function(){
           if(!db) return;
           var otherId = btn.getAttribute("data-assoc-pick");
-          if(cfg.generica){
-            await db.collection("relacionamento").add({
-              origem_tipo: cfg.origemTipo, origem_id: cfg.origemId,
-              destino_tipo: cfg.otherKey, destino_id: otherId,
-              tipo_relacao: ASSOC_GENERICA_TIPO
-            });
-          } else {
-            var data = {}; data[cfg.thisField] = cfg.thisId; data[cfg.otherField] = otherId;
-            await db.collection(cfg.joinCollection).add(data);
+          try{
+            if(cfg.generica){
+              await db.collection("relacionamento").add({
+                origem_tipo: cfg.origemTipo, origem_id: cfg.origemId,
+                destino_tipo: cfg.otherKey, destino_id: otherId,
+                tipo_relacao: ASSOC_GENERICA_TIPO
+              });
+            } else {
+              var data = {}; data[cfg.thisField] = cfg.thisId; data[cfg.otherField] = otherId;
+              await db.collection(cfg.joinCollection).add(data);
+            }
+          }catch(err){
+            setMsg(document.getElementById("assoc-msg"), "Não foi possível associar (" + errorText(err) + ").", "error");
+            return;
           }
           closeModal();
           // v40 (item 4): "+ Associar" agora também aparece na edição, não
@@ -3442,16 +3616,14 @@
           // aberta (openDrawer na visualização, openEditModal na edição),
           // em vez de sempre cair na visualização mesmo vindo da edição.
           (cfg.onDone || function(){ openDrawer(cfg.entityKey, cfg.rowId); })();
-        });
+        }); });
       });
     }
     wireResults();
     var searchInput = document.getElementById("assoc-search");
     function runAssocSearch(){
-      var q = searchInput.value.trim().toLowerCase();
-      var filtered = !q ? allItems : allItems.filter(function(o){
-        return (o.nome||"").toLowerCase().indexOf(q) > -1 || (o.codigo||"").toLowerCase().indexOf(q) > -1;
-      });
+      var q = normBusca(searchInput.value);
+      var filtered = !q ? allItems : allItems.filter(function(o){ return nomeOuCodigoContem(o, q); });
       document.getElementById("assoc-results").innerHTML = resultsHtml(filtered);
       wireResults();
     }
@@ -3472,11 +3644,11 @@
     var row = byId(recordsFor(entityKey), id);
     if(!row) return;
     selectedId = id;
-    modal = {type:"view-record", entityKey:entityKey, rowId:id};
+    modal = {type:"view-record", entityKey:entityKey, rowId:id, assinatura: JSON.stringify(row)};
     var m = document.getElementById("modal");
 
     var titulo = row.nome || row.codigo || "(sem nome)";
-    var subtitulo = (ctx.type==="fixed"?ctx.def.label:(ctx.categoria&&ctx.categoria.nome)) + " · " + row.codigo;
+    var subtitulo = [ctx.type==="fixed" ? ctx.def.label : (ctx.categoria && ctx.categoria.nome), row.codigo].filter(Boolean).join(" · ");
 
     // v59: Editar só para quem edita alguma aba; Excluir só para quem o
     // Grupo Responsável de "Dados Básicos" (ou o Papel) permite
@@ -3525,8 +3697,8 @@
     gisEdicao = null;
 
     m.innerHTML =
-      '<div class="modal-head"><div><h3>'+escapeHtml(titulo)+'</h3><p class="mono" style="margin:5px 0 0; color:var(--ink-faint); font-size:12px;">'+escapeHtml(subtitulo)+'</p></div>'+
-      '<button class="icon-btn" id="drawer-close">✕</button></div>'+
+      '<div class="modal-head"><div><h3 id="modal-title">'+escapeHtml(titulo)+'</h3><p class="mono" style="margin:5px 0 0; color:var(--ink-faint); font-size:12px;">'+escapeHtml(subtitulo)+'</p></div>'+
+      '<button type="button" class="icon-btn" id="drawer-close" aria-label="Fechar">✕</button></div>'+
       '<div class="modal-body" id="drawer-body"><div class="situacao-sequencia" id="view-situacao-seq" style="display:none;"></div>'+html+'</div>';
     var body = document.getElementById("drawer-body");
     wireViewTabs(body);
@@ -3543,9 +3715,15 @@
     var exb = document.getElementById("drawer-excluir-btn");
     if(exb) exb.addEventListener("click", function(){
       var conf = document.getElementById("drawer-excluir-conf");
-      conf.innerHTML = '<span class="lote-st-erro" style="font-size:12px;">Excluir definitivamente, com os vínculos?</span> <button type="button" class="btn sm" id="drawer-excluir-nao">Cancelar</button> <button type="button" class="btn sm primary" id="drawer-excluir-sim" style="background:var(--selo); border-color:var(--selo);">Excluir</button>';
+      conf.innerHTML = '<span class="lote-st-erro" style="font-size:12px;">Excluir definitivamente, com os vínculos?</span> <button type="button" class="btn sm" id="drawer-excluir-nao">Cancelar</button> <button type="button" class="btn sm primary btn-perigo" id="drawer-excluir-sim">Excluir</button>';
       document.getElementById("drawer-excluir-nao").addEventListener("click", function(){ conf.innerHTML = ""; });
-      document.getElementById("drawer-excluir-sim").addEventListener("click", async function(){ if(!db) return; await excluirRegistro(entityKey, id); closeDrawer(); render(); });
+      var simBtn = document.getElementById("drawer-excluir-sim");
+      simBtn.addEventListener("click", function(){ runBusy(simBtn, "Excluindo…", async function(){
+        if(!db) return;
+        try{ await excluirRegistro(entityKey, id); }
+        catch(err){ conf.innerHTML = '<span class="lote-st-erro" style="font-size:12px;">Não foi possível excluir (' + escapeHtml(errorText(err)) + ').</span>'; return; }
+        closeDrawer(); render();
+      }); });
     });
     document.getElementById("drawer-close").addEventListener("click", closeDrawer);
 
@@ -3590,7 +3768,7 @@
     var nativoOc = nativoOcultoDe(splitAbas.basico);
     // v55: cada nativo é um item à parte, posicionado pelo layout de "Dados Básicos"
     var nat = {};
-    nat.nome = '<div class="field"><label>Nome</label><input type="text" id="ed-nome" value="'+escapeHtml(row.nome||"")+'"></div>';
+    nat.nome = '<div class="field"><label for="ed-nome">Nome *</label><input type="text" id="ed-nome" value="'+escapeHtml(row.nome||"")+'"></div>';
     // v56: Código aparece na edição como na visualização (sempre somente leitura)
     if(!nativoOc.codigo) nat.codigo = '<div class="field"><label>Código</label><input type="text" value="'+escapeHtml(row.codigo||"")+'" disabled></div>';
     if(entityKey === "pessoa"){
@@ -3604,8 +3782,8 @@
           Object.keys(EVIDENCIA_LABEL).map(function(v){ return '<option value="'+v+'"'+(v===row.tipo_evidencia?" selected":"")+'>'+EVIDENCIA_LABEL[v]+'</option>'; }).join("") +
         '</select></div>';
       nat.cartorio_id = '<div class="field" data-tit-extra><label>Cartório</label><select id="ed-cartorio"><option value="">—</option>'+cartOpts+'</select></div>';
-      nat.municipio = '<div class="field" data-tit-extra><label>Município</label><input type="text" id="ed-municipio" value="'+escapeHtml(row.municipio||"")+'"></div>';
-      nat.uf = '<div class="field" data-tit-extra><label>UF</label><input type="text" id="ed-uf" maxlength="2" value="'+escapeHtml(row.uf||"")+'"></div>';
+      nat.municipio = '<div class="field" data-tit-extra><label for="ed-municipio">Município</label>'+municipioSelectHtml("ed-municipio", row.uf || "", row.municipio || "")+'</div>';
+      nat.uf = '<div class="field" data-tit-extra><label for="ed-uf">UF</label>'+ufSelectHtml("ed-uf", row.uf || "", true)+'</div>';
       nat.numero_matricula = '<div class="field" data-tit-numero id="ed-numero-wrap"><label id="ed-numero-label">Número da matrícula</label><input type="text" id="ed-numero" value="'+escapeHtml(row.numero_matricula||"")+'"></div>';
     }
     nat.ciclo_de_vida = '<div class="field" id="ed-ciclo-wrap"></div>';
@@ -3627,8 +3805,8 @@
     if(!gisEdicao || gisEdicao.rowId !== id) gisEdicao = {rowId:id, alterado:false, geo: row.geo || null};
 
     m.innerHTML =
-      '<div class="modal-head"><div><h3>Editar — '+escapeHtml(row.nome||row.codigo||"registro")+'</h3><p>Mostra todos os campos de uma vez, sem bloqueio por aba — é o fluxo de corrigir o que já existe.</p></div>'+
-      '<button class="icon-btn" id="modal-close">✕</button></div>'+
+      '<div class="modal-head"><div><h3 id="modal-title">Editar — '+escapeHtml(row.nome||row.codigo||"registro")+'</h3><p>Todos os campos ficam à vista; o que ainda não pode ser preenchido (aba bloqueada, campo requisito, aba validada) aparece esmaecido, com o motivo ao passar o mouse.</p></div>'+
+      '<button type="button" class="icon-btn" id="modal-close" aria-label="Fechar">✕</button></div>'+
       '<div class="modal-body" id="ed-body"><div class="situacao-sequencia" id="ed-situacao-seq" style="display:none;"></div>'+bodyHtml+'</div>'+
       '<div class="modal-foot"><span id="ed-msg" class="empty-note"></span>'+
       '<span style="display:flex; gap:8px;"><button type="button" class="btn sm" id="ed-cancel">Cancelar</button>'+
@@ -3690,18 +3868,24 @@
     document.getElementById("modal-close").addEventListener("click", backToView);
     document.getElementById("ed-cancel").addEventListener("click", backToView);
 
-    function renderCicloOptions(){
+    // Na abertura mostra o valor gravado; ao trocar o Tipo de pessoa o
+    // vocabulário muda e o valor só continua se existir na nova lista.
+    function renderCicloOptions(atual){
       var probe = entityKey === "pessoa" ? {tipo_pessoa: document.getElementById("ed-tipo-pessoa").value} : row;
       var valores = cicloValoresFor(entityKey, probe);
       var wrap = document.getElementById("ed-ciclo-wrap");
-      if(!valores.length){ wrap.innerHTML = ""; wrap.style.display = "none"; return; }
+      if(!valores.length && !atual){ wrap.innerHTML = ""; wrap.style.display = "none"; return; }
       wrap.style.display = "";
-      wrap.innerHTML = cicloCampoHtml(entityKey, "ed-ciclo", valores, row.ciclo_de_vida, false);
+      wrap.innerHTML = cicloCampoHtml(entityKey, "ed-ciclo", valores, atual, false);
       if(!cicloVisivel(entityKey)) wrap.style.display = "none";
     }
-    renderCicloOptions();
+    renderCicloOptions(row.ciclo_de_vida || "");
     if(entityKey === "pessoa"){
-      document.getElementById("ed-tipo-pessoa").addEventListener("change", renderCicloOptions);
+      document.getElementById("ed-tipo-pessoa").addEventListener("change", function(){
+        var sel = document.getElementById("ed-ciclo"), atual = sel ? sel.value : "";
+        var novos = cicloValoresFor("pessoa", {tipo_pessoa: this.value});
+        renderCicloOptions(novos.indexOf(atual) > -1 ? atual : "");
+      });
     }
 
     if(entityKey === "titularidade"){
@@ -3717,6 +3901,7 @@
       };
       document.getElementById("ed-tipo-evidencia").addEventListener("change", syncEd);
       syncEd();
+      wireUfMunicipio("ed-uf", "ed-municipio");
     }
 
     function getValEdit(campoId){
@@ -3755,7 +3940,8 @@
     bodyEl.addEventListener("change", function(){ updateCalculados(); updateCampoVisibility(); updateSituacao(); });
     updateCalculados(); updateCampoVisibility(); updateSituacao();
 
-    document.getElementById("ed-save").addEventListener("click", async function(){
+    var edSaveBtn = document.getElementById("ed-save");
+    edSaveBtn.addEventListener("click", function(){ runBusy(edSaveBtn, "Salvando…", async function(){
       var msg = document.getElementById("ed-msg");
       var nome = document.getElementById("ed-nome").value.trim();
       if(!nome){ msg.style.color = "var(--selo)"; msg.textContent = "Informe um nome."; return; }
@@ -3778,8 +3964,8 @@
         var uf = document.getElementById("ed-uf").value.trim().toUpperCase();
         var numero = document.getElementById("ed-numero").value.trim();
         if(tipo !== "posse_sem_justo_titulo"){
-          if(!cartorioId || !municipio || uf.length !== 2){
-            msg.style.color = "var(--selo)"; msg.textContent = "Informe cartório, município e UF (2 letras) — obrigatórios para esse tipo de evidência."; return;
+          if(!cartorioId || !municipio || !uf){
+            msg.style.color = "var(--selo)"; msg.textContent = "Informe cartório, UF e município — obrigatórios para esse tipo de evidência."; return;
           }
           if((tipo === "matricula" || tipo === "transcricao") && !numero){
             msg.style.color = "var(--selo)"; msg.textContent = "Informe o número da " + (tipo === "transcricao" ? "transcrição" : "matrícula") + "."; return;
@@ -3821,8 +4007,9 @@
       patch.situacao = sit ? sit.nome : null;
       if(gisEdicao && gisEdicao.rowId === row.id && gisEdicao.alterado) patch.geo = gisEdicao.geo;
 
-      if(!db) return;
-      await db.doc(col + "/" + row.id).update(patch);
+      if(!db){ setMsg(msg, "Sem conexão com a base neste momento.", "error"); return; }
+      try{ await db.doc(col + "/" + row.id).update(patch); }
+      catch(errSave){ setMsg(msg, "Não foi possível salvar (" + errorText(errSave) + ").", "error"); return; }
       gisEdicao = null;
       // v60: ABA -> ArcGIS ao salvar
       try{
@@ -3832,7 +4019,7 @@
       var idxAba = abaAtivaEdicao();
       closeModal();
       abrirVisualizacaoNaAba(idxAba);
-    });
+    }); });
     openModalShell();
   }
 
@@ -3844,6 +4031,47 @@
     selectedId = null;
     closeModal();
   }
+  // v62: a visualização aberta acompanha a base — se o registro mudou
+  // depois de desenhado (edição salva antes de o snapshot chegar, ArcGIS →
+  // ABA, outra pessoa editando), redesenha na mesma aba; se sumiu, fecha.
+  function atualizarVisualizacaoAberta(){
+    if(modal.type !== "view-record") return;
+    var row = byId(recordsFor(modal.entityKey), modal.rowId);
+    if(!row){ closeDrawer(); return; }
+    if(JSON.stringify(row) === modal.assinatura) return;
+    var atv = document.querySelector("#modal [data-view-tab].active"), ia = atv ? atv.getAttribute("data-view-tab") : "0";
+    openDrawer(modal.entityKey, modal.rowId);
+    if(ia !== "0"){ var vb = document.querySelector('#modal [data-view-tab="'+ia+'"]'); if(vb) vb.click(); }
+  }
+
+  // Listas de sugestões (Logradouro, Consulta): um único ouvinte global
+  // fecha qualquer lista aberta quando o clique acontece fora do contêiner
+  // dela (mousedown, não blur: um clique na sugestão dispara blur antes do
+  // click valer em alguns navegadores).
+  function closeSuggestionLists(exceptTarget){
+    var abertas = document.querySelectorAll(".geo-suggestions:not([hidden])");
+    Array.prototype.forEach.call(abertas, function(list){
+      if(exceptTarget && list.parentNode && list.parentNode.contains(exceptTarget)) return;
+      list.hidden = true;
+    });
+    return abertas.length > 0;
+  }
+  document.addEventListener("mousedown", function(e){ closeSuggestionLists(e.target); });
+
+  // Esc fecha só o que não perde trabalho, do mais "de cima" para baixo:
+  // a busca ampliada da Consulta, uma lista de sugestões, e os modais só
+  // de leitura (Ajuda, Associar, visualização do registro). Formulários e
+  // Configurações continuam fechando só pelos botões, como sempre.
+  // (A pesquisa da edição em lote trata o próprio Esc.)
+  document.addEventListener("keydown", function(e){
+    if(e.key !== "Escape" || e.defaultPrevented) return;
+    var buscaPopup = document.getElementById("consulta-busca-overlay");
+    if(buscaPopup){ buscaPopup.remove(); return; }
+    if(document.querySelector(".lote-busca-overlay")) return;
+    if(closeSuggestionLists(null)) return;
+    if(modal.type === "help" || modal.type === "assoc") closeModal();
+    else if(modal.type === "view-record") closeDrawer();
+  });
   // Rolar o mouse sobre um <input type="number"> focado muda o valor — bom
   // para alguns casos, mas surpreende em campos de configuração (Valor
   // mínimo/máximo etc.). Desativado em toda a aplicação.
@@ -3917,7 +4145,7 @@
   // Ajuda — explica os conceitos do sistema; atualizar HELP_SECTIONS e
   // HELP_CHANGELOG a cada nova versão publicada.
   // =========================================================================
-  var APP_VERSION = "v61";
+  var APP_VERSION = "v62";
   var HELP_SECTIONS = [
     { titulo:"O que é o Registro ABA",
       corpo:"<p>Protótipo funcional de um sistema de gestão fundiária — pensado para substituir o modelo rígido de \"processo/formulário\" por Entidades totalmente configuráveis. Os dados aqui são de exemplo.</p>" },
@@ -3938,11 +4166,13 @@
         "<ul>" +
         "<li><strong>Livre</strong> — sempre visível.</li>" +
         "<li><strong>Depende de aba(s)</strong> — só aparece depois que outra(s) aba(s) estiverem <em>inteiramente</em> preenchidas (todos os campos visíveis dela, não só um).</li>" +
+        "<li><strong>Depende de aba(s) validada(s)</strong> — só aparece depois que outra(s) aba(s) Validável(is) receberem o \"Validar esta aba\".</li>" +
         "<li><strong>Depende de campo(s)</strong> — só aparece depois que campo(s) específicos tiverem valor.</li>" +
         "</ul>" +
+        "<p>Ao remover uma aba ou um campo, as condições, Situações, regras e listas que apontavam para ele são limpas junto — nada fica \"esperando\" algo que não existe mais.</p>" +
         "<p>É assim que o preenchimento guiado (o \"ciclo de vida\" do preenchimento) funciona, sem precisar de um fluxograma separado.</p>" },
     { titulo:"Arrastar e soltar campos",
-      corpo:"<p>No canvas de Abas & Campos, arraste um campo pela alcinha <strong>⠿</strong> para reordenar dentro da mesma aba (a linha azul mostra onde ele vai cair), mover para outra aba (solte dentro do corpo dela), ou soltar em <strong>\"+ Aba (página)\"</strong> para criar uma aba nova já com esse campo — sem precisar remover e recriar.</p>" },
+      corpo:"<p>No canvas de Abas & Campos, arraste um campo pela alcinha <strong>⠿</strong>: soltando na faixa da esquerda ou da direita de outro campo, os dois dividem a linha; na metade de cima ou de baixo, ele vira uma linha nova (uma área translúcida mostra onde vai cair). Dá para mover para outra aba (solte dentro do corpo dela) ou soltar em <strong>\"+ Aba (página)\"</strong> para criar uma aba nova já com esse campo. A divisória entre dois campos da mesma linha ajusta a largura, e as abas mudam de ordem pela alça do cabeçalho.</p>" },
     { titulo:"Campos — tipos, campo requisito e cálculo",
       corpo:"<p>Cada campo tem um tipo (texto, número, data, lista, arquivo...), pode ser marcado como obrigatório, e tem dois recursos avançados:</p>" +
         "<ul>" +
@@ -3952,14 +4182,14 @@
     { titulo:"Ciclo de vida",
       corpo:"<p>Cada Entidade tem uma lista configurável de valores de ciclo de vida (ex.: Ativo/Inativo). Pessoa é a única com vocabulário duplo — física (Vivo/Falecido) e jurídica (Ativo/Inativo).</p>" },
     { titulo:"Associação entre registros",
-      corpo:"<p>Relações como Terreno↔Titularidade, Terreno↔Edificação e Titularidade↔Pessoa (Titular) aparecem no drawer de detalhe como chips. Clicar em <strong>+ Associar…</strong> abre uma busca (por nome ou código) em vez de uma lista solta — pensado para escalar a milhares de registros. O ✕ no chip desassocia.</p>" },
+      corpo:"<p>Relações como Terreno↔Titularidade, Terreno↔Edificação e Titularidade↔Pessoa (Titular) aparecem na visualização e na edição do registro, depois das abas. Clicar em <strong>+ Associar…</strong> abre uma busca (por nome ou código) em vez de uma lista solta — pensado para escalar a milhares de registros. O ✕ no chip desassocia.</p>" },
     { titulo:"Editar um registro existente",
-      corpo:"<p>Abra o registro (clique na linha da tabela) e use o botão <strong>✎ Editar</strong> no topo do drawer — abre uma janela com abas, parecida com a de criação, mas mostra todos os campos nativos e configurados de uma vez, sem bloqueio por aba/campo requisito — é o fluxo de corrigir o que já existe, não o de preenchimento guiado.</p>" },
+      corpo:"<p>Abra o registro (clique na linha da tabela, ou Enter com ela em foco) e use <strong>✎ Editar</strong>. A edição tem os mesmos campos, nos mesmos lugares, que a visualização: nada some nem pula de lugar — o que ainda não pode ser preenchido (aba com condição não satisfeita, Campo requisito, aba validada, aba de outro Grupo Responsável) fica à vista, esmaecido e travado, com o motivo ao passar o mouse. Salvar ou cancelar volta para a visualização na mesma aba.</p>" },
     { titulo:"Aba \"Dados Básicos\"",
       corpo:"<p>Na criação e na edição, os campos padrão do registro (Nome, campos nativos da Entidade como Tipo de pessoa/Tipo de evidência, e o Ciclo de vida na edição) aparecem numa primeira aba chamada <strong>Dados Básicos</strong>. Ela também aparece na Configuração, em Abas & Campos, marcada como fixa (🔒): sempre a primeira, sempre visível, sem condição para aparecer e sem opção de remover — mas dá para acrescentar campos próprios a ela pela paleta, do mesmo jeito que numa aba comum.</p>" },
     { titulo:"Configuração por Entidade vs. Configuração geral",
       corpo:"<p><strong>⚙ Configurar</strong> (no topo, por Entidade) ajusta ciclo de vida, abas e campos daquela Entidade específica.</p>" +
-        "<p><strong>⚙ Configuração geral</strong> (na barra lateral) é do sistema como um todo: usuários com acesso e a ordem das Entidades no menu — outras configurações globais entram aqui no futuro.</p>" },
+        "<p><strong>⚙ Configuração geral</strong> (na barra lateral) é do sistema como um todo: Entidades (ordem no menu, nomes, criar, excluir e recriar nativas), Usuários, Grupos e Papéis.</p>" },
     { titulo:"Modo de demonstração local",
       corpo:"<p>Dentro do claude.ai os dados ficam numa base compartilhada de verdade. Quando este arquivo é aberto fora do claude.ai (por exemplo, publicado como <code>index.html</code> no GitHub Pages), esse recurso não existe — então o sistema entra sozinho em <strong>modo de demonstração local</strong> (aviso amarelo no topo): tudo que você criar ou editar fica salvo só no seu navegador (localStorage), não é compartilhado com ninguém e some se você limpar os dados do site. É o jeito de mandar o app para alguém testar a navegação e o preenchimento sem precisar de acesso ao claude.ai.</p>" },
     { titulo:"Propriedades de um campo tipo Texto",
@@ -4026,6 +4256,7 @@
         "</ul>" }
   ];
   var HELP_CHANGELOG = [
+    { versao:"v62", texto:"Revisão de qualidade, sem mudar o jeito de usar. Correções: (1) data inexistente (ex.: 30/02) era aceita e gravada — agora é recusada, e o limite de Data mínima/máxima aparece em dd/mm/aaaa e é comparado sem erro de fuso; (2) o Contato do Cartório passou a ser gravado, e o formulário do Cartório não apaga mais o que está sendo digitado quando a base atualiza; (3) as Situações não gravam mais uma cópia das abas junto na base (e a sobra das versões anteriores é limpa ao abrir a Configuração); (4) Ciclo de vida não salva mais valores em branco nem repetidos; (5) remover uma aba ou um campo limpa as referências a ele — condição de outra aba, Campo requisito, regras de Lista, parte \"Campo\" do Código, Situações, Pesquisa/Exportação/Lista em Tela, Permissões e GIS; (6) trocar o tipo de um campo não herda mais Cálculo, Valor padrão ou o Somente leitura do Código; (7) na edição, um Ciclo de vida que saiu da lista configurada continua selecionado (marcado \"fora da lista atual\") em vez de o sistema trocar sozinho pela primeira opção; (8) a visualização aberta se atualiza sozinha quando o registro muda na base; (9) erros de gravação (salvar, excluir, associar, desassociar, lote) aparecem na tela em vez de sumir, e os botões de gravar não aceitam clique duplo; (10) rótulos e nomes digitados pelo usuário não são mais interpretados como HTML na tabela e no menu. Melhorias: busca sem distinção de acento (\"mario\" acha \"Mário\") em todas as buscas; UF e Município como listas (base do IBGE) no Cartório e na Titularidade; \"Nova Titularidade/Edificação/Pessoa\" com o gênero certo; rótulos acentuados na visualização; Esc fecha a Ajuda, o Associar, a visualização do registro e listas de sugestões; linhas da tabela abrem pelo teclado; foco visível; tema escuro na mesma família de cores do claro e da barra lateral; layout para celular; textos da Ajuda atualizados ao comportamento atual." },
     { versao:"v61", texto:"(1) As abas mudam de ordem arrastando pela alça ⠿ do cabeçalho, no construtor (Dados Básicos fica sempre em primeiro). (2) Saiu o rótulo \"fixa\" do cabeçalho de Dados Básicos. (3) O Código ganhou ⚙ própria, com Visível no formulário; oculto (o padrão) some da criação, da edição e da visualização — na lista de registros ele continua. A caixinha que ficava nas propriedades da aba saiu. Os campos do sistema na visualização passaram a usar o rótulo certo (\"Código\", \"Ciclo de vida\"). (4) Salvar ou cancelar a edição volta para a visualização na mesma aba." },
     { versao:"v60", texto:"(1) A edição em lote não cria mais três linhas vazias sozinha; com a tabela vazia, use + Nova linha ou cole do Excel na caixinha indicada. (2) No construtor, as propriedades de aba e de campo abrem só pela engrenagem ⚙ — clicar no resto da aba/campo não abre mais nada. (3) A aba Dados Básicos pode ser renomeada (⚙ da aba). (4) Saiu a caixinha \"Na mesma linha do campo anterior\": lado a lado só arrastando. (5) No campo Lista, o Valor padrão vem depois do Modo e das Opções. (6) \"Aparência\" passou a se chamar \"Modo\". (7) Arrastar opções da Lista (e valores do Ciclo de vida) mostra uma linha onde a opção vai cair. (8) Ciclo de vida é a primeira aba da Configuração, e ela abre ali. (9) Sem Ciclo de vida configurado, ele não aparece no construtor. (10) O Ciclo de vida ganhou propriedades de campo (⚙): Rótulo, Dica, Valor padrão, Obrigatório, Visível e Somente leitura — valem na criação, na edição e no lote. (11) A roda do mouse não trava mais a rolagem quando um campo numérico está com o foco (o valor do campo continua sem mudar). (12) GIS › Integração de campos: cada campo do ABA ligado a um campo do serviço, num sentido só — ArcGIS → ABA atualiza o registro a cada consulta (e o campo fica somente leitura na edição); ABA → ArcGIS grava na feição ao salvar o registro (applyEdits). (13) Pesquisa e Exportação redesenhada: caixinha por aba e \"Todos os campos\" em cada coluna (Pesquisa, Exportação, Lista em Tela), com estado parcial e contagem. (14) CPF/CNPJ ganhou Modo: CPF, CNPJ ou Ambos. (15) O fundo \"Mapa\" passou a vir da Esri — os tiles do OpenStreetMap bloqueiam páginas abertas como arquivo. (16) Editar um registro abre na mesma aba que estava sendo vista." },
     { versao:"v59", texto:"Permissões por Grupo Responsável, já valendo na tela. (1) Cada aba pode ter um Grupo Responsável (nas propriedades da aba, no construtor), e o administrador marca o que ele pode fazer: em Dados Básicos — o dono do processo — Criar, Editar, Excluir, Criar em lote, Editar em lote e Excluir em lote; nas demais abas, Editar e Editar em lote. O responsável só edita enquanto a aba está destravada e não validada; validada, vira somente leitura, e a validação pode ser tirada pelo responsável dela ou pelos responsáveis das abas que dependem dela. (2) Aba sem Grupo Responsável segue a grade do Papel. (3) Administrativo passa por cima de tudo, mas pode abrir mão disso numa Entidade (aba Permissões da Entidade); para voltar, só outro administrador com poder ali ou o Super usuário — há aviso quando não sobra ninguém. Super usuário: sempre tudo. (4) A aba Permissões da Entidade ficou só com Ver e Exportar, por aba e por campo. (5) Novo \"👤 Entrar como\" na barra lateral: escolha um usuário e o sistema passa a se comportar como ele (menu, botões, edição, lote, exclusão, Configuração geral). Sem ninguém escolhido, tudo liberado. Exportar ainda não tem efeito, porque não há exportação no protótipo." },
@@ -4094,14 +4325,14 @@
     m.innerHTML =
       '<div class="modal-head"><div><h3>Ajuda — conceitos do Registro ABA</h3>'+
       '<p>Versão '+APP_VERSION+' · esta ajuda é atualizada a cada nova versão publicada.</p></div>'+
-      '<button class="icon-btn" id="modal-close">✕</button></div>'+
+      '<button type="button" class="icon-btn" id="modal-close" aria-label="Fechar">✕</button></div>'+
       '<div class="modal-body">' +
         HELP_SECTIONS.map(function(s){ return '<div class="help-section"><h4>'+escapeHtml(s.titulo)+'</h4><div class="help-body">'+s.corpo+'</div></div>'; }).join("") +
         '<div class="help-section"><h4>Histórico de versões</h4>' +
           HELP_CHANGELOG.map(function(c){ return '<div class="field-row"><span class="k">'+escapeHtml(c.versao)+'</span><span class="v">'+escapeHtml(c.texto)+'</span></div>'; }).join("") +
         '</div>' +
       '</div>' +
-      '<div class="modal-foot"><span></span><button class="btn primary" id="help-close">Fechar</button></div>';
+      '<div class="modal-foot"><span></span><button type="button" class="btn primary" id="help-close">Fechar</button></div>';
     document.getElementById("modal-close").addEventListener("click", closeModal);
     document.getElementById("help-close").addEventListener("click", closeModal);
     openModalShell();
@@ -4186,7 +4417,7 @@
       ["Gabriela Nunes","grp-regul","externo"], ["Henrique Alves","grp-jur","externo"], ["Isabela Prado","grp-coord","corporativo"], ["João Victor Reis","grp-regul","interno"]
     ];
     return d.map(function(x, i){
-      var login = x[0].toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").split(" ");
+      var login = normBusca(x[0]).split(" ");
       return {id:"usr-ex" + (i + 1), codigo:"USR-" + padNumero(i + 1, 3), nome:x[0], email:login[0] + "." + login[login.length - 1] + "@exemplo.com.br", grupo_id:x[1], tipo:x[2], campos:{}};
     });
   }
@@ -4231,6 +4462,7 @@
     excNat.forEach(function(k){ nativas[k] = Object.assign({}, nativas[k] || {}, {excluida:true}); });
     var ok = await saveConfigGeral({ usuarios: draft.usuarios, grupos: draft.grupos, papeis: draft.papeis, ordem_entidades: draft.ordem.filter(function(k){ return !draft.excluir[k] || k.indexOf("form:") !== 0; }), entidadesNativas: nativas });
     if(!ok) return false;
+    try{
     // Entidade nativa excluída: some com os registros e os vínculos dela; o
     // modelo (definição e configuração) fica, para poder recriar depois
     for(var q = 0; q < excNat.length; q++){
@@ -4259,6 +4491,7 @@
       await db.doc("categoria/" + catId).delete();
       if(currentKey === exc[j]) currentKey = "terreno";
     }
+    }catch(errExc){ return false; } // v62: falha no meio não vira erro solto no console
     draft.renomear = {}; draft.excluir = {}; draft.recriar = {};
     aplicarNomesNativos(); render();
     return true;
@@ -4267,7 +4500,13 @@
   // criar Formulário): grava antes, para nada se perder no caminho
   async function configGeralSalvarESair(depois){
     var draft = modal.draft;
-    await salvarConfigGeralTudo(draft);
+    // v62: as mesmas regras do "Salvar e fechar" — antes gravava sem validar
+    // (Grupo sem nome/repetido) e seguia adiante mesmo se a gravação falhasse.
+    if(configGeralSub){ cgMsg("Termine (Salvar usuário) ou volte da tela do usuário antes.", "erro"); return; }
+    var err = validarConfigGeral(draft);
+    if(err){ cgMsg(err, "erro"); return; }
+    var ok = await salvarConfigGeralTudo(draft);
+    if(!ok){ cgMsg("Não foi possível salvar a Configuração geral — nada foi alterado.", "erro"); return; }
     closeModal();
     depois();
   }
@@ -4286,11 +4525,11 @@
     m.innerHTML =
       '<div class="modal-head"><div><h3>Configuração geral</h3>'+
       '<p>Entidades, usuários, grupos e papéis do sistema.</p></div>'+
-      '<button class="icon-btn" id="modal-close">✕</button></div>'+
+      '<button type="button" class="icon-btn" id="modal-close" aria-label="Fechar">✕</button></div>'+
       '<div class="modal-tabs">'+abasPermitidas.map(function(t){ return tabBtn(t[0], t[1]); }).join("")+'</div>'+
       '<div class="modal-body" id="modal-body"></div>'+
-      '<div class="modal-foot"><span id="cg-msg" class="empty-note"></span><span style="display:flex; gap:8px;"><button class="btn" id="cfg-cancel">Cancelar</button>'+
-      '<button class="btn primary" id="cfg-save-close">Salvar e fechar</button></span></div>';
+      '<div class="modal-foot"><span id="cg-msg" class="empty-note"></span><span style="display:flex; gap:8px;"><button type="button" class="btn" id="cfg-cancel">Cancelar</button>'+
+      '<button type="button" class="btn primary" id="cfg-save-close">Salvar e fechar</button></span></div>';
     document.getElementById("modal-close").addEventListener("click", closeModal);
     document.getElementById("cfg-cancel").addEventListener("click", closeModal);
     document.getElementById("cfg-save-close").addEventListener("click", async function(){
@@ -4315,7 +4554,7 @@
       : entidadesTabHtml(draft);
     wireConfigGeralEvents();
     devolverRolagem(m, rolagem);
-    function tabBtn(id, label){ return '<button class="modal-tab'+(configGeralTab===id?" active":"")+'" data-tab="'+id+'">'+label+'</button>'; }
+    function tabBtn(id, label){ return '<button type="button" class="modal-tab'+(configGeralTab===id?" active":"")+'" data-tab="'+id+'">'+label+'</button>'; }
   }
   function guardarRolagem(m){
     var out = {aba: m.querySelector(".modal-tab.active") ? m.querySelector(".modal-tab.active").getAttribute("data-tab") : null, els: []};
@@ -4367,7 +4606,7 @@
       var original = !criada && FIXED_BY_KEY[key] ? FIXED_BY_KEY[key].labelOriginal : "";
       return '<div class="ent-row'+(exc?' ent-excluir':'')+'" data-ent-row="'+escapeHtml(key)+'">' +
         '<span class="small-btn-row"><button type="button" class="btn sm" data-order-up="'+i+'"'+(i===0||!podeOrg?" disabled":"")+' title="Subir no menu">↑</button><button type="button" class="btn sm" data-order-down="'+i+'"'+(i===draft.ordem.length-1||!podeOrg?" disabled":"")+' title="Descer no menu">↓</button></span>' +
-        '<span class="nav-glyph">'+e.glyph+'</span>' +
+        '<span class="nav-glyph">'+escapeHtml(e.glyph)+'</span>' +
         (!exc && podeOrg ? '<input type="text" class="ent-nome" data-ent-renomear="'+escapeHtml(key)+'" value="'+escapeHtml(nome)+'">' : '<span class="ent-nome-fixo">'+escapeHtml(nome)+'</span>') +
         '<span class="empty-note">'+(criada ? "criada" : "nativa" + (original && original !== nome ? " (" + escapeHtml(original) + ")" : ""))+' · '+qtd+(qtd===1?" registro":" registros")+'</span>' +
         '<span class="small-btn-row" style="margin-left:auto;">' +
@@ -4639,6 +4878,7 @@
   // — uma coringa que a pessoa tenha renomeado à mão fica como está.
   function normalizarSituacoesDraft(situacoes){
     (situacoes || []).forEach(function(sit){
+      delete sit._abas; // lixo gravado por versões até a v61 (ver situacoesTabHtml)
       if(!sit.grupos || !sit.grupos.length){
         sit.grupos = [{ id: uid("sitg"), condicoes: (sit.condicoes || []).slice() }];
       }
@@ -4681,9 +4921,84 @@
     configPropsAberto = false;
     calendarOpen = null;
     sitSimuladorEstado = {};
-    modal = { type:"config", key:key, draft: buildDraft(key, seed) };
+    modal = { type:"config", key:key, draft: buildDraft(key, seed), nome: seed && seed.nome };
     renderConfigModal();
     openModalShell();
+  }
+
+  // Valores de ciclo de vida prontos para gravar: sem espaços nas pontas,
+  // sem linhas vazias (o editor deixa "" ao apagar o texto de uma linha) e
+  // sem repetidos.
+  function valoresLimpos(arr){
+    var vistos = {};
+    return (arr||[]).map(function(v){ return String(v == null ? "" : v).trim(); })
+      .filter(function(v){ if(!v || vistos[v]) return false; vistos[v] = true; return true; });
+  }
+  function cicloPatch(draft){
+    return draft.pessoa
+      ? {ciclo_de_vida_variantes:{fisica: valoresLimpos(draft.fisica), juridica: valoresLimpos(draft.juridica)}}
+      : {ciclo_de_vida_valores: valoresLimpos(draft.ciclo_de_vida_valores)};
+  }
+  // v62: remove do rascunho as referências a abas/campos que não existem
+  // mais — condição de desbloqueio, campo requisito, regras de Lista,
+  // segmento "Campo" do Código, Situações, Pesquisa/Exportação/Lista em
+  // Tela, Permissões e GIS. Roda a cada remoção (a tela reflete na hora) e
+  // de novo antes de salvar; sem isso uma aba removida continuava
+  // "exigida" por outra e a travava para sempre.
+  function sanearReferencias(draft){
+    var abas = draft.abas || [];
+    var abaById = {}, campoIds = {};
+    abas.forEach(function(a){ abaById[a.id] = a; (a.campos||[]).forEach(function(c){ campoIds[c.id] = true; }); });
+    abas.forEach(function(a){
+      var cond = a.condicao;
+      if(cond && cond.abas){
+        cond.abas = cond.abas.filter(function(id){
+          if(!abaById[id]) return false;
+          // "validadas" só aceita aba Validável (a própria aba é permitida, v44)
+          return cond.tipo !== "abas_validadas" || abaById[id].validavel;
+        });
+      }
+      if(cond && cond.campos) cond.campos = cond.campos.filter(function(id){ return campoIds[id]; });
+      (a.campos||[]).forEach(function(c){
+        if(c.dependeCampo && !campoIds[c.dependeCampo]){ c.dependeCampo = null; c.dependeValor = ""; }
+        (c.regras||[]).forEach(function(r){
+          (r.condicoes||[]).forEach(function(cd){ if(cd.campoId && !campoIds[cd.campoId]) cd.campoId = null; });
+        });
+        if(c.logica && c.logica.segmentos){
+          c.logica.segmentos = c.logica.segmentos.filter(function(sg){ return sg.tipo !== "campo" || campoIds[sg.campoId]; });
+        }
+      });
+    });
+    var sits = draft.situacoes || [];
+    sits.forEach(function(sit, si){
+      if(si === sits.length - 1) return; // a última é a Situação padrão, sem condições
+      (sit.grupos || []).forEach(function(g){
+        g.condicoes = (g.condicoes || []).filter(function(cd){ return abaById[cd.abaId]; });
+        g.condicoes.forEach(function(cd){
+          if((cd.estado === "validada" || cd.estado === "nao_validada") && !abaById[cd.abaId].validavel) cd.estado = "total";
+        });
+      });
+      if(!situacaoTemCondicao(sit) && abas.length){
+        sit.grupos = [{id: uid("sitg"), condicoes: [{abaId: abas[0].id, estado: "total"}]}];
+      }
+    });
+    var pe = draft.pesquisaExportacao;
+    if(pe){
+      ["pesquisaCampos","exportacaoCampos","listagemCampos"].forEach(function(k){
+        if(Array.isArray(pe[k])) pe[k] = pe[k].filter(function(id){ return campoIds[id]; });
+      });
+    }
+    Object.keys(draft.permissoes || {}).forEach(function(papel){
+      var perm = draft.permissoes[papel] || {};
+      Object.keys(perm.abas || {}).forEach(function(id){ if(!abaById[id]) delete perm.abas[id]; });
+      Object.keys(perm.campos || {}).forEach(function(id){ if(!campoIds[id]) delete perm.campos[id]; });
+    });
+    var arc = draft.gis && draft.gis.arcgis;
+    if(arc){
+      function refValida(ref){ return String(ref).indexOf("campo:") !== 0 || campoIds[String(ref).slice(6)]; }
+      if(arc.chaveRegistro && !refValida(arc.chaveRegistro)) arc.chaveRegistro = "codigo";
+      if(arc.mapeamentos) arc.mapeamentos = arc.mapeamentos.filter(function(mp){ return !mp.campo || refValida(mp.campo); });
+    }
   }
 
   async function saveConfigDoc(key, patch){
@@ -4691,7 +5006,9 @@
     if(!db) return false;
     try{
       if(ctx.type === "categoria"){
-        await db.doc("categoria/" + ctx.categoria.id).update(patch);
+        // id pela própria chave ("form:<id>") — logo depois de criar a
+        // Entidade, ctx.categoria ainda pode não ter chegado ao cache.
+        await db.doc("categoria/" + key.slice(5)).update(patch);
       } else {
         var existing = byId(cache.config_entidade, key);
         if(existing){ await db.doc("config_entidade/" + key).update(patch); }
@@ -4703,7 +5020,7 @@
 
   function renderConfigModal(){
     var key = modal.key, ctx = contextFor(key), draft = modal.draft;
-    var title = ctx.type === "fixed" ? ctx.def.label : (ctx.categoria ? ctx.categoria.nome : "—");
+    var title = ctx.type === "fixed" ? ctx.def.label : (ctx.categoria ? ctx.categoria.nome : (modal.nome || "—"));
     var m = document.getElementById("modal");
     // v46 (item 1): a classe "tall" agora carrega o tamanho mediano único
     // da Configuração (ver .modal.tall) — nenhuma aba tem mais tamanho
@@ -4736,17 +5053,17 @@
       : [];
 
     m.innerHTML =
-      '<div class="modal-head"><div><h3>Configurar — '+escapeHtml(title)+'</h3>'+
+      '<div class="modal-head"><div><h3 id="modal-title">Configurar — '+escapeHtml(title)+'</h3>'+
       '<p>Ciclo de vida, abas, campos, tipos e propriedades — configurável por Entidade.</p></div>'+
-      '<button class="icon-btn" id="modal-close">✕</button></div>'+
+      '<button type="button" class="icon-btn" id="modal-close" aria-label="Fechar">✕</button></div>'+
       // v49: a aba entra logo depois de Abas & Campos, e Pesquisa e
       // Exportação passa para antes de Permissões. v50: chama-se
       // "Associações" (o id interno segue "relacionamentos", pra não
       // invalidar configuração já salva).
       '<div class="modal-tabs">'+(key === "usuario" ? tabBtn("abas","Campos do usuário") : tabBtn("ciclo","Ciclo de vida")+tabBtn("abas","Abas & Campos")+tabBtn("relacionamentos","Associações")+tabBtn("situacoes","Situações")+tabBtn("gis","GIS")+tabBtn("pesquisa","Pesquisa e Exportação")+tabBtn("permissoes","Permissões"))+'</div>'+
       '<div class="modal-body" id="modal-body"></div>'+
-      '<div class="modal-foot"><button class="btn" id="cfg-cancel">Cancelar</button>'+
-      '<button class="btn primary" id="cfg-save-close">Salvar e fechar</button></div>';
+      '<div class="modal-foot"><button type="button" class="btn" id="cfg-cancel">Cancelar</button>'+
+      '<button type="button" class="btn primary" id="cfg-save-close">Salvar e fechar</button></div>';
 
     // v56: a configuração dos campos de Usuário volta para a Configuração geral
     function sairConfig(){ closeModal(); if(key === "usuario") openConfigGeralModal("usuarios"); }
@@ -4754,9 +5071,8 @@
     document.getElementById("cfg-cancel").addEventListener("click", sairConfig);
     document.getElementById("cfg-save-close").addEventListener("click", async function(){
       var btn = this; btn.textContent = "Salvando…"; btn.disabled = true;
-      var patch = draft.pessoa
-        ? {gis: draft.gis, adminRestritos: draft.adminRestritos, ciclo_de_vida_variantes:{fisica:draft.fisica, juridica:draft.juridica}, abas: draft.abas, permissoes: draft.permissoes, pesquisaExportacao: draft.pesquisaExportacao, situacoes: draft.situacoes, situacaoOrdemExibicao: draft.situacaoOrdemExibicao, relacionamentos: draft.relacionamentos || {}}
-        : {gis: draft.gis, adminRestritos: draft.adminRestritos, ciclo_de_vida_valores: draft.ciclo_de_vida_valores, abas: draft.abas, permissoes: draft.permissoes, pesquisaExportacao: draft.pesquisaExportacao, situacoes: draft.situacoes, situacaoOrdemExibicao: draft.situacaoOrdemExibicao, relacionamentos: draft.relacionamentos || {}};
+      sanearReferencias(draft);
+      var patch = Object.assign({gis: draft.gis, adminRestritos: draft.adminRestritos, abas: draft.abas, permissoes: draft.permissoes, pesquisaExportacao: draft.pesquisaExportacao, situacoes: draft.situacoes, situacaoOrdemExibicao: draft.situacaoOrdemExibicao, relacionamentos: draft.relacionamentos || {}}, cicloPatch(draft));
       var ok = await saveConfigDoc(key, patch);
       if(ok){ sairConfig(); }
       else { btn.textContent = "Erro ao salvar"; btn.disabled = false; setTimeout(function(){ btn.textContent = "Salvar e fechar"; }, 1600); }
@@ -4789,7 +5105,7 @@
       });
     }
 
-    function tabBtn(id, label){ return '<button class="modal-tab'+(configTab===id?" active":"")+'" data-tab="'+id+'">'+label+'</button>'; }
+    function tabBtn(id, label){ return '<button type="button" class="modal-tab'+(configTab===id?" active":"")+'" data-tab="'+id+'">'+label+'</button>'; }
   }
 
   function cicloTabHtml(draft){
@@ -4819,7 +5135,7 @@
     return '<div class="lista-opcoes-list" data-ciclo-valores="'+group+'">' +
         valoresRender.map(function(v, vi){ return cicloValorRowHtml(group, vi, v, !!v); }).join("") +
       '</div>' +
-      '<div class="small-btn-row"><button class="btn primary sm" data-save-ciclo="'+group+'">Salvar ciclo de vida</button></div>';
+      '<div class="small-btn-row"><button type="button" class="btn primary sm" data-save-ciclo="'+group+'">Salvar ciclo de vida</button></div>';
   }
 
   // =========================================================================
@@ -4878,8 +5194,8 @@
       '</div>' + corpo + botoes +
     '</div>';
   }
-  function situacaoCardHtml(sit, si, isCoringa, podeMover){
-    var abas = sit._abas || [];
+  function situacaoCardHtml(sit, si, isCoringa, podeMover, abas){
+    abas = abas || [];
     var selo = isCoringa
       ? '<span class="sit-prio padrao" title="Vale quando nenhuma regra acima bater">padrão</span>'
       : '<span class="sit-prio" title="Prioridade '+(si+1)+'ª — quanto mais para cima, mais cedo é testada">'+(si+1)+'º</span>';
@@ -4939,8 +5255,9 @@
         ' — o detalhe de cada uma, e o simulador de cenário, ficam em <strong>Sobreposição de regras</strong>, no fim desta aba.</span></div>';
     }
     situacoes.forEach(function(sit, si){
-      sit._abas = abas; // referência só para o render das linhas de condição acima
-      html += situacaoCardHtml(sit, si, si === lastIdx, {up: si > 0, down: si < lastIdx - 1});
+      // v62: abas vão como parâmetro — antes eram penduradas em sit._abas e
+      // acabavam gravadas na base junto com cada Situação.
+      html += situacaoCardHtml(sit, si, si === lastIdx, {up: si > 0, down: si < lastIdx - 1}, abas);
     });
     html += '<div style="display:flex; align-items:center; gap:8px; margin-top:4px;">' +
       '<button type="button" class="btn sm" id="add-situacao-btn">+ Situação</button>' +
@@ -5521,8 +5838,13 @@
   function cicloCampoHtml(key, selId, valores, atual, novo){
     var p = cicloPropsDe(key);
     var sel = novo ? (p.valorPadrao && valores.indexOf(p.valorPadrao) > -1 ? p.valorPadrao : "") : (atual || "");
-    var opts = (p.obrigatorio && sel ? "" : '<option value="">'+(p.obrigatorio ? "Selecione…" : "—")+'</option>') +
-      valores.map(function(v){ return '<option value="'+escapeHtml(v)+'"'+(v===sel?" selected":"")+'>'+escapeHtml(v)+'</option>'; }).join("");
+    // v62: valor gravado que saiu da lista configurada continua visível e
+    // selecionado — antes nenhuma opção batia, o navegador marcava a
+    // primeira sozinho e o Salvar trocava o Ciclo de vida sem ninguém pedir.
+    var foraDaLista = !!sel && valores.indexOf(sel) === -1;
+    var opts = (p.obrigatorio && sel && !foraDaLista ? "" : '<option value="">'+(p.obrigatorio ? "Selecione…" : "—")+'</option>') +
+      valores.map(function(v){ return '<option value="'+escapeHtml(v)+'"'+(v===sel?" selected":"")+'>'+escapeHtml(v)+'</option>'; }).join("") +
+      (foraDaLista ? '<option value="'+escapeHtml(sel)+'" selected>'+escapeHtml(sel)+' (fora da lista atual)</option>' : '');
     return '<label>'+escapeHtml(p.label || "Ciclo de vida")+(p.obrigatorio ? " *" : "")+'</label>' +
       '<select id="'+selId+'"'+(p.leitura ? ' disabled title="Somente leitura"' : '')+'>' + opts + '</select>' +
       (p.ajuda ? '<div class="empty-note" style="margin-top:3px;">'+escapeHtml(p.ajuda)+'</div>' : '');
@@ -6013,7 +6335,7 @@
         var campo = f.campoExibido || "nome";
         var exibido = String(u[campo] != null ? u[campo] : (u.nome||""));
         var grp = (geral.grupos || []).filter(function(g){ return g.id === u.grupo_id; })[0];
-        var busca = [u.codigo, u.nome, u.email, grp && grp.nome, TIPO_USUARIO_LABEL[u.tipo]].filter(Boolean).join(" ").toLowerCase();
+        var busca = normBusca([u.codigo, u.nome, u.email, grp && grp.nome, TIPO_USUARIO_LABEL[u.tipo]].filter(Boolean).join(" "));
         return { id:u.id, codigo:u.codigo||"", nome:u.nome, exibido: exibido, busca: busca };
       });
     }
@@ -6025,7 +6347,7 @@
       else if(!f.campoExibido || f.campoExibido === "nome") exibido = r.nome || r.codigo || "";
       else exibido = (r.campos && r.campos[f.campoExibido] != null) ? String(r.campos[f.campoExibido]) : "";
       var camposTxt = r.campos ? Object.keys(r.campos).map(function(k){ return r.campos[k]; }).filter(function(v){ return v != null && typeof v !== "object"; }).join(" ") : "";
-      var busca = [r.codigo, r.nome, camposTxt].filter(Boolean).join(" ").toLowerCase();
+      var busca = normBusca([r.codigo, r.nome, camposTxt].filter(Boolean).join(" "));
       return { id:r.id, codigo:r.codigo||"", nome:r.nome||"", exibido: exibido || (r.nome||r.codigo||"(sem valor)"), busca: busca };
     });
   }
@@ -6401,9 +6723,7 @@
       btn.addEventListener("click", async function(){
         var group = btn.getAttribute("data-save-ciclo");
         btn.textContent = "Salvando…";
-        var ok;
-        if(draft.pessoa){ ok = await saveConfigDoc(key, {ciclo_de_vida_variantes:{fisica:draft.fisica, juridica:draft.juridica}}); }
-        else { ok = await saveConfigDoc(key, {ciclo_de_vida_valores: draft.ciclo_de_vida_valores}); }
+        var ok = await saveConfigDoc(key, cicloPatch(draft));
         btn.textContent = ok ? "Salvo ✓" : "Erro ao salvar";
         setTimeout(function(){ btn.textContent = "Salvar ciclo de vida"; }, 1400);
       });
@@ -7220,6 +7540,7 @@
         var ai = parseInt(btn.getAttribute("data-remove-aba"),10);
         if(draft.abas[ai] && draft.abas[ai].fixo) return; // "Dados Básicos" não pode ser removida
         draft.abas.splice(ai,1);
+        sanearReferencias(draft);
         // Mantém a seleção "no mesmo lugar" — a aba que tomou o lugar da
         // removida (ou a anterior, se era a última) — em vez de esvaziar
         // o painel de propriedades.
@@ -7273,6 +7594,7 @@
       chk.addEventListener("change", function(){
         var ai = parseInt(chk.getAttribute("data-aba-validavel"),10);
         draft.abas[ai].validavel = chk.checked;
+        sanearReferencias(draft); // deixou de ser Validável: sai das condições de validação
         renderConfigModal();
       });
     });
@@ -7317,6 +7639,7 @@
         e.stopPropagation();
         var p = btn.getAttribute("data-remove-campo").split(":");
         removerCampoDaLinha(draft.abas[+p[0]].campos, +p[1]);
+        sanearReferencias(draft);
         // Ao remover o campo, fecha o popup de propriedades — não abre a
         // configuração da aba automaticamente.
         configSelection = null;
@@ -7347,10 +7670,19 @@
       sel.addEventListener("change", function(){
         var p=sel.getAttribute("data-campo-tipo").split(":");
         var campo = draft.abas[+p[0]].campos[+p[1]];
+        var tipoAnterior = campo.tipo;
         campo.tipo = sel.value;
         // Aparência é específica de cada tipo — zera a de outro tipo que
         // possa ter ficado (ex.: "unica_linha" de quando era Texto).
         campo.aparencia = sel.value === "texto" ? "unica_linha" : (sel.value === "numero" ? "inteiro" : (sel.value === "data" ? "data" : null));
+        // v62: Valor padrão de um tipo não serve para outro (ex.: "hoje" de
+        // Data virando texto fixo num campo Texto).
+        campo.valorPadrao = "";
+        // Tipos sem Cálculo na Configuração: o liga/desliga some da tela, e um
+        // "calculado" herdado ficava preso para sempre (campo desabilitado).
+        if(["codigo","cpf_cnpj","endereco_localidade","consulta","arquivo"].indexOf(sel.value) > -1) campo.calculado = false;
+        // Código força obrigatório + somente leitura; ao sair dele, volta ao normal.
+        if(tipoAnterior === "codigo" && sel.value !== "codigo"){ campo.obrigatorio = false; campo.leitura = false; }
         if(sel.value === "codigo"){
           campo.logica = campo.logica || {tipo:"sequencial", inicio:1};
           campo.obrigatorio = true;
@@ -7910,41 +8242,51 @@
     });
   }
 
-  // ---- Novo Formulário (Categoria) ----
+  // ---- Nova Entidade (Categoria) ----
+  // Código sugerido a partir do nome: "Alerta de Invasão" → "CAT-ALERTA-DE-INVASAO".
+  function codigoDeNome(nome){
+    return "CAT-" + normBusca(nome).toUpperCase().replace(/[^A-Z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  }
   function openNewCategoriaModal(){
     modal = {type:"new-categoria"};
     var m = document.getElementById("modal");
     m.innerHTML =
-      '<div class="modal-head"><div><h3>Nova Entidade</h3><p>Cria uma nova Entidade, com abas, campos e ciclo de vida inteiramente configuráveis.</p></div>' +
-      '<button class="icon-btn" id="modal-close">✕</button></div>' +
+      '<div class="modal-head"><div><h3 id="modal-title">Nova Entidade</h3><p>Cria uma nova Entidade, com abas, campos e ciclo de vida inteiramente configuráveis.</p></div>' +
+      '<button type="button" class="icon-btn" id="modal-close" aria-label="Fechar">✕</button></div>' +
       '<div class="modal-body">' +
-        '<div class="field"><label>Nome da Entidade</label><input type="text" id="nc-nome" placeholder="Ex.: Alerta de Invasão"></div>' +
-        '<div class="field"><label>Código</label><input type="text" id="nc-codigo" placeholder="Ex.: CAT-INVASAO"></div>' +
+        '<div class="field"><label for="nc-nome">Nome da Entidade</label><input type="text" id="nc-nome" placeholder="Ex.: Alerta de Invasão"></div>' +
+        '<div class="field"><label for="nc-codigo">Código</label><input type="text" id="nc-codigo" placeholder="Gerado a partir do nome se ficar em branco"></div>' +
         '<p class="empty-note">Depois de criado, abrimos direto a Configuração para você montar as abas e o ciclo de vida (ou removê-lo).</p>' +
       '</div>' +
-      '<div class="modal-foot"><span></span><button class="btn primary" id="nc-submit">Criar Entidade</button></div>';
+      '<div class="modal-foot"><span id="nc-msg" class="empty-note" role="status"></span><button type="button" class="btn primary" id="nc-submit">Criar Entidade</button></div>';
     document.getElementById("modal-close").addEventListener("click", closeModal);
-    document.getElementById("nc-submit").addEventListener("click", async function(){
-      var nome = document.getElementById("nc-nome").value.trim();
-      var codigoRaw = document.getElementById("nc-codigo").value.trim();
-      if(!nome){ document.getElementById("nc-nome").focus(); return; }
-      var codigo = codigoRaw || ("CAT-" + nome.normalize("NFD").replace(/[̀-ͯ]/g,"").toUpperCase().replace(/[^A-Z0-9]+/g,"-").replace(/^-+|-+$/g,""));
-      var newDoc = { codigo: codigo, nome: nome, ciclo_de_vida_ativo: true, ciclo_de_vida_valores: ["Ativo","Inativo"], abas: [] };
-      if(!db){
-        // Sem conexão — ainda assim deixamos configurar localmente; ao salvar, o aviso de erro aparece.
-        var fakeId = uid("categoria");
-        closeModal(); selectKey("form:" + fakeId);
-        openConfigModal("form:" + fakeId, newDoc);
-        return;
+    var nomeEl = document.getElementById("nc-nome"), codigoEl = document.getElementById("nc-codigo");
+    nomeEl.addEventListener("input", function(){
+      codigoEl.placeholder = nomeEl.value.trim() ? codigoDeNome(nomeEl.value) : "Gerado a partir do nome se ficar em branco";
+    });
+    var submitBtn = document.getElementById("nc-submit");
+    submitBtn.addEventListener("click", function(){ runBusy(submitBtn, "Criando…", async function(){
+      var msg = document.getElementById("nc-msg");
+      var nome = nomeEl.value.trim();
+      if(!nome){ setMsg(msg, "Informe o nome da Entidade.", "error"); nomeEl.focus(); return; }
+      var codigo = codigoEl.value.trim() || codigoDeNome(nome);
+      // v62: dois Formulários com o mesmo código confundiam referências e a exportação
+      if(cache.categoria.some(function(c){ return String(c.codigo || "").toUpperCase() === codigo.toUpperCase(); })){
+        setMsg(msg, "Já existe uma Entidade com o código " + codigo + ".", "error"); codigoEl.focus(); return;
       }
-      var ref = await db.collection("categoria").add(newDoc);
+      if(!db){ setMsg(msg, "Sem conexão com a base neste momento.", "error"); return; }
+      var newDoc = { codigo: codigo, nome: nome, ciclo_de_vida_ativo: true, ciclo_de_vida_valores: ["Ativo","Inativo"], abas: [] };
+      var ref;
+      try{ ref = await db.collection("categoria").add(newDoc); }
+      catch(err){ setMsg(msg, "Não foi possível criar (" + errorText(err) + ").", "error"); return; }
       closeModal();
       selectKey("form:" + ref.id);
       // Abre a Configuração já com os dados que acabamos de criar — não depende
       // do onSnapshot ter chegado, então "+ Aba" e "+ Adicionar" funcionam de imediato.
       openConfigModal("form:" + ref.id, newDoc);
-    });
+    }); });
     openModalShell();
+    nomeEl.focus();
   }
 
   // Faixa de abas (estilo modal-tabs) + painéis para os fluxos de criação de
@@ -8151,7 +8493,7 @@
     // v55: nativos posicionados pelo layout de "Dados Básicos".
     var nativoOc = nativoOcultoDe(splitAbas.basico);
     var nat = {};
-    nat.nome = '<div class="field"><label>Nome do registro</label><input type="text" id="nr-nome" placeholder="Identificação curta deste caso"></div>';
+    nat.nome = '<div class="field"><label for="nr-nome">Nome do registro *</label><input type="text" id="nr-nome" placeholder="Identificação curta deste caso"></div>';
     if(!nativoOc.codigo) nat.codigo = '<div class="field"><label>Código · gerado automaticamente</label><input type="text" disabled placeholder="Preenchido ao salvar"></div>';
     if(cicloValores.length) nat.ciclo_de_vida = '<div class="field"'+(cicloVisivel("form:" + cat.id) ? '' : ' style="display:none;"')+'>' + cicloCampoHtml("form:" + cat.id, "nr-ciclo", cicloValores, "", true) + '</div>';
     var basicosHtml = basicoGradeHtml("form:" + cat.id, splitAbas.basico, nat, fieldHtml);
@@ -8160,10 +8502,10 @@
     var body = tabs.html();
 
     m.innerHTML =
-      '<div class="modal-head"><div><h3>Novo registro — '+escapeHtml(cat.nome)+'</h3><p>Campos * são obrigatórios. Abas bloqueadas aparecem conforme você preenche.</p></div>'+
-      '<button class="icon-btn" id="modal-close">✕</button></div>'+
+      '<div class="modal-head"><div><h3 id="modal-title">Novo registro — '+escapeHtml(cat.nome)+'</h3><p>Campos * são obrigatórios. Abas bloqueadas aparecem conforme você preenche.</p></div>'+
+      '<button type="button" class="icon-btn" id="modal-close" aria-label="Fechar">✕</button></div>'+
       '<div class="modal-body" id="nr-body"><div class="situacao-sequencia" id="nr-situacao-seq" style="display:none;"></div>'+body+'</div>'+
-      '<div class="modal-foot"><span id="nr-msg" class="empty-note"></span><button class="btn primary" id="nr-submit">Criar registro</button></div>';
+      '<div class="modal-foot"><span id="nr-msg" class="empty-note"></span><button type="button" class="btn primary" id="nr-submit">Criar registro</button></div>';
     document.getElementById("modal-close").addEventListener("click", closeModal);
     wireDatePickers(m);
     wireEnderecoLocFields(m);
@@ -8201,7 +8543,8 @@
     nrBodyEl.addEventListener("change", function(){ updateCalculados(); updateVisibility(); });
     updateCalculados(); updateVisibility();
 
-    document.getElementById("nr-submit").addEventListener("click", async function(){
+    var nrSubmit = document.getElementById("nr-submit");
+    nrSubmit.addEventListener("click", function(){ runBusy(nrSubmit, "Salvando…", async function(){
       var nome = document.getElementById("nr-nome").value.trim();
       var msg = document.getElementById("nr-msg");
       var cicloSel = document.getElementById("nr-ciclo");
@@ -8234,15 +8577,17 @@
         msg.textContent = !nome ? "Informe um nome para o registro." : (cicloFalta ? "Selecione o Ciclo de vida." : (missing.length ? "Faltando: " + missing.join(", ") : "Corrija: " + invalid.join(", ")));
         return;
       }
-      if(!db) return;
+      if(!db){ setMsg(msg, "Sem conexão com a base neste momento.", "error"); return; }
       var sit = situacaoAtual(cat.situacoes, todasAbas, getVal, tabs.getValidado);
-      await db.collection("formulario_personalizado").add({
-        codigo: "FRM-" + Date.now().toString(36).toUpperCase(),
-        nome: nome, categoria_id: cat.id, ciclo_de_vida: cicloSel ? (cicloSel.value || null) : null, campos: campos,
-        abasValidadas: tabs.validState, situacao: sit ? sit.nome : null
-      });
+      try{
+        await db.collection("formulario_personalizado").add({
+          codigo: "FRM-" + Date.now().toString(36).toUpperCase(),
+          nome: nome, categoria_id: cat.id, ciclo_de_vida: cicloSel ? (cicloSel.value || null) : null, campos: campos,
+          abasValidadas: tabs.validState, situacao: sit ? sit.nome : null
+        });
+      }catch(err){ setMsg(msg, "Não foi possível salvar (" + errorText(err) + ").", "error"); return; }
       closeModal();
-    });
+    }); });
     openModalShell();
   }
 
@@ -8284,8 +8629,8 @@
           Object.keys(EVIDENCIA_LABEL).map(function(v){ return '<option value="'+v+'">'+EVIDENCIA_LABEL[v]+'</option>'; }).join("") +
         '</select></div>';
       nat.cartorio_id = '<div class="field" data-tit-extra><label>Cartório</label><select id="nf-cartorio"><option value="">—</option>'+cartOpts+'</select></div>';
-      nat.municipio = '<div class="field" data-tit-extra><label>Município</label><input type="text" id="nf-municipio"></div>';
-      nat.uf = '<div class="field" data-tit-extra><label>UF</label><input type="text" id="nf-uf" maxlength="2"></div>';
+      nat.municipio = '<div class="field" data-tit-extra><label for="nf-municipio">Município</label>'+municipioSelectHtml("nf-municipio", "", "")+'</div>';
+      nat.uf = '<div class="field" data-tit-extra><label for="nf-uf">UF</label>'+ufSelectHtml("nf-uf", "", true)+'</div>';
       nat.numero_matricula = '<div class="field" id="nf-numero-wrap"><label id="nf-numero-label">Número da matrícula</label><input type="text" id="nf-numero"></div>';
       extrasHtml +=
         '<div class="field"><label>Titular(es) *</label>' +
@@ -8303,10 +8648,10 @@
     var body = tabs.html();
 
     m.innerHTML =
-      '<div class="modal-head"><div><h3>Novo '+escapeHtml(def.label)+'</h3><p>Campos * são obrigatórios. Abas bloqueadas aparecem conforme você preenche.</p></div>'+
-      '<button class="icon-btn" id="modal-close">✕</button></div>'+
+      '<div class="modal-head"><div><h3 id="modal-title">'+escapeHtml(novoLabel(def))+'</h3><p>Campos * são obrigatórios. Abas bloqueadas aparecem conforme você preenche.</p></div>'+
+      '<button type="button" class="icon-btn" id="modal-close" aria-label="Fechar">✕</button></div>'+
       '<div class="modal-body" id="nf-body"><div class="situacao-sequencia" id="nf-situacao-seq" style="display:none;"></div>'+body+'</div>'+
-      '<div class="modal-foot"><span id="nf-msg" class="empty-note"></span><button class="btn primary" id="nf-submit">Criar '+escapeHtml(def.label)+'</button></div>';
+      '<div class="modal-foot"><span id="nf-msg" class="empty-note"></span><button type="button" class="btn primary" id="nf-submit">Criar '+escapeHtml(def.label)+'</button></div>';
     document.getElementById("modal-close").addEventListener("click", closeModal);
     wireDatePickers(m);
     wireEnderecoLocFields(m);
@@ -8344,6 +8689,7 @@
       };
       document.getElementById("nf-tipo-evidencia").addEventListener("change", syncTitExtra);
       syncTitExtra();
+      wireUfMunicipio("nf-uf", "nf-municipio");
 
       // Titular(es) — busca dentro da própria Pessoa cadastrada; adicionado à
       // lista pendente e só vira vínculo real (titularidade_pessoa) ao criar.
@@ -8362,13 +8708,11 @@
         });
       };
       var renderTitularResults = function(q){
-        q = (q||"").trim().toLowerCase();
+        q = normBusca(q);
         var out = document.getElementById("nf-titular-results");
         var addedIds = pendingTitulares.map(function(t){ return t.id; });
         var base = cache.pessoa.filter(function(p){ return addedIds.indexOf(p.id) === -1; });
-        var filtered = !q ? base : base.filter(function(p){
-          return (p.nome||"").toLowerCase().indexOf(q) > -1 || (p.codigo||"").toLowerCase().indexOf(q) > -1;
-        });
+        var filtered = !q ? base : base.filter(function(p){ return nomeOuCodigoContem(p, q); });
         var shown = filtered.slice(0, 20);
         if(shown.length === 0){ out.innerHTML = '<p class="empty-note">Nenhuma Pessoa encontrada — cadastre-a primeiro em Pessoa.</p>'; return; }
         out.innerHTML = '<div class="assoc-results">' + shown.map(function(p){
@@ -8416,7 +8760,8 @@
     nfBodyEl.addEventListener("change", function(){ updateCalculados(); updateVisibility(); });
     updateCalculados(); updateVisibility();
 
-    document.getElementById("nf-submit").addEventListener("click", async function(){
+    var nfSubmit = document.getElementById("nf-submit");
+    nfSubmit.addEventListener("click", function(){ runBusy(nfSubmit, "Salvando…", async function(){
       var msg = document.getElementById("nf-msg");
       var nome = document.getElementById("nf-nome").value.trim();
       if(!nome){ msg.style.color = "var(--selo)"; msg.textContent = "Informe um nome."; return; }
@@ -8434,8 +8779,8 @@
         var uf = document.getElementById("nf-uf").value.trim().toUpperCase();
         var numero = document.getElementById("nf-numero").value.trim();
         if(tipo !== "posse_sem_justo_titulo"){
-          if(!cartorioId || !municipio || uf.length !== 2){
-            msg.style.color = "var(--selo)"; msg.textContent = "Informe cartório, município e UF (2 letras) — obrigatórios para esse tipo de evidência."; return;
+          if(!cartorioId || !municipio || !uf){
+            msg.style.color = "var(--selo)"; msg.textContent = "Informe cartório, UF e município — obrigatórios para esse tipo de evidência."; return;
           }
           if((tipo === "matricula" || tipo === "transcricao") && !numero){
             msg.style.color = "var(--selo)"; msg.textContent = "Informe o número da " + (tipo === "transcricao" ? "transcrição" : "matrícula") + "."; return;
@@ -8476,17 +8821,19 @@
       });
       if(missing.length){ msg.style.color = "var(--selo)"; msg.textContent = "Faltando: " + missing.join(", "); return; }
       if(invalid.length){ msg.style.color = "var(--selo)"; msg.textContent = "Corrija: " + invalid.join(", "); return; }
-      if(!db) return;
+      if(!db){ setMsg(msg, "Sem conexão com a base neste momento.", "error"); return; }
       var sit = situacaoAtual(cfg && cfg.situacoes, todasAbas, getVal, tabs.getValidado);
       var payload = Object.assign({ codigo: genCodigo(def.key), nome: nome, ciclo_de_vida: cicloSel ? (cicloSel.value || null) : null, campos: campos, abasValidadas: tabs.validState, situacao: sit ? sit.nome : null }, nativePayload);
-      var ref = await db.collection(def.key).add(payload);
-      if(def.key === "titularidade"){
-        for(var ti=0; ti<pendingTitulares.length; ti++){
-          await db.collection("titularidade_pessoa").add({ titularidade_id: ref.id, pessoa_id: pendingTitulares[ti].id });
+      try{
+        var ref = await db.collection(def.key).add(payload);
+        if(def.key === "titularidade"){
+          for(var ti=0; ti<pendingTitulares.length; ti++){
+            await db.collection("titularidade_pessoa").add({ titularidade_id: ref.id, pessoa_id: pendingTitulares[ti].id });
+          }
         }
-      }
+      }catch(err){ setMsg(msg, "Não foi possível salvar (" + errorText(err) + ").", "error"); return; }
       closeModal();
-    });
+    }); });
     openModalShell();
   }
 
@@ -8566,9 +8913,7 @@
     if(e.length > 1) return {erro:"\"" + txt + "\" bate com mais de um registro — use o Código"};
     return {erro:"\"" + txt + "\" não encontrado"};
   }
-  function loteNorm(s){
-    return String(s == null ? "" : s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
-  }
+  function loteNorm(s){ return normBusca(s).replace(/\s+/g, " "); }
   function loteAbasDe(key){
     var ctx = contextFor(key);
     if(ctx.type === "categoria") return (ctx.categoria && ctx.categoria.abas) || [];
@@ -8942,7 +9287,7 @@
     m.innerHTML =
       '<div class="modal-head"><div><h3>Edição em lote — ' + escapeHtml(loteTitulo()) + '</h3>' +
       '<p>Digite direto nas células ou cole um bloco copiado do Excel a partir da célula em foco. Valem as mesmas regras do formulário: Ciclo de vida, abas bloqueadas, Campo requisito, formato e Situação.</p></div>' +
-      '<button class="icon-btn" id="modal-close" title="Fechar">✕</button></div>' +
+      '<button type="button" class="icon-btn" id="modal-close" title="Fechar" aria-label="Fechar">✕</button></div>' +
       '<div class="modal-body" id="lote-body">' +
         '<div class="lote-barra">' +
           '<button type="button" class="btn sm" id="lote-add"' + (cria ? '' : ' disabled title="Seu grupo não tem Criar em lote nesta Entidade"') + '>+ Nova linha</button>' +
@@ -9200,7 +9545,7 @@
     var partes = [aplicadas + " célula(s) colada(s)"];
     if(ignoradasTrava) partes.push(ignoradasTrava + " em aba bloqueada ou campo oculto (marcadas em vermelho)");
     if(ignoradasLeitura) partes.push(ignoradasLeitura + " caíram em coluna somente leitura e foram ignoradas");
-    if(semLinha) partes.push(semLinha + " linha(s) além do fim ignoradas — Titularidade não é criada em lote");
+    if(semLinha) partes.push(semLinha + " linha(s) além do fim ignoradas — seu grupo não pode criar registros em lote nesta Entidade");
     loteMsg(partes.join(" · "), (ignoradasTrava || semLinha) ? "erro" : "");
   }
 
@@ -9509,6 +9854,7 @@
     var criadas = 0, atualizadas = 0, seqCodigo = {};
     var btn = document.getElementById("lote-salvar"); if(btn) btn.disabled = true;
     loteMsg("Salvando…", "");
+    try{
     for(var i = 0; i < r.alvo.length; i++){
       var linha = r.alvo[i];
       var getVal = loteGetVal(linha), getValidado = loteGetValidado(linha);
@@ -9561,6 +9907,13 @@
         if(lote.key === "titularidade") await loteTitSincronizar(linha.id, loteTitularesDe(linha.id), listaMultiParse(linha.valores.__titulares));
         atualizadas++;
       }
+    }
+    }catch(err){
+      // v62: antes uma falha no meio deixava o botão desabilitado e a tela
+      // sem aviso. O que já foi gravado fica; a tabela recarrega da base.
+      if(btn) btn.disabled = false;
+      loteMsg("A gravação parou no meio (" + errorText(err) + "): " + criadas + " criado(s) e " + atualizadas + " atualizado(s) antes do erro. Recarregue a edição em lote para conferir.", "erro");
+      return;
     }
     await new Promise(function(res){ setTimeout(res, 60); });
     if(modal.type !== "lote") return;
@@ -9656,14 +10009,20 @@
     var col = loteColecao(lote.key);
     var idSet = {}; c.ids.forEach(function(id){ idSet[id] = 1; });
     var btn = document.getElementById("lote-conf-sim"); if(btn) btn.disabled = true;
-    for(var j = 0; j < LOTE_JOIN_COLS.length; j++){
-      var jc = LOTE_JOIN_COLS[j];
-      var doJoin = (cache[jc] || []).filter(function(x){ return idSet[x[lote.key + "_id"]]; });
-      for(var a = 0; a < doJoin.length; a++) await db.doc(jc + "/" + doJoin[a].id).delete();
+    try{
+      for(var j = 0; j < LOTE_JOIN_COLS.length; j++){
+        var jc = LOTE_JOIN_COLS[j];
+        var doJoin = (cache[jc] || []).filter(function(x){ return idSet[x[lote.key + "_id"]]; });
+        for(var a = 0; a < doJoin.length; a++) await db.doc(jc + "/" + doJoin[a].id).delete();
+      }
+      var rels = (cache.relacionamento || []).filter(function(r){ return idSet[r.origem_id] || idSet[r.destino_id]; });
+      for(var b = 0; b < rels.length; b++) await db.doc("relacionamento/" + rels[b].id).delete();
+      for(var k = 0; k < c.ids.length; k++) await db.doc(col + "/" + c.ids[k]).delete();
+    }catch(err){
+      if(btn) btn.disabled = false;
+      loteMsg("A exclusão parou no meio (" + errorText(err) + "). Feche e reabra a edição em lote para conferir o que ficou.", "erro");
+      return;
     }
-    var rels = (cache.relacionamento || []).filter(function(r){ return idSet[r.origem_id] || idSet[r.destino_id]; });
-    for(var b = 0; b < rels.length; b++) await db.doc("relacionamento/" + rels[b].id).delete();
-    for(var k = 0; k < c.ids.length; k++) await db.doc(col + "/" + c.ids[k]).delete();
     await new Promise(function(res){ setTimeout(res, 60); });
     if(modal.type !== "lote") return;
     lote.confirmar = null;
@@ -10921,8 +11280,13 @@
       try{ window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
       catch(e){ persistOk = false; }
     }
+    // v62: cópias profundas na entrada e na saída, como numa base de verdade.
+    // Antes os objetos eram guardados por referência: um rascunho gravado
+    // (ex.: "Salvar ciclo de vida") continuava ligado ao estado salvo, e
+    // qualquer edição seguinte — mesmo cancelada — alterava a base.
+    function copy(v){ return v === undefined ? v : JSON.parse(JSON.stringify(v)); }
     function snapshotFor(name){
-      return { docs: state[name].map(function(d){ return { id:d.id, data:function(){ return d; } }; }) };
+      return { docs: state[name].map(function(d){ var c = copy(d); return { id:d.id, data:function(){ return c; } }; }) };
     }
     function notify(name){ listeners[name].forEach(function(cb){ cb(snapshotFor(name)); }); }
     function genId(name){ return name + "_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2,8); }
@@ -10933,7 +11297,7 @@
         add: function(data){
           return new Promise(function(resolve){
             var id = genId(name);
-            state[name].push(Object.assign({}, data, {id:id}));
+            state[name].push(Object.assign(copy(data), {id:id}));
             persist(); notify(name);
             resolve({id:id});
           });
@@ -10954,7 +11318,7 @@
         set: function(data){
           return new Promise(function(resolve){
             var idx = state[name].findIndex(function(d){ return d.id === id; });
-            var doc = Object.assign({}, data, {id:id});
+            var doc = Object.assign(copy(data), {id:id});
             if(idx === -1) state[name].push(doc); else state[name][idx] = doc;
             persist(); notify(name);
             resolve();
@@ -10963,8 +11327,8 @@
         update: function(patch){
           return new Promise(function(resolve){
             var idx = state[name].findIndex(function(d){ return d.id === id; });
-            if(idx === -1) state[name].push(Object.assign({}, patch, {id:id}));
-            else state[name][idx] = Object.assign({}, state[name][idx], patch);
+            if(idx === -1) state[name].push(Object.assign(copy(patch), {id:id}));
+            else state[name][idx] = Object.assign({}, state[name][idx], copy(patch));
             persist(); notify(name);
             resolve();
           });
@@ -10978,7 +11342,7 @@
         },
         get: function(){
           return new Promise(function(resolve){
-            var d = state[name].find(function(x){ return x.id === id; });
+            var d = copy(state[name].find(function(x){ return x.id === id; }));
             resolve({ exists: !!d, id:id, data:function(){ return d; } });
           });
         }
@@ -11000,10 +11364,10 @@
     // pra conferir de relance se o que está na tela é o que foi entregue.
     var versaoLinha = '<div class="sidebar-versao">Registro ABA <strong>' + APP_VERSION + '</strong></div>';
     if(isLocalDb){
-      banner.style.display = "";
+      banner.hidden = false;
       foot.innerHTML = versaoLinha + '<strong>Sobre estes dados —</strong> modo de demonstração local: os registros ficam salvos apenas no seu navegador (localStorage), não são compartilhados com ninguém.';
     } else {
-      banner.style.display = "none";
+      banner.hidden = true;
       foot.innerHTML = versaoLinha + '<strong>Sobre estes dados —</strong> os registros vêm do mesmo <code class="mono">seed_examples.sql</code> rodado contra o schema Postgres do protótipo.';
     }
   }
@@ -11045,6 +11409,7 @@
         semearCartoriosTeste();
         semearUsuariosExemplo();
         render();
+        atualizarVisualizacaoAberta();
       }, function(err){ dbReady = true; render(); });
     });
   }
@@ -11052,5 +11417,5 @@
   boot();
 })();
 </script>
-
-</head><body></body></html>
+</body>
+</html>
